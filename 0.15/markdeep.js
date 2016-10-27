@@ -489,6 +489,103 @@ var RUSSIAN = {
     }
 };
 
+// Translated by Sandor Berczi
+var HUNGARIAN = {
+    keyword: {
+        table:     'táblázat',
+        figure:    'ábra',
+        listing:   'lista',
+        diagram:   'diagramm',
+
+        sec:       'fej',  // Abbreviation for section
+        section:   'fejezet',
+        subsection:'alfejezet',
+
+        Monday:    'hétfő',
+        Tuesday:   'kedd',
+        Wednesday: 'szerda',
+        Thursday:  'csütörtök',
+        Friday:    'péntek',
+        Saturday:  'szombat',
+        Sunday:    'vasárnap',
+
+        January:   'január',
+        February:  'február',
+        March:     'március',
+        April:     'április',
+        May:       'május',
+        June:      'június',
+        July:      'július',
+        August:    'augusztus',
+        September: 'szeptember',
+        October:   'október',
+        November:  'november',
+        December:  'december',
+
+        jan: 'jan',
+        feb: 'febr',
+        mar: 'márc',
+        apr: 'ápr',
+        may: 'máj',
+        jun: 'jún',
+        jul: 'júl',
+        aug: 'aug',
+        sep: 'szept',
+        oct: 'okt',
+        nov: 'nov',
+        dec: 'dec'
+    }
+};
+
+
+// Translated by Sandor Berczi
+var GERMAN = {
+    keyword: {
+        table:     'Tabelle',
+        figure:    'Abbildung',
+        listing:   'Auflistung',
+        diagram:   'Diagramm',
+
+        sec:       'Kap',
+        section:   'Kapitel',
+        subsection:'Unterabschnitt',
+
+        Monday:    'Montag',
+        Tuesday:   'Dienstag',
+        Wednesday: 'Mittwoch',
+        Thursday:  'Donnerstag',
+        Friday:    'Freitag',
+        Saturday:  'Samstag',
+        Sunday:    'Sonntag',
+
+        January:   'Januar',
+        February:  'Februar',
+        March:     'März',
+        April:     'April',
+        May:       'Mai',
+        June:      'Juni',
+        July:      'Juli',
+        August:    'August',
+        September: 'September',
+        October:   'Oktober',
+        November:  'November',
+        December:  'Dezember',
+
+        jan: 'Jan',
+        feb: 'Feb',
+        mar: 'Mär',
+        apr: 'Apr',
+        may: 'Mai',
+        jun: 'Jun',
+        jul: 'Jul',
+        aug: 'Aug',
+        sep: 'Sep',
+        oct: 'Okt',
+        nov: 'Nov',
+        dec: 'Dez'
+    }
+};
+
 
 var DEFAULT_OPTIONS = {
     mode:               'markdeep',
@@ -504,9 +601,10 @@ var DEFAULT_OPTIONS = {
 var LANG_TABLE = {
     ru: RUSSIAN,
     fr: FRENCH,
-    bg: BULGARIAN
+    bg: BULGARIAN,
+    de: GERMAN,
+    hu: HUNGARIAN
 // Awaiting localization by a native speaker:
-//    de: GERMAN,
 //    es: SPANISH
 //    ...
 };
