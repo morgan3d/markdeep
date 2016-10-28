@@ -1866,7 +1866,7 @@ function markdeepToHTML(str, elementMode) {
 
     // REFERENCE-LINKS: [foo][] or [bar][foo] + [foo]: http://foo.com
     str = str.rp(/^\[([^\^#].*?)\]:(.*?)$/gm, function (match, symbolicName, url) {
-        referenceLinkTable[symbolicName.toLowerCase().trim()] = url.trim();
+        referenceLinkTable[symbolicName.toLowerCase().trim()] = {link: url.trim(), used: false};
         return '';
     });
 
@@ -2082,7 +2082,14 @@ function markdeepToHTML(str, elementMode) {
         }
         
         symbolicName = symbolicName.toLowerCase().trim();
-        return '<a ' + protect('href="' + referenceLinkTable[symbolicName] + '"') + '>' + text + '</a>';
+        var t = referenceLinkTable[symbolicName];
+        if (! t) {
+            console.log("Reference link '" + symbolicName + "' never defined");
+            return '?';
+        } else {
+            t.used = true;
+            return '<a ' + protect('href="' + t.link + '"') + '>' + text + '</a>';
+        }
     });
 
 
@@ -2117,23 +2124,29 @@ function markdeepToHTML(str, elementMode) {
     }
 
     // TABLE, LISTING, and FIGURE LABEL NUMBERING: Figure [symbol]:  Table [symbol]:  Listing [symbol]: Diagram [symbols]:
+
+    // This data structure maps caption types [by localized name] to a count of how many of
+    // that type of object exist.
     var refCounter = {};
-    // refTable[ref] = number to link to
+
+    // refTable['type_symbolicName'] = {number: number to link to, used: bool}
     var refTable = {};
-    str = str.rp(RegExp(/($|>)\s*/.source + '(' + keyword('figure') + '|' + keyword('table') + '|' + keyword('listing') + '|' + keyword('diagram') + ')' + /\s+\[(.+?)\]:/.source, 'gim'), function (match, prefix, type, ref) {
-        type = type.toLowerCase();
+
+    str = str.rp(RegExp(/($|>)\s*/.source + '(' + keyword('figure') + '|' + keyword('table') + '|' + keyword('listing') + '|' + keyword('diagram') + ')' + /\s+\[(.+?)\]:/.source, 'gim'), function (match, prefix, _type, _ref) {
+        var type = _type.toLowerCase();
         // Increment the counter
         var count = refCounter[type] = (refCounter[type] | 0) + 1;
-        var ref = type + '_' + mangle(ref.toLowerCase().trim());
+        var ref = type + '_' + mangle(_ref.toLowerCase().trim());
 
         // Store the reference number
-        refTable[ref] = count;
+        refTable[ref] = {number: count, used: false, source: type + ' [' + _ref + ']'};
         
         return prefix + entag('a', '', protect('name="' + ref + '"')) + entag('b', type[0].toUpperCase() + type.ss(1) + '&nbsp;' + count + ':', protect('style="font-style:normal;"'));
     });
 
+
     // FIGURE, TABLE, and LISTING references:
-    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst.)\s+\[(.+?)\]/gi, function (match, _type, ref) {
+    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst.)\s+\[(.+?)\]/gi, function (match, _type, _ref) {
         // Fix abbreviations
         var type = _type.toLowerCase();
         switch (type) {
@@ -2143,11 +2156,14 @@ function markdeepToHTML(str, elementMode) {
         }
 
         // Clean up the reference
-        var ref = type + '_' + mangle(ref.toLowerCase().trim());
-        var num = refTable[ref];
-        if (num) {
-            return '<a ' + protect('href="#' + ref + '"') + '>' + _type + '&nbsp;' + num + '</a>';
+        var ref = type + '_' + mangle(_ref.toLowerCase().trim());
+        var t = refTable[ref];
+
+        if (t) {
+            t.used = true;
+            return '<a ' + protect('href="#' + ref + '"') + '>' + _type + '&nbsp;' + t.number + '</a>';
         } else {
+            console.log("Reference to undefined '" + type + " [" + _ref + "]'");
             return _type + ' ?';
         }
     });
@@ -2207,6 +2223,19 @@ function markdeepToHTML(str, elementMode) {
     while (str.indexOf(PROTECT_CHARACTER) + 1) {
         str = str.rp(PROTECT_REGEXP, expose);
     }
+
+    // Warn about unused references
+    Object.keys(referenceLinkTable).forEach(function (key) {
+        if (! referenceLinkTable[key].used) {
+            console.log("Reference link '[" + key + "]' defined but never used");
+        }
+    });
+
+    Object.keys(refTable).forEach(function (key) {
+        if (! refTable[key].used) {
+            console.log("'" + refTable[key].source + "' never referenced");
+        }
+    });
 
     return '<span class="md">' + entag('p', str) + '</span>';
 }
