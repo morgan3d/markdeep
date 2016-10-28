@@ -2227,13 +2227,13 @@ function markdeepToHTML(str, elementMode) {
     // Warn about unused references
     Object.keys(referenceLinkTable).forEach(function (key) {
         if (! referenceLinkTable[key].used) {
-            console.log("Reference link '[" + key + "]' defined but never used");
+            console.log("Reference link '[" + key + "]' is defined but never used");
         }
     });
 
     Object.keys(refTable).forEach(function (key) {
         if (! refTable[key].used) {
-            console.log("'" + refTable[key].source + "' never referenced");
+            console.log("'" + refTable[key].source + "' is never referenced");
         }
     });
 
