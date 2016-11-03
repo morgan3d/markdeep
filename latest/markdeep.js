@@ -1,6 +1,6 @@
 /**
   markdeep.js
-  Version 0.15
+  Version 0.16
 
   Copyright 2015-2016, Morgan McGuire, http://casual-effects.com
   All rights reserved.
@@ -1765,6 +1765,14 @@ function markdeepToHTML(str, elementMode) {
     // actually looks like math and not just dollar
     // signs. Don't rp double-dollar signs. Do this only
     // outside of protected blocks.
+
+    // Also allow LaTeX of the form $...$ if the close tag is not US$ or Can$
+    // and there are spaces outside of the dollar signs.
+    //
+    // Test: " $3 or US$2 and 3$, $x$ $y + \n 2x$ or ($z$) $k$. or $2 or $2".match(pattern) = 
+    // ["$x$", "$y +  2x$", "$z$", "$k$"];
+    str = str.rp(/((?:[^\w\d]))\$(\S(?:[^\$]*?\S(?!US|Can))??)\$(?![\w\d])/g, '$1\\($2\\)');
+
     //
     // Literally: find a non-dollar sign, non-number followed
     // by a dollar sign and a space.  Then, find any number of
@@ -1775,12 +1783,6 @@ function markdeepToHTML(str, elementMode) {
 
     str = str.rp(/((?:[^\w\d]))\$([ \t][^\$]+?[ \t])\$(?![\w\d])/g, '$1\\($2\\)');
 
-    // Also allow LaTeX of the form $...$ if the close tag is not US$
-    // and there are spaces outside of the dollar signs.
-    //
-    // Test: " $3 or US$2 and 3$, $x$ $y + \n 2x$ or ($z$) $k$. or $2 or $2".match(pattern) = 
-    // ["$x$", "$y +  2x$", "$z$", "$k$"];
-    str = str.rp(/((?:[^\w\d]))\$(\S(?:[^\$]*?\S(?!US))??)\$(?![\w\d])/g, '$1\\($2\\)');
 
     // Temporarily hide MathJax LaTeX blocks from Markdown processing
     str = str.rp(/(\\\([\s\S]+?\\\))/g, protector);
