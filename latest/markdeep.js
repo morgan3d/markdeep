@@ -1808,8 +1808,7 @@ function markdeepToHTML(str, elementMode) {
     }
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
-    str = str.rp(/\n((?:_[ \t]*){3,}|(?:-[ \t]*){3,}|(?:\*[ \t]*){3,})\s*?\n/g, '\n<hr/>\n');
-
+    str = str.rp(/\n[ \t]*((\*|-|_)[ \t]*){3,}[ \t]*\n/g, '\n<hr/>\n');
     var FANCY_QUOTE = protect('class="fancyquote"');
 
     // FANCY QUOTE in a blockquote:
