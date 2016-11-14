@@ -209,7 +209,9 @@ var STYLESHEET = entag('style',
     'stroke:none' +
     '}' +
 
-    '.md a:link.url{font-family:Georgia,Palatino,\'Times New Roman\'}' +
+    // Not restricted to a:link because we want things like svn URLs to have this font, which
+    // makes "//" look better.
+    '.md a{font-family:Georgia,Palatino,\'Times New Roman\'}' +
 
     'h1,.tocHeader,.nonumberh1{' +
     'border-bottom:3px solid;' +
@@ -298,7 +300,7 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md a:link, .md a:visited{color:#38A;text-decoration:none}' +
-    '.md a:hover{text-decoration:underline}' +
+    '.md a:link:hover{text-decoration:underline}' +
 
     '.md dt{' +
     'font-weight:700' +
@@ -983,6 +985,7 @@ function replaceLists(s, protect) {
     var ATTRIBS = {'+': protect('class="plus"'), '-': protect('class="minus"'), '*': protect('class="asterisk"')};
     var NUMBER_ATTRIBS = protect('class="number"');
 
+console.log(s); // TODO: Remove
     // Sometimes the list regexp grabs too much because subsequent
     // lines are indented *less* than the first line. So, if that case
     // is found, re-run the regexp.
@@ -1783,7 +1786,6 @@ function markdeepToHTML(str, elementMode) {
 
     str = str.rp(/((?:[^\w\d]))\$([ \t][^\$]+?[ \t])\$(?![\w\d])/g, '$1\\($2\\)');
 
-
     // Temporarily hide MathJax LaTeX blocks from Markdown processing
     str = str.rp(/(\\\([\s\S]+?\\\))/g, protector);
     str = str.rp(/(\\begin\{equation\}[\s\S]*?\\end\{equation\})/g, protector);
@@ -1801,8 +1803,9 @@ function markdeepToHTML(str, elementMode) {
         str = str.rp(new RegExp(/^[ \t]*/.source + '#{' + i + ',' + i +'}(?:[ \t])([^\n#]+)#*[ \t]*\n', 'gm'), 
                  makeHeaderFunc(i));
 
+        // No-number headers
         str = str.rp(new RegExp(/^[ \t]*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n#]+)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
-                     entag('div', '$1', protect('class="nonumberh' + i + '"')));
+                     entag('div', '$1', protect('class="nonumberh' + i + '"')) + '\n\n\n');
     }
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
@@ -2173,7 +2176,8 @@ function markdeepToHTML(str, elementMode) {
     // URL: <http://baz> or http://baz
     // Must be detected after [link]() processing 
     str = str.rp(/(?:<|(?!<)\b)(\w{3,6}:\/\/.+?)(?:$|>|(?=<)|(?=\s|\u00A0)(?!<))/g, function (match, url) {
-        return '<a ' + protect('href="' + url + '" class="url"') + '>' + url + '</a>';
+        // svn and perforce URLs are not hyperlinked. All others (http/https/ftp/mailto/tel, etc. are)
+        return '<a ' + ((url[0] !== 's' && url[0] !== 'p') ? protect('href="' + url + '" class="url"') : '') + '>' + url + '</a>';
     });
 
     if (! elementMode) {
