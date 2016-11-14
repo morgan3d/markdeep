@@ -985,7 +985,6 @@ function replaceLists(s, protect) {
     var ATTRIBS = {'+': protect('class="plus"'), '-': protect('class="minus"'), '*': protect('class="asterisk"')};
     var NUMBER_ATTRIBS = protect('class="number"');
 
-console.log(s); // TODO: Remove
     // Sometimes the list regexp grabs too much because subsequent
     // lines are indented *less* than the first line. So, if that case
     // is found, re-run the regexp.
