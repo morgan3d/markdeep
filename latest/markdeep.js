@@ -127,7 +127,8 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md img{' +
-    'max-width:100%' +
+    'max-width:100%;' +
+    'page-break-inside:avoid' +
     '}' +
 
      // Justification tends to handle URLs and code blocks poorly
@@ -197,6 +198,7 @@ var STYLESHEET = entag('style',
     'text-align:center;' +
     'stroke-linecap:round;' +
     'stroke-width:' + STROKE_WIDTH + 'px;'+
+    'page-break-inside:avoid;' +
     'stroke:#000;' + 
     'fill:#000' +
     '}' +
@@ -242,7 +244,8 @@ var STYLESHEET = entag('style',
 
     '.md table{' +
     'border-collapse:collapse;' +
-    'line-height:140%' +
+    'line-height:140%;' +
+    'page-break-inside:avoid' +
     '}' +
 
     '.md table.table{' +
@@ -296,7 +299,8 @@ var STYLESHEET = entag('style',
     'border-bottom: 1px solid #CCC;' + 
     'padding: 5px 0 5px 20px;' +
     'margin:0 0 30px 0;' +
-    'background:#FCFCFC' +
+    'background:#FCFCFC;' +
+    'page-break-inside:avoid' +
     '}' +
 
     '.md a:link, .md a:visited{color:#38A;text-decoration:none}' +
@@ -317,7 +321,8 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md code{' +
-    'white-space:pre' +
+    'white-space:pre;' +
+    'page-break-inside:avoid' +
     '}' +
 
     '.md .endnote{' +
