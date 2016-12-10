@@ -28,7 +28,7 @@
   Sagalaev, which is used for code highlighting. (BSD 3-clause license)
 */
 /**See http://casual-effects.com/markdeep for @license and documentation.
-markdeep.min.js 0.15 (C) 2016 Morgan McGuire 
+markdeep.min.js 0.16 (C) 2016 Morgan McGuire 
 highlight.min.js 9.5.0 (C) 2016 Ivan Sagalaev https://highlightjs.org/*/
 (function() {
 'use strict';
@@ -60,6 +60,7 @@ var STROKE_WIDTH = 2;
 var DIAGRAM_MARKER = '*';
 
 // http://stackoverflow.com/questions/1877475/repeat-character-n-times
+// ECMAScript 6 has a String.repeat method, but that's not available everywhere
 var DIAGRAM_START = Array(5 + 1).join(DIAGRAM_MARKER);
 
 /** attribs are optional */
@@ -1668,10 +1669,14 @@ function markdeepToHTML(str, elementMode) {
         str = str.innerHTML;
     }
 
+    // Prefix a newline so that blocks beginning at the top of the
+    // document are processed correctly
+    str = '\n\n' + str;
+
     // Replace pre-formatted script tags that are used to protect
     // less-than signs, e.g., in std::vector<Value>
     str = str.rp(/<script\s+type\s*=\s*['"]preformatted['"]\s*>([\s\S]*?)<\/script>/gi, '$1');
-
+    
     function replaceDiagrams(str) {
         var result = extractDiagram(str);
         if (result.diagramString) {
@@ -1681,10 +1686,10 @@ function markdeepToHTML(str, elementMode) {
                 // Strip whitespace and enclosing brackets from the caption
                 caption = caption.trim();
                 caption = caption.ss(1, caption.length - 1);
-              
+                
                 return entag('center', entag('div', caption, protect('class="imagecaption"')));
             });
-
+            
             var diagramSVG = diagramToSVG(result.diagramString, result.alignmentHint);
             return result.beforeString +
                 diagramSVG + '\n' +
@@ -1693,11 +1698,7 @@ function markdeepToHTML(str, elementMode) {
             return str;
         }
     }
-
-    // Prefix a newline so that blocks beginning at the top of the
-    // document are processed correctly
-    str = '\n\n' + str;
-
+    
     // CODE FENCES, with styles. Do this before other
     // processing so that their code is protected from further
     // Markdown processing
@@ -1718,17 +1719,17 @@ function markdeepToHTML(str, elementMode) {
     
     stylizeFence('tilde', '~');
     stylizeFence('backtick', '`');
-
+    
     // Protect raw <CODE> content
     str = str.rp(/(<code\b.*?<\/code>)/gi, protector);
     
     str = replaceDiagrams(str);
-
+    
     // Protect SVG blocks (including the ones we just inserted)
     str = str.rp(/<svg( .*?)?>([\s\S]*?)<\/svg>/gi, function (match, attribs, body) {
         return '<svg' + protect(attribs) + '>' + protect(body) + '</svg>';
     });
-
+    
     // Protect STYLE blocks
     str = str.rp(/<style>([\s\S]*?)<\/style>/gi, function (match, body) {
         return entag('style', protect(body));
@@ -1742,27 +1743,27 @@ function markdeepToHTML(str, elementMode) {
         return "<img " + protect(match.ss(5, match.length - 1)) + ">";
     });
 
-    // INLINE CODE: Surrounded in back ticks on a single line.  Do
-    // this before any other processing to protect code blocks
-    // from further interference. Don't process back ticks inside
-    // of code fences. Allow a single newline, but not wrapping
-    // further because that might just pick up quotes used as other
-    // punctuation across lines. Explicitly exclude cases where the second
-    // quote immediately preceeds a number, e.g., the old `97
+    // INLINE CODE: Surrounded in back ticks on a single line.  Do this before any other
+    // processing to protect code blocks from further interference. Don't process back ticks
+    // inside of code fences. Allow a single newline, but not wrapping further because that
+    // might just pick up quotes used as other punctuation across lines. Explicitly exclude
+    // cases where the second quote immediately preceeds a number, e.g., "the old `97"
     str = str.rp(/(`)(.+?(?:\n.+?)?)`(?!\d)/g, entag('code', '$2'));
-
-    // CODE: Escape angle brackets inside code blocks (including the
-    // ones we just introduced), and then protect the blocks
-    // themselves
+    
+    // CODE: Escape angle brackets inside code blocks (including the ones we just introduced),
+    // and then protect the blocks themselves
     str = str.rp(/(<code(?: .*?)?>)([\s\S]*?)<\/code>/gi, function (match, open, inlineCode) {
         return protect(open + escapeHTMLEntities(inlineCode) + '</code>');
     });
-
+    
     // PRE: Protect pre blocks
     str = str.rp(/(<pre\b[\s\S]*?<\/pre>)/gi, protector);
-
+    
     // Protect raw HTML attributes from processing
     str = str.rp(/(<\w[^ \n<>]*?[ \t]+)(.*?)(?=\/?>)/g, protectorWithPrefix);
+
+    // End of processing literal blocks
+    /////////////////////////////////////////////////////////////////////////////
 
     // Temporarily hide $$ MathJax LaTeX blocks from Markdown processing (this must
     // come before single $ block detection below)
@@ -3563,12 +3564,10 @@ if (! window.alreadyProcessedMarkdeep) {
     
     // In order to be able to show what source files look like, the
     // noformat argument may be supplied.
-     
     
     if (! noformat) {
-        // Remove any recursive references to this script so that we
-        // don't trigger the cost of recursive *loading*. (The
-        // alreadyProcessedMarkdeep variable will prevent recursive
+        // Remove any recursive references to this script so that we don't trigger the cost of
+        // recursive *loading*. (The alreadyProcessedMarkdeep variable will prevent recursive
         // *execution*.) We allow other scripts to pass through.
         toArray(document.getElementsByTagName('script')).forEach(function(node) {
             if (isMarkdeepScriptName(node.src)) {
@@ -3594,10 +3593,11 @@ if (! window.alreadyProcessedMarkdeep) {
         return;
     }
 
-    source = unescapeHTMLEntities(source);
-    
-    // Run markdeep processing after the rest of this file parses
-    setTimeout(function() {
+    var markdeepProcessor = function() {
+        // Recompute the source text from the current version of the document
+        var source = nodeToMarkdeepSource(document.body);
+
+        source = unescapeHTMLEntities(source);
         var markdeepHTML = markdeepToHTML(source, false);
         
         // Need MathJax if $$ ... $$, \( ... \), or \begin{
@@ -3609,7 +3609,7 @@ if (! window.alreadyProcessedMarkdeep) {
             // Custom definitions (NC == \newcommand)
             var MATHJAX_COMMANDS = '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^\\circ}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}$$\n'.rp(/NC/g, '\\newcommand');
 
-            markdeepHTML = '<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' + 
+            markdeepHTML = '<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' +
                 '<span style="display:none">' + MATHJAX_COMMANDS + '</span>\n' + markdeepHTML; 
         }
         
@@ -3644,7 +3644,86 @@ if (! window.alreadyProcessedMarkdeep) {
         }
 
         document.body.style.visibility = 'visible';
-    }, 0);
+    };
+
+    ///////////// 'insert' command processing
+    // Helper function for use by children
+    function sendContentsToMyParent() {
+        //console.log(location.href + " sent message to parent");
+        parent.postMessage(myID + '=' + source, '*');
+    }
+
+    // Strip the filename from the url, if there is one (and it is a string)
+    function removeFilename(url) {
+        return url && url.ss(0, url.lastIndexOf('/') + 1);
+    }
+    
+    var tmp = /([^?]+)(?:\?id=(inc\d+)&p=([^&]+))?/.exec(location.href);
+    var myBase = removeFilename(tmp[1]);
+    var myID = tmp[2];
+    var parentBase = removeFilename(tmp[3] && decodeURIComponent(tmp[3]));
+    var childFrameStyle = 'display:none';
+    var includeCounter = 0;
+    var IAmAChild = myID; // !== undefined
+    var IAmAParent = false;
+    var numIncludeChildrenLeft = 0;
+    
+    source = source.rp(/(?:^|\s)\(insert[ \t]+(\S*)?[ \t]+here\)\s/g, function(match, src) {
+        if (numIncludeChildrenLeft === 0) {
+            // This is the first child observed. Prepare to receive messages from the
+            // embedded children.
+            IAmAParent = true;
+            addEventListener("message", function (event) {
+                // Parse the message. Ensure that it is for the Markdeep/include.js system.
+                var childID = false;
+                var childBody = event.data.replace(/^(inc\d+)=/, function (match, a) {
+                    childID = a;
+                    return '';
+                });
+                
+                if (childID) {
+                    // This message was for the Markdeep/include.js system
+                    //console.log(location.href + ' received a message from child ' + childID);
+                    
+                    // Replace the corresponding node's contents
+                    var childFrame = document.getElementById(childID);
+                    childFrame.outerHTML = childBody + '\n';
+                    
+                    --numIncludeChildrenLeft;
+
+                    if (numIncludeChildrenLeft <= 0) {
+                        if (IAmAChild) {
+                            sendContentsToMyParent();
+                        } else {
+                            // The entire document is complete, so run the markdeep processor
+                            // as soon as the document has recovered from our replacements
+                            setTimeout(markdeepProcessor, 0);
+                        }
+                    }
+                }
+            });
+        }
+
+        ++numIncludeChildrenLeft;
+
+        // Replace this tag with a frame that loads the document.  Once loaded, it will
+        // send a message with its contents for use as a replacement.
+        var childID = 'inc' + (++includeCounter);
+        return '<iframe src="' + src + '?id=' + childID + '&p=' + encodeURIComponent(myBase) + 
+            '"id="' + childID + '"style="' + childFrameStyle + '"></iframe>';
+    });
+
+    if (IAmAParent) {
+        document.body.innerHTML = source;
+    } else {
+        if (IAmAChild) {
+            // I'm not waiting on my own children, so trigger the send now
+            sendContentsToMyParent();
+        } else {
+            // Run markdeep processing after the rest of this file parses
+            setTimeout(markdeepProcessor, 0);
+        }
+    }
 }
 
 })();
