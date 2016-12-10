@@ -3669,7 +3669,7 @@ if (! window.alreadyProcessedMarkdeep) {
     var IAmAParent = false;
     var numIncludeChildrenLeft = 0;
     
-    source = source.rp(/(?:^|\s)\(insert[ \t]+(\S*)?[ \t]+here\)\s/g, function(match, src) {
+    source = source.rp(/(?:^|\s)\(insert[ \t]+(\S+\.\S*)[ \t]+here\)\s/g, function(match, src) {
         if (numIncludeChildrenLeft === 0) {
             // This is the first child observed. Prepare to receive messages from the
             // embedded children.
