@@ -3583,14 +3583,20 @@ if (! window.alreadyProcessedMarkdeep) {
     var source = nodeToMarkdeepSource(document.body);
 
     if (noformat) { 
-        // Abort processing
+        // Abort processing. 
         source = source.rp(/<!-- Markdeep:.+$/gm, '') + MARKDEEP_LINE;
     
         // Escape the <> (not ampersand) that we just added
         source = source.rp(/</g, '&lt;').rp(/>/g, '&gt;');
-            
+
         // Replace the Markdeep line itself so that ?noformat examples have a valid line to copy
         document.body.innerHTML = entag('pre', source);
+
+        var fallbackNodes = document.getElementsByClassName('fallback');
+        for (var i = 0; i < fallbackNodes.length; ++i) {
+            fallbackNodes[i].remove();
+        }
+
         return;
     }
 
