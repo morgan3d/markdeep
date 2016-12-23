@@ -1,6 +1,6 @@
 /**
   markdeep.js
-  Version 0.16
+  Version 0.17
 
   Copyright 2015-2016, Morgan McGuire, http://casual-effects.com
   All rights reserved.
@@ -28,7 +28,7 @@
   Sagalaev, which is used for code highlighting. (BSD 3-clause license)
 */
 /**See http://casual-effects.com/markdeep for @license and documentation.
-markdeep.min.js 0.16 (C) 2016 Morgan McGuire 
+markdeep.min.js 0.17 (C) 2016 Morgan McGuire 
 highlight.min.js 9.5.0 (C) 2016 Ivan Sagalaev https://highlightjs.org/*/
 (function() {
 'use strict';
@@ -807,14 +807,16 @@ function extractDiagram(sourceString) {
          i >= 0; 
          i = sourceString.indexOf(DIAGRAM_START, i + DIAGRAM_START.length)) {
 
-        // Is this a diagram? Try following it around
+        // We found what looks like a diagram start. See if it has either a full border of
+        // aligned '*' characters, or top-left-bottom borders and nothing but white space on
+        // the left.
         
         // Look backwards to find the beginning of the line (or of the string)
         // and measure the start character relative to it
         var lineBeginning = max(0, sourceString.lastIndexOf('\n', i)) + 1;
         var xMin = i - lineBeginning;
         
-        // Find the first non-diagram character...or the end of the string
+        // Find the first non-diagram character on this line...or the end of the entire source string
         var j;
         for (j = i + DIAGRAM_START.length; sourceString[j] === DIAGRAM_MARKER; ++j) {}
         var xMax = j - lineBeginning - 1;
@@ -832,7 +834,7 @@ function extractDiagram(sourceString) {
         var textOnLeft = false, textOnRight = false;
 
         advance();
-                                    
+                                  
         // Now, see if the pattern repeats on subsequent lines
         for (var good = true, previousEnding = j; good; ) {
             // Find the next line
@@ -852,13 +854,22 @@ function extractDiagram(sourceString) {
             
             // See if there are markers at the correct locations on the next line
             if ((sourceString[lineBeginning + xMin] === DIAGRAM_MARKER) && 
-                (sourceString[lineBeginning + xMax] === DIAGRAM_MARKER)) {
+                (! textOnLeft || (sourceString[lineBeginning + xMax] === DIAGRAM_MARKER))) {
 
                 // See if there's a complete line of DIAGRAM_MARKER, which would end the diagram
-                for (var x = xMin; (x < xMax) && (sourceString[lineBeginning + x] === DIAGRAM_MARKER); ++x) {}
+                var x;
+                for (x = xMin; (x < xMax) && (sourceString[lineBeginning + x] === DIAGRAM_MARKER); ++x) {}
            
                 var begin = lineBeginning + xMin;
                 var end   = lineBeginning + xMax;
+                
+                if (! textOnLeft) {
+                    // This may be an incomplete line
+                    var newlineLocation = sourceString.indexOf('\n', begin);
+                    if (newlineLocation !== -1) {
+                        end = Math.min(end, newlineLocation);
+                    }
+                }
 
                 // Trim any excess whitespace caused by our truncation because Markdown will
                 // interpret that as fixed-formatted lines
