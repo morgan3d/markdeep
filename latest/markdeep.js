@@ -3728,7 +3728,7 @@ if (! window.alreadyProcessedMarkdeep) {
         // send a message with its contents for use as a replacement.
         var childID = 'inc' + (++includeCounter);
         return '<iframe src="' + src + '?id=' + childID + '&p=' + encodeURIComponent(myBase) + 
-            '"id="' + childID + '"style="' + childFrameStyle + '"></iframe>';
+            '"id="' + childID + '"style="' + childFrameStyle + '" content="text/html;charset=UTF-8"></iframe>';
     });
 
     if (IAmAParent) {
