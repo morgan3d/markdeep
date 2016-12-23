@@ -73,10 +73,15 @@ function entag(tag, content, attribs) {
 
 
 function measureFontSize(fontStack) {
-    var canvas = document.createElement('canvas');
-    var ctx = canvas.getContext('2d');
-    ctx.font = '10pt ' + fontStack;
-    return ctx.measureText("M").width;
+    try {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.font = '10pt ' + fontStack;
+        return ctx.measureText("M").width;
+    } catch (e) {
+        // Needed for Firefox include...iframe canvas doesn't work for some reason
+        return 10;
+    }
 }
 
 
