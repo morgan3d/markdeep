@@ -1725,7 +1725,7 @@ function markdeepToHTML(str, elementMode) {
     // processing so that their code is protected from further
     // Markdown processing
     var stylizeFence = function (cssClass, symbol) {
-        var pattern = new RegExp('\n' + symbol + '{3,}(.*)\n([\\s\\S]+?)\n' + symbol + '{3,}\n([ \t]*\\[.*\\])?', 'g');
+        var pattern = new RegExp('\n' + symbol + '{3,}(.*)\n([\\s\\S]+?)\n' + symbol + '{3,}\n([ \t]*\\[.*(?:\n.*){0,3}\\])?', 'g');
         str = str.rp(pattern, function(match, lang, sourceCode, caption) {
             var result = '\n';
             if (caption) {
