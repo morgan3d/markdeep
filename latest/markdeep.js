@@ -917,13 +917,14 @@ function extractDiagram(sourceString) {
 function replaceMatched(string, delimiterRegExp, tag, attribs) {
     var delimiter = delimiterRegExp.source;
     var flanking = '[^ \\t\\n' + delimiter + ']';
-    var pattern  = '(' + delimiter + ')' +
+    var pattern  = '([^A-Za-z0-9])(' + delimiter + ')' +
         '(' + flanking + '.*?(\\n.+?)*?)' + 
         delimiter + '(?![A-Za-z0-9])';
 
+    console.log(string);
     return string.rp(new RegExp(pattern, 'g'), 
-                          '<' + tag + (attribs ? ' ' + attribs : '') +
-                          '>$2</' + tag + '>');
+                          '$1<' + tag + (attribs ? ' ' + attribs : '') +
+                          '>$3</' + tag + '>');
 }
     
 /** Maruku ("github")-style table processing */
