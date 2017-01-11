@@ -513,6 +513,54 @@ var RUSSIAN = {
     }
 };
 
+// Translated by Dariusz Kuśnierek 
+var POLISH = {
+    keyword: {
+        table:     'tabela',
+        figure:    'ilustracja',
+        listing:   'wykaz',
+        diagram:   'diagram',
+        contents:  'Spis treści',
+
+        sec:       'rozdz.',
+        section:   'rozdział',
+        subsection: 'podrozdział',
+
+        Monday:    'Poniedziałek',
+        Tuesday:   'Wtorek',
+        Wednesday: 'Środa',
+        Thursday:  'Czwartek',
+        Friday:    'Piątek',
+        Saturday:  'Sobota',
+        Sunday:    'Niedziela',
+
+        January:   'Styczeń',
+        February:  'Luty',
+        March:     'Marzec',
+        April:     'Kwiecień',
+        May:       'Maj',
+        June:      'Czerwiec', 
+        July:      'Lipiec',
+        August:    'Sierpień', 
+        September: 'Wrzesień', 
+        October:   'Październik', 
+        November:  'Listopad',
+        December:  'Grudzień',
+
+        jan: 'sty',
+        feb: 'lut',
+        mar: 'mar',
+        apr: 'kwi',
+        may: 'maj',
+        jun: 'cze',
+        jul: 'lip',
+        aug: 'sie',
+        sep: 'wrz',
+        oct: 'paź',
+        nov: 'lis',
+        dec: 'gru'
+    }
+};
 
 // Translated by Sandor Berczi
 var HUNGARIAN = {
@@ -630,6 +678,7 @@ var DEFAULT_OPTIONS = {
 var LANG_TABLE = {
     ru: RUSSIAN,
     fr: FRENCH,
+    pl: POLISH,
     bg: BULGARIAN,
     de: GERMAN,
     hu: HUNGARIAN
