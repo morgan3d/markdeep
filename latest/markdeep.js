@@ -107,7 +107,7 @@ var BODY_STYLESHEET = entag('style', 'body{max-width:680px;' +
     file to override these defaults. */
 var STYLESHEET = entag('style',
     'body{' +
-    'counter-reset: h1 h2 h3 h4 h5 h6' +
+    'counter-reset: h1 h2 h3 h4 h5 h6 paragraph' +
     '}' +
                        
     '.md code,pre{' +
