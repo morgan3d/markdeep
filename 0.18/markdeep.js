@@ -1047,7 +1047,7 @@ function replaceTables(s, protect) {
 
 function replaceLists(s, protect) {
     // Identify list blocks:
-    // Blank line or line ending in colon, line that starts with 1.,*,+, or -,
+    // Blank line or line ending in colon, line that starts with #., *, +, or -,
     // and then any number of lines until another blank line
     var BLANK_LINES = /^\s*\n/.source;
     
@@ -1086,18 +1086,24 @@ function replaceLists(s, protect) {
                 
                 // Add a CSS class based on the type of list bullet
                 var attribs = ATTRIBS[trimmed[0]];
-                var isUnordered = !! attribs; // attribs !== undefined
+                var isUnordered = !! attribs; // JavaScript for: attribs !== undefined
                 attribs = attribs || NUMBER_ATTRIBS;
                 var isOrdered   = /^\d+\.[ \t]/.test(trimmed);
+                var isBlank     = trimmed === '';
 
-                // If not ordered or unordered, then we're just looking at a blank line
+                if (isOrdered || isUnordered) {
+                    // Add the indentation for the bullet itself
+                    indentLevel += 2;
+                }
+
                 if (! current) {
-                    // Went above top-level indent
+                    // Went below top-level indent
                     result += '\n' + line;
-                } else if (! isOrdered && ! isUnordered) {
-                    // Continued line
+                } else if (! isOrdered && ! isUnordered && (isBlank || (indentLevel >= current.indentLevel))) {
+                    // Line without a marker
                     result += '\n' + current.indentChars + line;
                 } else {
+                    //console.log(indentLevel + ":" + line);
                     if (indentLevel !== current.indentLevel) {
                         // Enter or leave indentation level
                         if ((current.indentLevel !== -1) && (indentLevel < current.indentLevel)) {
@@ -1111,7 +1117,8 @@ function replaceLists(s, protect) {
                             // Start a new list that is more indented
                             current = {indentLevel: indentLevel,
                                        tag:         isOrdered ? 'ol' : 'ul',
-                                       indentChars: line.ss(0, indentLevel)};
+                                       // Subtract off the two indent characters we added above
+                                       indentChars: line.ss(0, indentLevel - 2)};
                             stack.push(current);
                             result += '\n<' + current.tag + '>';
                         }
@@ -1418,7 +1425,7 @@ function replaceScheduleLists(str, protect) {
                    });
     } catch (ignore) {
         // Maybe this wasn't a schedule after all, since we couldn't parse a date
-        console.log(ignore);
+        console.log(ignore + ' in a Markdeep schedule list');
     }
 
     return str;
@@ -3723,7 +3730,7 @@ if (! window.alreadyProcessedMarkdeep) {
         document.body.style.visibility = 'visible';
     };
 
-    ///////////// 'insert' command processing
+    ///////////// INSERT  command processing
     // Helper function for use by children
     function sendContentsToMyParent() {
         //console.log(location.href + " sent message to parent");
@@ -3759,7 +3766,8 @@ if (! window.alreadyProcessedMarkdeep) {
                 });
                 
                 if (childID) {
-                    // This message was for the Markdeep/include.js system
+                    // This message event was for the Markdeep/include.js system
+
                     //console.log(location.href + ' received a message from child ' + childID);
                     
                     // Replace the corresponding node's contents
