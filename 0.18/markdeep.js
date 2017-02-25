@@ -2233,7 +2233,7 @@ function markdeepToHTML(str, elementMode) {
 
 
     // FIGURE, TABLE, and LISTING references:
-    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst.)\s+\[(.+?)\]/gi, function (match, _type, _ref) {
+    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst.)\s+\[(.+)\]/gi, function (match, _type, _ref) {
         // Fix abbreviations
         var type = _type.toLowerCase();
         switch (type) {
