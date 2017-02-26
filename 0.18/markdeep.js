@@ -1993,6 +1993,13 @@ function markdeepToHTML(str, elementMode) {
     };
 
 
+    // Reformat figure links that have subfigure labels in parentheses, to avoid them being
+    // processed as links
+    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst\.)\s*\[([^\s\]]+)\](?=\()/gi, function (match) {
+        return match + '<span/>';
+    });
+
+
     // Process links before images so that captions can contain links
 
     // Detect gravizo URLs inside of markdown images and protect them, 
@@ -2233,7 +2240,8 @@ function markdeepToHTML(str, elementMode) {
 
 
     // FIGURE, TABLE, and LISTING references:
-    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst.)\s+\[(.+)\]/gi, function (match, _type, _ref) {
+    // (must come after figure/table/listing processing, obviously)
+    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst\.)\s+\[([^\s\]]+)\]/gi, function (match, _type, _ref) {
         // Fix abbreviations
         var type = _type.toLowerCase();
         switch (type) {
