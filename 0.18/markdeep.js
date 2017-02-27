@@ -1781,8 +1781,8 @@ function markdeepToHTML(str, elementMode) {
     // processing so that their code is protected from further
     // Markdown processing
     var stylizeFence = function (cssClass, symbol) {
-        var pattern = new RegExp('\n' + symbol + '{3,}(.*)\n([\\s\\S]+?)\n' + symbol + '{3,}\n([ \t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
-        str = str.rp(pattern, function(match, lang, sourceCode, caption) {
+        var pattern = new RegExp('\n([ \t]*)' + symbol + '{3,}(.*)\n([\\s\\S]+?)\n\\1' + symbol + '{3,}\n([ \t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
+        str = str.rp(pattern, function(match, indent, lang, sourceCode, caption) {
             var result = '\n';
             if (caption) {
                 caption = caption.trim();
@@ -1790,6 +1790,10 @@ function markdeepToHTML(str, elementMode) {
             }
             lang = lang ? lang.trim() : lang;
             lang = lang ? [lang] : undefined;
+            
+            // Remove the block's own indentation from each line of sourceCode
+            sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
+
             var highlighted = hljs.highlightAuto(sourceCode, lang);
             return result + protect(entag('pre', entag('code', highlighted.value), 'class="listing ' + cssClass + '"')) + '\n';
         });
@@ -1979,8 +1983,10 @@ function markdeepToHTML(str, elementMode) {
             // Vimeo video
             img = '<iframe ' + protect('class="markdeep" src="https://player.vimeo.com/video/' + hash[1] + '"' + attribs + ' width="480px" height="300px" frameborder="0" allowfullscreen webkitallowfullscreen mozallowfullscreen') + '></iframe>';
         } else {
-            // Image
-            img = '<img ' + protect('class="markdeep" src="' + url + '"' + attribs) + '/>';
+            // Image (trailing space is needed in case attribs must be quoted by the
+            // browser...without the space, the browser will put the closing slash in the
+            // quotes.)
+            img = '<img ' + protect('class="markdeep" src="' + url + '"' + attribs) + ' />';
 
             // Check for width or height (or max-width and max-height). If they exist,
             // link this to the full-size image as well.
@@ -2011,21 +2017,21 @@ function markdeepToHTML(str, elementMode) {
         return "(http://g.gravizo.com/g?" + encodeURIComponent(url) + ")";
     });
 
-    // LINKS: [text](url attribs)
-    str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\(([^\)]+?)(\s+[^\)]*?)?\)/g, function (match, pre, text, url, attribs) {
+    // HYPERLINKS: [text](url attribs)
+    str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\(("?)([^<>\s"]+?)\3(\s+[^\)]*?)?\)/g, function (match, pre, text, maybeQuote, url, attribs) {
         attribs = attribs || '';
         return pre + '<a ' + protect('href="' + url + '"' + attribs) + '>' + text + '</a>' + maybeShowURL(url);
     });
 
-    // EMPTY LINKS: [](url)
-    str = str.rp(/(^|[^!])\[[ \t]*?\]\(([^\)]+?)\)/g, function (match, pre, url) {
+    // EMPTY HYPERLINKS: [](url)
+    str = str.rp(/(^|[^!])\[[ \t]*?\]\(("?)([^<>\s"]+?)\2\)/g, function (match, pre, maybeQuote, url) {
         return pre + '<a ' + protect('href="' + url + '"') + '>' + url + '</a>';
     });
 
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
     var imageGridRowAttribs = protect('valign="top"');
-    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\([^\)\s]+(?:[^\)]*?)?\)){2,}[ \t]*)+\n/g, function (match) {
+    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\)]*?)?\)){2,}[ \t]*)+\n/g, function (match) {
         var table = '';
 
         // Break into rows:
@@ -2046,7 +2052,7 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // SIMPLE IMAGE: ![](url attribs)
-    str = str.rp(/(\s*)!\[\]\(([^\)\s]+)([^\)]*?)?\)(\s*)/g, function (match, preSpaces, url, attribs, postSpaces) {
+    str = str.rp(/(\s*)!\[\]\(("?)([^"<>\s]+?)\2([^\)]*?)?\)(\s*)/g, function (match, preSpaces, maybeQuote, url, attribs, postSpaces) {
         var img = formatImage(match, url, attribs);
 
         if (isolated(preSpaces, postSpaces)) {
@@ -2065,11 +2071,11 @@ function markdeepToHTML(str, elementMode) {
     while (loop) {
         loop = false;
         // CAPTIONED IMAGE: ![caption](url attribs)
-        str = str.rp(/(\s*)!\[([\s\S]+?)?\]\(([^\)\s]+)([^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, url, attribs, postSpaces) {
+        str = str.rp(/(\s*)!\[([\s\S]+?)?\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
             loop = true;
             var divStyle = '';
             var iso = isolated(preSpaces, postSpaces);
-            
+
             // Only floating images get their size attributes moved to the whole box
             if (attribs && ! iso) {
                 // Move any width *attribute* specification to the box itself
