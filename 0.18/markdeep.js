@@ -2052,7 +2052,7 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // SIMPLE IMAGE: ![](url attribs)
-    str = str.rp(/(\s*)!\[\]\(("?)([^"<>\s]+?)\2([^\)]*?)?\)(\s*)/g, function (match, preSpaces, maybeQuote, url, attribs, postSpaces) {
+    str = str.rp(/(\s*)!\[\]\(("?)([^"<>\s]+?)\2(\s[^\)]*?)?\)(\s*)/g, function (match, preSpaces, maybeQuote, url, attribs, postSpaces) {
         var img = formatImage(match, url, attribs);
 
         if (isolated(preSpaces, postSpaces)) {
