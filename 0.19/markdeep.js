@@ -670,7 +670,7 @@ var DEFAULT_OPTIONS = {
     lang:               {keyword:{}}, // English
     tocStyle:           'auto',
     hideEmptyWeekends:  true,
-    showURLs:           false,
+    showLabels:           false,
     sortScheduleLists:  true
 };
 
@@ -719,8 +719,8 @@ function option(key) {
 }
 
 
-function maybeShowURL(url, tag) {
-    if (option('showURLs')) {
+function maybeShowLabel(url, tag) {
+    if (option('showLabels')) {
         var text = ' {\u00A0' + url + '\u00A0}';
         return tag ? entag(tag, text) : text;
     } else {
@@ -2023,7 +2023,7 @@ function markdeepToHTML(str, elementMode) {
     // HYPERLINKS: [text](url attribs)
     str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\(("?)([^<>\s"]+?)\3(\s+[^\)]*?)?\)/g, function (match, pre, text, maybeQuote, url, attribs) {
         attribs = attribs || '';
-        return pre + '<a ' + protect('href="' + url + '"' + attribs) + '>' + text + '</a>' + maybeShowURL(url);
+        return pre + '<a ' + protect('href="' + url + '"' + attribs) + '>' + text + '</a>' + maybeShowLabel(url);
     });
 
     // EMPTY HYPERLINKS: [](url)
@@ -2107,7 +2107,7 @@ function markdeepToHTML(str, elementMode) {
             
             return preSpaces + 
                 entag('div', img + entag('div', 
-                                         caption + maybeShowURL(url),
+                                         caption + maybeShowLabel(url),
                                          protect('class="imagecaption"')),
                       protect('class="image" style="' + divStyle + '"')) + 
                 postSpaces;
@@ -2247,7 +2247,9 @@ function markdeepToHTML(str, elementMode) {
         // Store the reference number
         refTable[ref] = {number: count, used: false, source: type + ' [' + _ref + ']'};
         
-        return prefix + entag('a', '', protect('name="' + ref + '"')) + entag('b', type[0].toUpperCase() + type.ss(1) + '&nbsp;' + count + ':', protect('style="font-style:normal;"'));
+        return prefix +
+               entag('a', '', protect('name="' + ref + '"')) + entag('b', type[0].toUpperCase() + type.ss(1) + '&nbsp;' + count + ':', protect('style="font-style:normal;"')) +
+               maybeShowLabel(_ref);
     });
 
     // FIGURE, TABLE, and LISTING references:
@@ -2267,7 +2269,7 @@ function markdeepToHTML(str, elementMode) {
 
         if (t) {
             t.used = true;
-            return '<a ' + protect('href="#' + ref + '"') + '>' + _type + '&nbsp;' + t.number + '</a>';
+            return '<a ' + protect('href="#' + ref + '"') + '>' + _type + '&nbsp;' + t.number + maybeShowLabel(_ref) + '</a>';
         } else {
             console.log("Reference to undefined '" + type + " [" + _ref + "]'");
             return _type + ' ?';
@@ -2300,7 +2302,7 @@ function markdeepToHTML(str, elementMode) {
                 subtitles = subtitles ? subtitles.rp(/[ \t]*(\S.*?)\n/g, '<div class="subtitle"> $1 </div>\n') : '';
                 
                 // Remove all tags from the title when inside the <TITLE> tag
-                return entag('title', removeHTMLTags(title)) + maybeShowURL(window.location.href, 'center') +
+                return entag('title', removeHTMLTags(title)) + maybeShowLabel(window.location.href, 'center') +
                     '<div class="title"> ' + title + 
                     ' </div>\n' + subtitles + '<div class="afterTitles"></div>\n';
             });
