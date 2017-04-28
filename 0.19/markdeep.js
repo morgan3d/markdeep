@@ -1635,7 +1635,7 @@ function insertTableOfContents(s, protect) {
 
     case 'long':
         insertLocation = firstHeaderLocation;
-        TOC = '<div class="longTOC"><div class="tocHeader">Contents</div><p>' + fullTOC + '</p></div>';
+        TOC = '<div class="longTOC"><div class="tocHeader">' + keyword('contents') + '</div><p>' + fullTOC + '</p></div>';
         break;
 
     default:
