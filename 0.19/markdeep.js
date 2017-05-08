@@ -1013,12 +1013,25 @@ function replaceTables(s, protect) {
             var right = (match[match.length - 1] === ':');
             columnStyle.push(protect(' style="text-align:' + ((left && right) ? 'center' : (right ? 'right' : 'left')) + '"'));
         });
+
+        var row = rowArray[startRow + 1].trim();
+        var hasLeadingBar  = row[0] === '|';
+        var hasTrailingBar = row[row.length - 1] === '|';
         
         var tag = 'th';
+        
         for (var r = startRow; r < rowArray.length; ++r) {
             // Remove leading and trailing whitespace and column delimiters
-            var row = trimTableRowEnds(rowArray[r].trim());
-            
+            row = rowArray[r].trim();
+            if (! hasLeadingBar && (row[0] === '|')) {
+                // Empty first column
+                row = '&nbsp;' + row;
+            }
+            if (! hasTrailingBar && (row[row.length - 1] === '|')) {
+                // Empty last column
+                row += '&nbsp;';
+            }
+            row = trimTableRowEnds(row);
             var i = 0;
             result += entag('tr', '<' + tag + columnStyle[0] + '>' + 
                             row.rp(/\|/g, function () {
