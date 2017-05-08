@@ -2870,7 +2870,7 @@ function diagramToSVG(diagramString, alignmentHint) {
             for (var i = 0; i < this._pathArray.length; ++i) {
                 if (method.call(this._pathArray[i], x, y)) { return true; }
             }
-            return false;
+            // Fall through: return undefined == false
         }
     }
 
@@ -3399,7 +3399,7 @@ function diagramToSVG(diagramString, alignmentHint) {
                         pathSet.upEndsAt(x, y) ||    // For points on vertical lines 
                         pathSet.downEndsAt(x, y) ||  // that are surrounded by other characters
 
-                        onLine(up, dn, lt, rt)) {
+                        (onLine(up, dn, lt, rt) && (c !== 'o'))) {
                         
                         decorationSet.insert(x, y, c);
                         grid.setUsed(x, y);
