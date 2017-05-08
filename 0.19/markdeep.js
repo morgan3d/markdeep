@@ -855,8 +855,8 @@ function extractDiagram(sourceString) {
     function advance() {
         nextLineBeginning = sourceString.indexOf('\n', lineBeginning) + 1;
         textOnLeft  = textOnLeft  || /\S/.test(sourceString.ss(lineBeginning, lineBeginning + xMin));
-        // Text on the right ... if the line is not all '*'
-        textOnRight = textOnRight || (/\S/.test(sourceString.ss(lineBeginning + xMax + 1, nextLineBeginning)) && ! /[^*]/.test(sourceString.ss(lineBeginning, nextLineBeginning)));
+        // Text on the right ... if the line is not all '*'        
+        textOnRight = textOnRight || /[^ *\t\n\r]/.test(sourceString.ss(lineBeginning + xMax + 1, nextLineBeginning));
     }
 
     var noDiagramResult = {beforeString: sourceString, diagramString: '', alignmentHint: '', afterString: ''};
