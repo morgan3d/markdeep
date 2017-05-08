@@ -3736,7 +3736,7 @@ if (! window.alreadyProcessedMarkdeep) {
             var text = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8">' + head + document.head.innerHTML + markdeepHTML;
             if (needMathJax) {
                 // Dynamically load mathjax
-                text += '<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>';
+                text += '<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>';
             }
             document.body.innerHTML = entag('code', escapeHTMLEntities(text));
         } else {
