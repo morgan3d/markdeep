@@ -3408,7 +3408,7 @@ function diagramToSVG(diagramString, alignmentHint) {
                          //! ((c === 'o') && isLetter(rt) && isLetter(rrt) && (rrt !== 'o')))
                        ) {
 
-                        console.log(llt, lt, c, rt, rrt);
+//                        console.log(llt, lt, c, rt, rrt);
                         
                         decorationSet.insert(x, y, c);
                         grid.setUsed(x, y);
