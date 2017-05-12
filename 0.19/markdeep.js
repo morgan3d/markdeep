@@ -3361,6 +3361,7 @@ function diagramToSVG(diagramString, alignmentHint) {
 
     function findDecorations(grid, pathSet, decorationSet) {
         function isEmptyOrVertex(c) { return (c === ' ') || /[^a-zA-Z0-9]|[ov]/.test(c); }
+        function isLetter(c) { var x = c.toUpperCase().charCodeAt(0); return (x > 64) && (x < 91); }
                     
         /** Is the point in the center of these values on a line? Allow points that are vertically
             adjacent but not horizontally--they wouldn't fit anyway, and might be text. */
@@ -3390,6 +3391,8 @@ function diagramToSVG(diagramString, alignmentHint) {
                     var dn = grid(x, y + 1);
                     var lt = grid(x - 1, y);
                     var rt = grid(x + 1, y);
+                    var llt = grid(x - 2, y);
+                    var rrt = grid(x + 2, y);
 
                     if (pathSet.rightEndsAt(x - 1, y) ||   // Must be at the end of a line...
                         pathSet.leftEndsAt(x + 1, y) ||    // or completely isolated NSEW
@@ -3399,7 +3402,13 @@ function diagramToSVG(diagramString, alignmentHint) {
                         pathSet.upEndsAt(x, y) ||    // For points on vertical lines 
                         pathSet.downEndsAt(x, y) ||  // that are surrounded by other characters
 
-                        (onLine(up, dn, lt, rt) && (c !== 'o'))) {
+                        (onLine(up, dn, lt, rt) && true)
+                         // 'o' must not be part of a word containing double-'o's
+                         //! ((c === 'o') && isLetter(lt) && isLetter(llt) && (llt !== 'o')) &&
+                         //! ((c === 'o') && isLetter(rt) && isLetter(rrt) && (rrt !== 'o')))
+                       ) {
+
+                        console.log(llt, lt, c, rt, rrt);
                         
                         decorationSet.insert(x, y, c);
                         grid.setUsed(x, y);
