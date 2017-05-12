@@ -1776,7 +1776,6 @@ function markdeepToHTML(str, elementMode) {
         var result = extractDiagram(str);
         if (result.diagramString) {
             var CAPTION_REGEXP = /^\n*[ \t]*\[[^\n]+\][ \t]*(?=\n)/;
-            //console.log(result.afterString.match(CAPTION_REGEXP));
             result.afterString = result.afterString.rp(CAPTION_REGEXP, function (caption) {
                 // Strip whitespace and enclosing brackets from the caption
                 caption = caption.trim();
@@ -2442,7 +2441,9 @@ function diagramToSVG(diagramString, alignmentHint) {
     // decoration. This will be replaced in the final svg and is
     // faster than checking each neighborhood each time.
     var HIDE_O = '\ue004';
-    diagramString = diagramString.rp(/([a-z]|[A-Z])o([a-z]|[A-Z])/g, '$1' + HIDE_O + '$2');
+    diagramString = diagramString.rp(/([a-zA-Z]{2})o/g, '$1' + HIDE_O);
+    diagramString = diagramString.rp(/o([a-zA-Z]{2})/g, HIDE_O + '$1');
+    diagramString = diagramString.rp(/([a-zA-Z\ue004])o([a-zA-Z\ue004])/g, '$1' + HIDE_O + '$2');
 
     /** Pixels per character */
     var SCALE   = 8;
@@ -3401,15 +3402,9 @@ function diagramToSVG(diagramString, alignmentHint) {
 
                         pathSet.upEndsAt(x, y) ||    // For points on vertical lines 
                         pathSet.downEndsAt(x, y) ||  // that are surrounded by other characters
-
-                        (onLine(up, dn, lt, rt) && true)
-                         // 'o' must not be part of a word containing double-'o's
-                         //! ((c === 'o') && isLetter(lt) && isLetter(llt) && (llt !== 'o')) &&
-                         //! ((c === 'o') && isLetter(rt) && isLetter(rrt) && (rrt !== 'o')))
-                       ) {
-
-//                        console.log(llt, lt, c, rt, rrt);
                         
+                        onLine(up, dn, lt, rt)) {
+
                         decorationSet.insert(x, y, c);
                         grid.setUsed(x, y);
                     }
@@ -3511,7 +3506,6 @@ function diagramToSVG(diagramString, alignmentHint) {
         } // x
     } // findArrowHeads
 
-    //var grid = new Grid(diagramString);
     var grid = makeGrid(diagramString);
 
     var pathSet = new PathSet();
