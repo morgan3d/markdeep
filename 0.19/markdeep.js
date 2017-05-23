@@ -205,6 +205,10 @@ var STYLESHEET = entag('style',
     'clear:both' +
     '}' +
 
+    'h1,h2,h3,h4,h5,h6,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
+     'page-break-after:avoid;break-after:avoid' +
+    '}'+
+
     '.md svg.diagram{' +
     'display:block;' +
     'font-family:' + codeFontStack + ';' +
