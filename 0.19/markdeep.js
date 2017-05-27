@@ -247,6 +247,7 @@ var STYLESHEET = entag('style',
     'counter-reset: h3 h4 h5 h6;' +
     'border-bottom:2px solid #999;' +
     'color:#555;' +
+    'font-weight:bold;'+
     'font-size:18px;' +
     '}' +
 
@@ -2541,9 +2542,15 @@ function diagramToSVG(diagramString, alignmentHint) {
         // Elements are true when consumed
         grid._used   = [];
 
-        grid.width   = str.indexOf('\n');
         grid.height  = str.split('\n').length;
         if (str[str.length - 1] === '\n') { --grid.height; }
+
+        // Convert the string to an array to better handle greater-than 16-bit unicode
+        // characters, which JavaScript does not process correctly with indices. Do this
+        // after the above string processing.
+        console.log(str);
+        str = Array.from(str);
+        grid.width = str.indexOf('\n');
 
         /** Mark this location. Takes a Vec2 or (x, y) */
         grid.setUsed = function (x, y) {
@@ -3735,7 +3742,7 @@ if (! window.alreadyProcessedMarkdeep) {
         
         if (needMathJax) {
             // Custom definitions (NC == \newcommand)
-            var MATHJAX_COMMANDS = '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^\\circ}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand');
+            var MATHJAX_COMMANDS = '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^{\\large\\circ}}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand');
 
             markdeepHTML = '<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' +
                 '<span style="display:none">' + MATHJAX_COMMANDS + '</span>\n' + markdeepHTML; 
