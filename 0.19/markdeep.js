@@ -2548,7 +2548,7 @@ function diagramToSVG(diagramString, alignmentHint) {
         // Convert the string to an array to better handle greater-than 16-bit unicode
         // characters, which JavaScript does not process correctly with indices. Do this
         // after the above string processing.
-        console.log(str);
+        //console.log(str);
         str = Array.from(str);
         grid.width = str.indexOf('\n');
 
