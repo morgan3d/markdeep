@@ -1788,7 +1788,7 @@ function markdeepToHTML(str, elementMode) {
                 
                 return entag('center', entag('div', caption, protect('class="imagecaption"')));
             });
-            
+
             var diagramSVG = diagramToSVG(result.diagramString, result.alignmentHint);
             return result.beforeString +
                 diagramSVG + '\n' +
@@ -2371,14 +2371,15 @@ function markdeepToHTML(str, elementMode) {
 
 
 /**
-   Adds whitespace at the end of each line of str, so that all lines
-   have equal length
+   Adds whitespace at the end of each line of str, so that all lines have equal length in
+   unicode characters (which is not the same as JavaScript characters when high-index/escape
+   characters are present).
 */
 function equalizeLineLengths(str) {
     var lineArray = str.split('\n');
     var longest = 0;
     lineArray.forEach(function(line) {
-        longest = max(longest, line.length);
+        longest = max(longest, Array.from(line).length);
     });
 
     // Worst case spaces needed for equalizing lengths
@@ -2389,7 +2390,7 @@ function equalizeLineLengths(str) {
     lineArray.forEach(function(line) {
         // Append the needed number of spaces onto each line, and
         // reconstruct the output with newlines
-        result += line + spaces.ss(line.length) + '\n';
+        result += line + spaces.ss(Array.from(line).length) + '\n';
     });
 
     return result;
@@ -2431,8 +2432,8 @@ function isASCIILetter(c) {
     return ((code >= 65) && (code <= 90)) || ((code >= 97) && (code <= 122));
 }
 
-/** Converts diagramString, which is a Markdeep diagram without the
-    surrounding asterisks, to SVG (HTML). 
+/** Converts diagramString, which is a Markdeep diagram without the surrounding asterisks, to
+    SVG (HTML). Lines may have ragged lengths.
 
     alignmentHint is the float alignment desired for the SVG tag,
     which can be 'floatleft', 'floatright', or ''
@@ -2523,11 +2524,9 @@ function diagramToSVG(diagramString, alignmentHint) {
     Vec2.prototype.toString = Vec2.prototype.toSVG = 
         function () { return '' + (this.x * SCALE) + ',' + (this.y * SCALE * ASPECT) + ' '; };
 
-    /** The grid is */
+    /** Converts a "rectangular" string defined by newlines into 2D
+        array of characters. Grids are immutable. */
     function makeGrid(str) {
-        /** Converts a "rectangular" string defined by newlines into 2D
-            array of characters. Grids are immutable. */
-
         /** Returns ' ' for out of bounds values */
         var grid = function(x, y) {
             if (y === undefined) {
@@ -2546,9 +2545,8 @@ function diagramToSVG(diagramString, alignmentHint) {
         if (str[str.length - 1] === '\n') { --grid.height; }
 
         // Convert the string to an array to better handle greater-than 16-bit unicode
-        // characters, which JavaScript does not process correctly with indices. Do this
-        // after the above string processing.
-        //console.log(str);
+        // characters, which JavaScript does not process correctly with indices. Do this after
+        // the above string processing.
         str = Array.from(str);
         grid.width = str.indexOf('\n');
 
