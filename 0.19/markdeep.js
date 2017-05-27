@@ -2960,7 +2960,7 @@ function diagramToSVG(diagramString, alignmentHint) {
             } else if (isGray(decoration.type)) {
                 
                 var shade = Math.round((3 - GRAY_CHARACTERS.indexOf(decoration.type)) * 63.75);
-                svg += '<rect x="' + ((C.x - 0.5) * SCALE) + '" y="' + ((C.y - 0.5) * SCALE * ASPECT) + '" width="' + SCALE + '" height="' + (SCALE * ASPECT) + '" fill="rgb(' + shade + ',' + shade + ',' + shade +')"/>';
+                svg += '<rect x="' + ((C.x - 0.5) * SCALE) + '" y="' + ((C.y - 0.5) * SCALE * ASPECT) + '" width="' + SCALE + '" height="' + (SCALE * ASPECT) + '" stroke=none fill="rgb(' + shade + ',' + shade + ',' + shade +')"/>';
 
             } else if (isTri(decoration.type)) {
                 // 30-60-90 triangle
