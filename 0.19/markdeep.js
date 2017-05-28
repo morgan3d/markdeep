@@ -229,6 +229,9 @@ var STYLESHEET = entag('style',
     'stroke:none' +
     '}' +
 
+    // pagebreak hr
+    '@media print{.md .pagebreak{page-break-after:always; visibility:hidden}}' +
+
     // Not restricted to a:link because we want things like svn URLs to have this font, which
     // makes "//" look better.
     '.md a{font-family:Georgia,Palatino,\'Times New Roman\'}' +
@@ -1918,12 +1921,15 @@ function markdeepToHTML(str, elementMode) {
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
     str = str.rp(/\n[ \t]*((\*|-|_)[ \t]*){3,}[ \t]*\n/g, '\n<hr/>\n');
-    var FANCY_QUOTE = protect('class="fancyquote"');
+
+    // PAGE BREAK or HORIZONTAL RULE: +++++
+    str = str.rp(/\n[ \t]*\+{5,}[ \t]*\n/g, '\n<hr ' + protect('class="pagebreak"') + '/>\n');
 
     // FANCY QUOTE in a blockquote:
     // > " .... "
     // >    -- Foo
 
+    var FANCY_QUOTE = protect('class="fancyquote"');
     str = str.rp(/\n>[ \t]*"(.*(?:\n>.*)*)"[ \t]*(?:\n>[ \t]*)?(\n>[ \t]{2,}\S.*)?\n/g,
                  function (match, quote, author) {
                      return entag('blockquote', 
@@ -2177,6 +2183,9 @@ function markdeepToHTML(str, elementMode) {
     // EXPONENTS: ^1 ^-1 (no decimal places allowed)
     str = str.rp(/\^([-+]?\d+)\b/g, '<sup>$1</sup>');
 
+    // PAGE BREAK:
+    str = str.rp(/\b\\(pagebreak|newpage)\b/gi, protect('<div style="page-break-after:always"> </div>\n'))
+    
     // SCHEDULE LISTS: date : title followed by indented content
     str = replaceScheduleLists(str, protect);
 
