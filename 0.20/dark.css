@@ -97,3 +97,23 @@ a em.asterisk {
 .md h3, .md h4, .md h5, .md h6, .md div.nonumberh3, .md div.nonumberh4, .md div.nonumberh5, .md div.nonumberh6 {
     font-size: 115%
 }
+
+@media screen {
+    .md table.table td {
+        border: 1px solid #513302;
+    }
+    
+    .md table.table th {
+        background: #af730c;
+        background: -webkit-linear-gradient(#d3a658, #af730c);
+        border: none;
+    }
+    
+    .md table.table th:last-child {
+        border-right: 1px solid #845509;
+    }
+    
+    .md table.table tr:nth-child(even) {
+        background-color: #231601;
+    }
+}
