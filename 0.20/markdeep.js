@@ -1300,8 +1300,8 @@ function replaceScheduleLists(str, protect) {
                                                         text: parenthesized ? '' :
                                                         entag('tr',
                                                                     entag('td', 
-                                                                          '<a ' + protect('name="schedule' + scheduleNumber + '_' + dateVal.getUTCFullYear() + '-' + (dateVal.getUTCMonth() + 1) + '-' + dateVal.getUTCDate() + '"') + '></a>' +
-                                                                          date, dateTDAttribs) + 
+                                                                          '<a ' + protect('name="schedule' + scheduleNumber + '_' + dateVal.getUTCFullYear() + '-' + (dateVal.getUTCMonth() + 1) + '-' + dateVal.getUTCDate() + '"') + '>' +
+                                                                          date + '</a>', dateTDAttribs) + 
                                                                     entag('td', entag('b', title)), rowAttribs) + 
                                                         entag('tr', entag('td', '\n\n' + events, eventTDAttribs), rowAttribs)});
                                       
@@ -1760,7 +1760,7 @@ function markdeepToHTML(str, elementMode) {
     function makeHeaderFunc(level) {
         return function (match, header) {
             return '\n<a ' + protect('name="' + mangle(removeHTMLTags(header)) + '"') + 
-                '></a>' + entag('h' + level, header) + '\n\n';
+                '>' + entag('h' + level, header) + '</a>\n\n';
         }
     }
 
@@ -1975,7 +1975,7 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/\n\[#(\S+)\]: ((?:.+?\n?)*)/g, function (match, symbolicName, entry) {
         symbolicName = symbolicName.trim();
         return '<div ' + protect('class="bib"') + '>[<a ' + protect('name="citation-' + symbolicName.toLowerCase() + '"') + 
-            '></a><b>' + symbolicName + '</b>] ' + entry + '</div>';
+            '><b>' + symbolicName + '</b></a>] ' + entry + '</div>';
     });
 
     // TABLES: line with | over line containing only | and -
@@ -2231,7 +2231,7 @@ function markdeepToHTML(str, elementMode) {
         if (symbolicName in endNoteTable) {
             return '\n<div ' + protect('class="endnote"') + '><a ' + 
                 protect('name="endnote-' + symbolicName + '"') + 
-                '></a><sup>' + endNoteTable[symbolicName] + '</sup> ' + note + '</div>';
+                '><sup>' + endNoteTable[symbolicName] + '</sup></a> ' + note + '</div>';
         } else {
             return "\n";
         }
