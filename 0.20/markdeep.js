@@ -1300,8 +1300,8 @@ function replaceScheduleLists(str, protect) {
                                                         text: parenthesized ? '' :
                                                         entag('tr',
                                                                     entag('td', 
-                                                                          '<a ' + protect('name="schedule' + scheduleNumber + '_' + dateVal.getUTCFullYear() + '-' + (dateVal.getUTCMonth() + 1) + '-' + dateVal.getUTCDate() + '"') + '>' +
-                                                                          date + '</a>', dateTDAttribs) + 
+                                                                          '<a ' + protect('name="schedule' + scheduleNumber + '_' + dateVal.getUTCFullYear() + '-' + (dateVal.getUTCMonth() + 1) + '-' + dateVal.getUTCDate() + '"') + '>&nbsp;</a>' +
+                                                                          date, dateTDAttribs) + 
                                                                     entag('td', entag('b', title)), rowAttribs) + 
                                                         entag('tr', entag('td', '\n\n' + events, eventTDAttribs), rowAttribs)});
                                       
@@ -1593,7 +1593,7 @@ function insertTableOfContents(s, protect) {
             }
         }
         
-        return entag('a', '', protect('name="' + name + '"')) + header;
+        return entag('a', '&nbsp;', protect('name="' + name + '"')) + header;
     });
 
     if (shortTOC.length > 0) {
@@ -1760,7 +1760,7 @@ function markdeepToHTML(str, elementMode) {
     function makeHeaderFunc(level) {
         return function (match, header) {
             return '\n<a ' + protect('name="' + mangle(removeHTMLTags(header)) + '"') + 
-                '>' + entag('h' + level, header) + '</a>\n\n';
+                '>&nbsp;</a>' + entag('h' + level, header) + '\n\n';
         }
     }
 
@@ -1975,7 +1975,7 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/\n\[#(\S+)\]: ((?:.+?\n?)*)/g, function (match, symbolicName, entry) {
         symbolicName = symbolicName.trim();
         return '<div ' + protect('class="bib"') + '>[<a ' + protect('name="citation-' + symbolicName.toLowerCase() + '"') + 
-            '><b>' + symbolicName + '</b></a>] ' + entry + '</div>';
+            '>&nbsp;</a><b>' + symbolicName + '</b>] ' + entry + '</div>';
     });
 
     // TABLES: line with | over line containing only | and -
@@ -2231,7 +2231,7 @@ function markdeepToHTML(str, elementMode) {
         if (symbolicName in endNoteTable) {
             return '\n<div ' + protect('class="endnote"') + '><a ' + 
                 protect('name="endnote-' + symbolicName + '"') + 
-                '><sup>' + endNoteTable[symbolicName] + '</sup></a> ' + note + '</div>';
+                '>&nbsp;</a><sup>' + endNoteTable[symbolicName] + '</sup> ' + note + '</div>';
         } else {
             return "\n";
         }
@@ -2274,7 +2274,7 @@ function markdeepToHTML(str, elementMode) {
         refTable[ref] = {number: count, used: false, source: type + ' [' + _ref + ']'};
         
         return prefix +
-               entag('a', '', protect('name="' + ref + '"')) + entag('b', type[0].toUpperCase() + type.ss(1) + '&nbsp;' + count + ':', protect('style="font-style:normal;"')) +
+               entag('a', '&nbsp;', protect('name="' + ref + '"')) + entag('b', type[0].toUpperCase() + type.ss(1) + '&nbsp;' + count + ':', protect('style="font-style:normal;"')) +
                maybeShowLabel(_ref);
     });
 
