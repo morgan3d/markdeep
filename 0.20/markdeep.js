@@ -131,7 +131,7 @@ var STYLESHEET = entag('style',
 
     '.md .image{display:inline-block}' +
     '.md div.imagecaption,.md div.tablecaption,.md div.listingcaption{' +
-    'margin:0.2em 5px 10px 5px;' +
+    'margin:5px 5px 5px 5px;' +
     'text-align: justify;' +
     'font-style:italic' +
     '}' +
@@ -320,7 +320,7 @@ var STYLESHEET = entag('style',
     'border-top: 1px solid #CCC;' + 
     'border-bottom: 1px solid #CCC;' + 
     'padding: 5px 0 5px 20px;' +
-    'margin:0 0 30px 0;' +
+    'margin:0 0 0 0;' +
     'background:#FCFCFC;' +
     'page-break-inside:avoid' +
     '}' +
@@ -672,25 +672,78 @@ var GERMAN = {
     }
 };
 
+// Translated by Nils Nilsson
+var SWEDISH = {
+    keyword: {
+        table:     'tabell',
+        figure:    'figur',
+        listing:   'lista',
+        diagram:   'diagram',
 
+        contents:  'innehållsförteckning',
+        sec:       'sek',
+        subsection:'undersektion',
+
+        Monday:    'måndag',
+        Tuesday:   'tisdag',
+        Wednesday: 'onsdag',
+        Thursday:  'torsdag',
+        Friday:    'fredag',
+        Saturday:  'lördag',
+        Sunday:    'söndag',
+
+        January:   'januari',
+        February:  'februari',
+        March:     'mars',
+        April:     'april',
+        May:       'maj',
+        June:      'juni',
+        July:      'juli',
+        August:    'augusti',
+        September: 'september',
+        October:   'oktober',
+        November:  'november',
+        December:  'december',
+
+        jan: 'jan',
+        feb: 'feb',
+        mar: 'mar',
+        apr: 'apr',
+        may: 'maj',
+        jun: 'jun',
+        jul: 'jul',
+        aug: 'aug',
+        sep: 'sep',
+        oct: 'okt',
+        nov: 'nov',
+        dec: 'dec'
+    }
+};
+   
 var DEFAULT_OPTIONS = {
     mode:               'markdeep',
     detectMath:         true,
     lang:               {keyword:{}}, // English
     tocStyle:           'auto',
     hideEmptyWeekends:  true,
-    showLabels:           false,
-    sortScheduleLists:  true
+    showLabels:         false,
+    sortScheduleLists:  true,
+    captionAbove:       {diagram: false,
+                         image:   false,
+                         table:   false,
+                         listing: false}
 };
 
 
 var LANG_TABLE = {
+    en: {keyword:{}},        
     ru: RUSSIAN,
     fr: FRENCH,
     pl: POLISH,
     bg: BULGARIAN,
     de: GERMAN,
-    hu: HUNGARIAN
+    hu: HUNGARIAN,
+    sv: SWEDISH
 // Awaiting localization by a native speaker:
 //    es: SPANISH
 //    ...
@@ -716,11 +769,25 @@ var sign = Math.sign || function (x) {
 
 
 /** Get an option, or return the corresponding value from DEFAULT_OPTIONS */
-function option(key) {
+function option(key, key2) {
     if (window.markdeepOptions && (window.markdeepOptions[key] !== undefined)) {
-        return window.markdeepOptions[key];
+        var val = window.markdeepOptions[key];
+        if (key2) {
+            val = val[key2]
+            if (val !== undefined) {
+                return val;
+            } else {
+                return DEFAULT_OPTIONS[key][key2];
+            }
+        } else {
+            return window.markdeepOptions[key];
+        }
     } else if (DEFAULT_OPTIONS[key] !== undefined) {
-        return DEFAULT_OPTIONS[key];
+        if (key2) {
+            return DEFAULT_OPTIONS[key][key2];
+        } else {
+            return DEFAULT_OPTIONS[key];
+        }
     } else {
         console.warn('Illegal option: "' + key + '"');
         return undefined;
@@ -1032,18 +1099,21 @@ function replaceTables(s, protect) {
         for (var r = startRow; r < rowArray.length; ++r) {
             // Remove leading and trailing whitespace and column delimiters
             row = rowArray[r].trim();
+            
             if (! hasLeadingBar && (row[0] === '|')) {
                 // Empty first column
                 row = '&nbsp;' + row;
             }
+            
             if (! hasTrailingBar && (row[row.length - 1] === '|')) {
                 // Empty last column
                 row += '&nbsp;';
             }
+            
             row = trimTableRowEnds(row);
             var i = 0;
             result += entag('tr', '<' + tag + columnStyle[0] + '>' + 
-                            row.rp(/\|/g, function () {
+                            row.rp(/ *\| */g, function () {
                                 ++i;
                                 return '</' + tag + '><' + tag + columnStyle[i] + '>';
                             }) + '</' + tag + '>') + '\n';
@@ -1058,7 +1128,12 @@ function replaceTables(s, protect) {
         result = entag('table', result, protect('class="table"'));
 
         if (caption) {
-            result = entag('div', caption, protect('class="tablecaption"')) + result;
+            caption = entag('div', caption, protect('class="tablecaption"'));
+            if (option('captionAbove', 'table')) {
+                result = caption + result;
+            } else {
+                result = '\n' + result + caption;
+            }
         }
 
         return result;
@@ -1790,12 +1865,16 @@ function markdeepToHTML(str, elementMode) {
                 caption = caption.trim();
                 caption = caption.ss(1, caption.length - 1);
                 
-                return entag('center', entag('div', caption, protect('class="imagecaption"')));
+                result.caption = entag('center', entag('div', caption, protect('class="imagecaption"')));
+                return '';
             });
 
             var diagramSVG = diagramToSVG(result.diagramString, result.alignmentHint);
+            var captionAbove = option('captionAbove', 'diagram')
             return result.beforeString +
-                diagramSVG + '\n' +
+                (result.caption && captionAbove ? result.caption : '') +
+                diagramSVG +
+                (result.caption && ! captionAbove ? result.caption : '') + '\n' +
                 replaceDiagrams(result.afterString);
         } else {
             return str;
@@ -1808,10 +1887,9 @@ function markdeepToHTML(str, elementMode) {
     var stylizeFence = function (cssClass, symbol) {
         var pattern = new RegExp('\n([ \t]*)' + symbol + '{3,}(.*)\n([\\s\\S]+?)\n\\1' + symbol + '{3,}\n([ \t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
         str = str.rp(pattern, function(match, indent, lang, sourceCode, caption) {
-            var result = '\n';
             if (caption) {
                 caption = caption.trim();
-                result += '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption.ss(1, caption.length - 1) + '</div>\n';
+                caption = '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption.ss(1, caption.length - 1) + '</div>\n';
             }
             lang = lang ? lang.trim() : lang;
             lang = lang ? [lang] : undefined;
@@ -1820,7 +1898,10 @@ function markdeepToHTML(str, elementMode) {
             sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
 
             var highlighted = hljs.highlightAuto(sourceCode, lang);
-            return result + protect(entag('pre', entag('code', highlighted.value), 'class="listing ' + cssClass + '"')) + '\n';
+            var captionAbove = option('captionAbove', 'listing')
+            return (caption && captionAbove ? caption : '') +
+                protect(entag('pre', entag('code', highlighted.value), 'class="listing ' + cssClass + '"')) +
+                (caption && ! captionAbove ? caption : '') + '\n';
         });
     };
     
@@ -1994,7 +2075,7 @@ function markdeepToHTML(str, elementMode) {
         return '<a ' + protect('href="mailto:' + addr + '"') + '>' + addr + '</a>';
     });
 
-    // Common code for formatting images with and without a caption
+    // Common code for formatting images
     var formatImage = function (ignore, url, attribs) {
         attribs = attribs || '';
         var img;
@@ -2094,6 +2175,7 @@ function markdeepToHTML(str, elementMode) {
     // Note that there is intentionally no global flag on the first regexp since we only want
     // to process the first occurance.
     var loop = true;
+    var imageCaptionAbove = option('captionAbove', 'image');
     while (loop) {
         loop = false;
         // CAPTIONED IMAGE: ![caption](url attribs)
@@ -2128,12 +2210,10 @@ function markdeepToHTML(str, elementMode) {
                 // Embedded: float
                 divStyle += 'float:right;margin:4px 0px 0px 25px;'
             }
-            
+
+            caption = entag('div', caption + maybeShowLabel(url), protect('class="imagecaption"'));
             return preSpaces + 
-                entag('div', img + entag('div', 
-                                         caption + maybeShowLabel(url),
-                                         protect('class="imagecaption"')),
-                      protect('class="image" style="' + divStyle + '"')) + 
+                entag('div', (imageCaptionAbove ? caption : '') + img + (! imageCaptionAbove ? caption : ''), protect('class="image" style="' + divStyle + '"')) + 
                 postSpaces;
         });
     } // while replacements made
@@ -2339,8 +2419,6 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/^\s*<\/p>/, '');
 
     // If not in element mode and not an INSERT child, maybe add a TOC
-    //TODO: Use myURLParse here...why doesn't it work??
-    //console.log(location.href);///([^?]+)(?:\?id=(inc\d+)&p=([^&]+))?/.exec(location.href)[2]);
     if (! elementMode) {// && ! myURLParse[2]) {
         var temp = insertTableOfContents(str, protect);
         str = temp[0];
