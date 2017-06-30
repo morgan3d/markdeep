@@ -205,6 +205,10 @@ var STYLESHEET = entag('style',
     'clear:both' +
     '}' +
 
+    'h1,h2,h3,h4,h5,h6,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
+     'page-break-after:avoid;break-after:avoid' +
+    '}'+
+
     '.md svg.diagram{' +
     'display:block;' +
     'font-family:' + codeFontStack + ';' +
@@ -225,6 +229,9 @@ var STYLESHEET = entag('style',
     'stroke:none' +
     '}' +
 
+    // pagebreak hr
+    '@media print{.md .pagebreak{page-break-after:always; visibility:hidden}}' +
+
     // Not restricted to a:link because we want things like svn URLs to have this font, which
     // makes "//" look better.
     '.md a{font-family:Georgia,Palatino,\'Times New Roman\'}' +
@@ -243,6 +250,7 @@ var STYLESHEET = entag('style',
     'counter-reset: h3 h4 h5 h6;' +
     'border-bottom:2px solid #999;' +
     'color:#555;' +
+    'font-weight:bold;'+
     'font-size:18px;' +
     '}' +
 
@@ -1783,7 +1791,7 @@ function markdeepToHTML(str, elementMode) {
                 
                 return entag('center', entag('div', caption, protect('class="imagecaption"')));
             });
-            
+
             var diagramSVG = diagramToSVG(result.diagramString, result.alignmentHint);
             return result.beforeString +
                 diagramSVG + '\n' +
@@ -1913,12 +1921,15 @@ function markdeepToHTML(str, elementMode) {
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
     str = str.rp(/\n[ \t]*((\*|-|_)[ \t]*){3,}[ \t]*\n/g, '\n<hr/>\n');
-    var FANCY_QUOTE = protect('class="fancyquote"');
+
+    // PAGE BREAK or HORIZONTAL RULE: +++++
+    str = str.rp(/\n[ \t]*\+{5,}[ \t]*\n/g, '\n<hr ' + protect('class="pagebreak"') + '/>\n');
 
     // FANCY QUOTE in a blockquote:
     // > " .... "
     // >    -- Foo
 
+    var FANCY_QUOTE = protect('class="fancyquote"');
     str = str.rp(/\n>[ \t]*"(.*(?:\n>.*)*)"[ \t]*(?:\n>[ \t]*)?(\n>[ \t]{2,}\S.*)?\n/g,
                  function (match, quote, author) {
                      return entag('blockquote', 
@@ -2172,6 +2183,9 @@ function markdeepToHTML(str, elementMode) {
     // EXPONENTS: ^1 ^-1 (no decimal places allowed)
     str = str.rp(/\^([-+]?\d+)\b/g, '<sup>$1</sup>');
 
+    // PAGE BREAK:
+    str = str.rp(/\b\\(pagebreak|newpage)\b/gi, protect('<div style="page-break-after:always"> </div>\n'))
+    
     // SCHEDULE LISTS: date : title followed by indented content
     str = replaceScheduleLists(str, protect);
 
@@ -2366,14 +2380,15 @@ function markdeepToHTML(str, elementMode) {
 
 
 /**
-   Adds whitespace at the end of each line of str, so that all lines
-   have equal length
+   Adds whitespace at the end of each line of str, so that all lines have equal length in
+   unicode characters (which is not the same as JavaScript characters when high-index/escape
+   characters are present).
 */
 function equalizeLineLengths(str) {
     var lineArray = str.split('\n');
     var longest = 0;
     lineArray.forEach(function(line) {
-        longest = max(longest, line.length);
+        longest = max(longest, Array.from(line).length);
     });
 
     // Worst case spaces needed for equalizing lengths
@@ -2384,7 +2399,7 @@ function equalizeLineLengths(str) {
     lineArray.forEach(function(line) {
         // Append the needed number of spaces onto each line, and
         // reconstruct the output with newlines
-        result += line + spaces.ss(line.length) + '\n';
+        result += line + spaces.ss(Array.from(line).length) + '\n';
     });
 
     return result;
@@ -2426,8 +2441,8 @@ function isASCIILetter(c) {
     return ((code >= 65) && (code <= 90)) || ((code >= 97) && (code <= 122));
 }
 
-/** Converts diagramString, which is a Markdeep diagram without the
-    surrounding asterisks, to SVG (HTML). 
+/** Converts diagramString, which is a Markdeep diagram without the surrounding asterisks, to
+    SVG (HTML). Lines may have ragged lengths.
 
     alignmentHint is the float alignment desired for the SVG tag,
     which can be 'floatleft', 'floatright', or ''
@@ -2518,11 +2533,9 @@ function diagramToSVG(diagramString, alignmentHint) {
     Vec2.prototype.toString = Vec2.prototype.toSVG = 
         function () { return '' + (this.x * SCALE) + ',' + (this.y * SCALE * ASPECT) + ' '; };
 
-    /** The grid is */
+    /** Converts a "rectangular" string defined by newlines into 2D
+        array of characters. Grids are immutable. */
     function makeGrid(str) {
-        /** Converts a "rectangular" string defined by newlines into 2D
-            array of characters. Grids are immutable. */
-
         /** Returns ' ' for out of bounds values */
         var grid = function(x, y) {
             if (y === undefined) {
@@ -2537,9 +2550,14 @@ function diagramToSVG(diagramString, alignmentHint) {
         // Elements are true when consumed
         grid._used   = [];
 
-        grid.width   = str.indexOf('\n');
         grid.height  = str.split('\n').length;
         if (str[str.length - 1] === '\n') { --grid.height; }
+
+        // Convert the string to an array to better handle greater-than 16-bit unicode
+        // characters, which JavaScript does not process correctly with indices. Do this after
+        // the above string processing.
+        str = Array.from(str);
+        grid.width = str.indexOf('\n');
 
         /** Mark this location. Takes a Vec2 or (x, y) */
         grid.setUsed = function (x, y) {
@@ -2951,7 +2969,7 @@ function diagramToSVG(diagramString, alignmentHint) {
             } else if (isGray(decoration.type)) {
                 
                 var shade = Math.round((3 - GRAY_CHARACTERS.indexOf(decoration.type)) * 63.75);
-                svg += '<rect x="' + ((C.x - 0.5) * SCALE) + '" y="' + ((C.y - 0.5) * SCALE * ASPECT) + '" width="' + SCALE + '" height="' + (SCALE * ASPECT) + '" fill="rgb(' + shade + ',' + shade + ',' + shade +')"/>';
+                svg += '<rect x="' + ((C.x - 0.5) * SCALE) + '" y="' + ((C.y - 0.5) * SCALE * ASPECT) + '" width="' + SCALE + '" height="' + (SCALE * ASPECT) + '" stroke=none fill="rgb(' + shade + ',' + shade + ',' + shade +')"/>';
 
             } else if (isTri(decoration.type)) {
                 // 30-60-90 triangle
@@ -3731,7 +3749,7 @@ if (! window.alreadyProcessedMarkdeep) {
         
         if (needMathJax) {
             // Custom definitions (NC == \newcommand)
-            var MATHJAX_COMMANDS = '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^\\circ}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand');
+            var MATHJAX_COMMANDS = '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^{\\large\\circ}}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand');
 
             markdeepHTML = '<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' +
                 '<span style="display:none">' + MATHJAX_COMMANDS + '</span>\n' + markdeepHTML; 
