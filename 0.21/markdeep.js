@@ -1062,7 +1062,7 @@ function replaceTables(s, protect) {
     function trimTableRowEnds(row) {
         return row.trim().rp(/^\||\|$/g, '');
     }
-    
+
     s = s.rp(TABLE_REGEXP, function (match) {
         // Found a table, actually parse it by rows
         var rowArray = match.split('\n');
@@ -1112,11 +1112,11 @@ function replaceTables(s, protect) {
             
             row = trimTableRowEnds(row);
             var i = 0;
-            result += entag('tr', '<' + tag + columnStyle[0] + '>' + 
+            result += entag('tr', '<' + tag + columnStyle[0] + '> ' + 
                             row.rp(/ *\| */g, function () {
                                 ++i;
-                                return '</' + tag + '><' + tag + columnStyle[i] + '>';
-                            }) + '</' + tag + '>') + '\n';
+                                return ' </' + tag + '><' + tag + columnStyle[i] + '> ';
+                            }) + ' </' + tag + '>') + '\n';
             
             // Skip the header-separator row
             if (r == startRow) { 
@@ -1139,6 +1139,7 @@ function replaceTables(s, protect) {
         return result;
     });
 
+    console.log(s);
     return s;
 }
 
@@ -1836,7 +1837,7 @@ function markdeepToHTML(str, elementMode) {
     function makeHeaderFunc(level) {
         return function (match, header) {
             return '</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
-                '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>';
+                '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n';
         }
     }
 
@@ -3823,6 +3824,8 @@ if (! window.alreadyProcessedMarkdeep) {
 
         source = unescapeHTMLEntities(source);
         var markdeepHTML = markdeepToHTML(source, false);
+
+        //console.log(markdeepHTML); // Final processed source
         
         // Need MathJax if $$ ... $$, \( ... \), or \begin{
         var needMathJax = option('detectMath') &&
