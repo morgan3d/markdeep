@@ -325,7 +325,7 @@ var STYLESHEET = entag('style',
     'page-break-inside:avoid' +
     '}' +
 
-    '.md a.target{width:0;height:0;visibility:hidden;display:none}' +
+    '.md a.target{width:0px;height:0px;visibility:hidden;font-size:0px;display:inline-block}' +
     '.md a:link, .md a:visited{color:#38A;text-decoration:none}' +
     '.md a:link:hover{text-decoration:underline}' +
 
