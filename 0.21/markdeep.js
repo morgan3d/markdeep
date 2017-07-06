@@ -1147,12 +1147,12 @@ function replaceLists(s, protect) {
     // Identify list blocks:
     // Blank line or line ending in colon, line that starts with #., *, +, or -,
     // and then any number of lines until another blank line
-    var BLANK_LINES = /^\s*\n/.source;
-    
+    var BLANK_LINES = /\n\s*\n/.source;
+
     // Preceding line ending in a colon
-    var PREFIX     = /[:,]?\s*\n/.source;
+    var PREFIX     = /[:,]\s*\n/.source;
     var LIST_BLOCK_REGEXP = 
-        new RegExp('(' + PREFIX + '|' + BLANK_LINES + ')' +
+        new RegExp('(' + PREFIX + '|' + BLANK_LINES + '|<p>\s*\n|<br/>\s*\n?)' +
                    /((?:[ \t]*(?:\d+\.|-|\+|\*)(?:[ \t]+.+\n(?:[ \t]*\n)?)+)+)/.source, 'gm');
 
     var keepGoing = true;
@@ -2394,10 +2394,10 @@ function markdeepToHTML(str, elementMode) {
     });
 
     if (! elementMode) {
-        var TITLE_PATTERN = /^\s*(?:<\/p><p>\s*)<strong.*?>([^ \t\*].*?[^ \t\*])<\/strong>[ \t]*\n/.source;
+        var TITLE_PATTERN = /^\s*<\/p><p>\s*<strong.*?>([^ \t\*].*?[^ \t\*])<\/strong>(?:<\/p>)?[ \t]*\n/.source;
         
         var ALL_SUBTITLES_PATTERN = /([ {4,}\t][ \t]*\S.*\n)*/.source;
-        
+
         // Detect a bold first line and make it into a title; detect indented lines
         // below it and make them subtitles
         str = str.rp(
