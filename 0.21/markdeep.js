@@ -1139,7 +1139,6 @@ function replaceTables(s, protect) {
         return result;
     });
 
-    console.log(s);
     return s;
 }
 
@@ -1151,7 +1150,7 @@ function replaceLists(s, protect) {
     var BLANK_LINES = /^\s*\n/.source;
     
     // Preceding line ending in a colon
-    var PREFIX     = /[:,]\s*\n/.source;
+    var PREFIX     = /[:,]?\s*\n/.source;
     var LIST_BLOCK_REGEXP = 
         new RegExp('(' + PREFIX + '|' + BLANK_LINES + ')' +
                    /((?:[ \t]*(?:\d+\.|-|\+|\*)(?:[ \t]+.+\n(?:[ \t]*\n)?)+)+)/.source, 'gm');
