@@ -1833,9 +1833,10 @@ function markdeepToHTML(str, elementMode) {
         return prefix + protect(protectee);
     }
 
+    // HEADERS
     function makeHeaderFunc(level) {
         return function (match, header) {
-            return '</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
+            return '\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
                 '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n';
         }
     }
@@ -2101,10 +2102,11 @@ function markdeepToHTML(str, elementMode) {
             img = '<img ' + protect('class="markdeep" src="' + url + '"' + attribs) + ' />';
 
             // Check for width or height (or max-width and max-height). If they exist,
-            // link this to the full-size image as well.
-            if (/\b(width|height)\b/i.test(attribs)) {
-                img = entag('a ', img, protect('href="' + url + '" target="_blank"'));
-            }
+            // link this to the full-size image as well. The current code ALWAYS makes
+            // this link.
+            //if (/\b(width|height)\b/i.test(attribs)) {
+            img = entag('a ', img, protect('href="' + url + '" target="_blank"'));
+            //}
         }
 
         return img;
@@ -2142,7 +2144,7 @@ function markdeepToHTML(str, elementMode) {
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
     var imageGridRowAttribs = protect('valign="top"');
-    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\)]*?)?\)){2,}[ \t]*)+\n/g, function (match) {
+    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*)+\n/g, function (match) {
         var table = '';
 
         // Break into rows:
@@ -2153,7 +2155,11 @@ function markdeepToHTML(str, elementMode) {
             row = row.trim();
             if (row) {
                 // Parse each image
-                table += entag('tr', row.rp(/[ \t]*!\[[^\n]*?\]\([^\)\s]+(?:[^\)]*?)?\)/g, function(image) {
+                table += entag('tr', row.rp(/[ \t]*!\[[^\n]*?\]\([^\)\s]+([^\)]*?)?\)/g, function(image, attribs) {
+                    //if (! /width|height/i.test(attribs) {
+                        // Add a bogus "width" attribute to force the images to be hyperlinked to their
+                        // full-resolution versions
+                    //}
                     return entag('td', '\n\n'+ image + '\n\n');
                 }), imageGridRowAttribs);
             }
@@ -2181,8 +2187,10 @@ function markdeepToHTML(str, elementMode) {
     var imageCaptionAbove = option('captionAbove', 'image');
     while (loop) {
         loop = false;
+
         // CAPTIONED IMAGE: ![caption](url attribs)
         str = str.rp(/(\s*)!\[([\s\S]+?)?\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
+
             loop = true;
             var divStyle = '';
             var iso = isolated(preSpaces, postSpaces);
@@ -2204,7 +2212,7 @@ function markdeepToHTML(str, elementMode) {
             }
             
             var img = formatImage(match, url, attribs);
-            
+
             if (iso) {
                 // In its own block: center
                 preSpaces += '<center>';
@@ -2213,7 +2221,7 @@ function markdeepToHTML(str, elementMode) {
                 // Embedded: float
                 divStyle += 'float:right;margin:4px 0px 0px 25px;'
             }
-
+            
             caption = entag('div', caption + maybeShowLabel(url), protect('class="imagecaption"'));
             return preSpaces + 
                 entag('div', (imageCaptionAbove ? caption : '') + img + (! imageCaptionAbove ? caption : ''), protect('class="image" style="' + divStyle + '"')) + 
@@ -2287,9 +2295,10 @@ function markdeepToHTML(str, elementMode) {
     // DEGREE: ##-degree
     str = str.rp(/(\d+?)[ \t-]degree(?:s?)/g, '$1&deg;');
 
-    // PARAGRAPH: Newline, any amount of space, newline
-    str = str.rp(/\n[\s\n]*\n/g, '\n\n</p><p>\n\n');
-
+    // PARAGRAPH: Newline, any amount of space, newline...as long as there isn't already
+    // a paragraph break there
+    str = str.rp(/\n\s*\n+(?!<\/p>)/g, '\n\n</p><p>\n\n');
+    
     // Reference links
     str = str.rp(/\[(.+?)\]\[(.*?)\]/g, function (match, text, symbolicName) {
         // Empty symbolic name is replaced by the text
