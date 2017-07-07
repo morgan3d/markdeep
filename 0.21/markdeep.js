@@ -264,6 +264,10 @@ var STYLESHEET = entag('style',
     'h4{counter-reset:h5 h6}' +
     'h5{counter-reset:h6}' +
 
+    '.md div.table{' +
+    'margin:16px 0 16px 0' +
+    '}' +
+                       
     '.md table{' +
     'border-collapse:collapse;' +
     'line-height:140%;' +
@@ -333,11 +337,9 @@ var STYLESHEET = entag('style',
     'font-weight:700' +
     '}' +
 
-    // Don't pad the bottom of definitions in tables
-    'dl>.md dd{' +
-    'padding:0 0 18px' +
-    '}' +
-
+    // Remove excess space above definitions due to paragraph breaks, and add some at the bottom
+    '.md dl>dd{margin-top:-8px; margin-bottom:8px}' +
+                       
      // Extra space around terse definition lists
     '.md dl>table{' +
     'margin:35px 0 30px' + 
@@ -1136,7 +1138,7 @@ function replaceTables(s, protect) {
             }
         }
 
-        return result;
+        return entag('div', result, "class='table'");
     });
 
     return s;
@@ -1601,7 +1603,7 @@ function replaceDefinitionLists(s, protect) {
                      list.forEach(function (entry) {
                          result += entag('tr',
                                          entag('td', entag('dt', entry.term)) + 
-                                         entag('td', entag('dd', entry.definition)), 
+                                         entag('td', entag('dd', entag('p', entry.definition))), 
                                          rowAttribs);
                      });
                      result = entag('table', result);
@@ -1611,7 +1613,7 @@ function replaceDefinitionLists(s, protect) {
                          // Leave *two* blanks at the start of a
                          // definition so that subsequent processing
                          // can detect block formatting within it.
-                         result += entag('dt', entry.term) + entag('dd', '\n\n' + entry.definition);
+                         result += entag('dt', entry.term) + entag('dd', entag('p', entry.definition));
                      });
                  }
 
@@ -1833,11 +1835,13 @@ function markdeepToHTML(str, elementMode) {
         return prefix + protect(protectee);
     }
 
-    // HEADERS
+    // SECTION HEADERS
+    // This is common code for numbered headers. Nno-number ATX headers are processed
+    // separately
     function makeHeaderFunc(level) {
         return function (match, header) {
             return '\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
-                '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n';
+                '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n\n';
         }
     }
 
@@ -1881,7 +1885,7 @@ function markdeepToHTML(str, elementMode) {
             return str;
         }
     }
-    
+
     // CODE FENCES, with styles. Do this before other
     // processing so that their code is protected from further
     // Markdown processing
@@ -1900,15 +1904,17 @@ function markdeepToHTML(str, elementMode) {
 
             var highlighted = hljs.highlightAuto(sourceCode, lang);
             var captionAbove = option('captionAbove', 'listing')
-            return (caption && captionAbove ? caption : '') +
+
+            // Insert paragraph close/open tags, since browsers force them anyway around pre tags
+            return '\n\n</p>' + (caption && captionAbove ? caption : '') +
                 protect(entag('pre', entag('code', highlighted.value), 'class="listing ' + cssClass + '"')) +
-                (caption && ! captionAbove ? caption : '') + '\n';
+                (caption && ! captionAbove ? caption : '') + '<p>\n\n';
         });
     };
     
     stylizeFence('tilde', '~');
     stylizeFence('backtick', '`');
-    
+
     // Protect raw <CODE> content
     str = str.rp(/(<code\b.*?<\/code>)/gi, protector);
     
@@ -2002,7 +2008,7 @@ function markdeepToHTML(str, elementMode) {
 
         // No-number headers
         str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n#]+)\\(?#*\\)?\\n[ \t]*\n\\s*', 'gm'), 
-                     entag('div', '$1', protect('class="nonumberh' + i + '"')) + '\n\n\n');
+                     '\n</p>\n' + entag('div', '$1', protect('class="nonumberh' + i + '"')) + '\n<p>\n\n');
     }
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
@@ -2296,8 +2302,12 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/(\d+?)[ \t-]degree(?:s?)/g, '$1&deg;');
 
     // PARAGRAPH: Newline, any amount of space, newline...as long as there isn't already
-    // a paragraph break there
-    str = str.rp(/\n\s*\n+(?!<\/p>)/g, '\n\n</p><p>\n\n');
+    // a paragraph break there.
+    str = str.rp(/(?:<p>)?\n\s*\n+(?!<\/p>)/gi,
+                 function(match) { return (/^<p>/i.test(match)) ? match : '\n\n</p><p>\n\n';});
+
+    // Remove empty paragraphs (mostly avoided by the above, but some can still occur)
+    str = str.rp(/<p>[\s\n]*<\/p>/gi, '');
     
     // Reference links
     str = str.rp(/\[(.+?)\]\[(.*?)\]/g, function (match, text, symbolicName) {
@@ -2403,7 +2413,7 @@ function markdeepToHTML(str, elementMode) {
     });
 
     if (! elementMode) {
-        var TITLE_PATTERN = /^\s*<\/p><p>\s*<strong.*?>([^ \t\*].*?[^ \t\*])<\/strong>(?:<\/p>)?[ \t]*\n/.source;
+        var TITLE_PATTERN = /^\s*(?:<\/p><p>)?\s*<strong.*?>([^ \t\*].*?[^ \t\*])<\/strong>(?:<\/p>)?[ \t]*\n/.source;
         
         var ALL_SUBTITLES_PATTERN = /([ {4,}\t][ \t]*\S.*\n)*/.source;
 
@@ -3833,7 +3843,7 @@ if (! window.alreadyProcessedMarkdeep) {
         source = unescapeHTMLEntities(source);
         var markdeepHTML = markdeepToHTML(source, false);
 
-        //console.log(markdeepHTML); // Final processed source
+        //console.log(markdeepHTML); // Final processed source 
         
         // Need MathJax if $$ ... $$, \( ... \), or \begin{
         var needMathJax = option('detectMath') &&
