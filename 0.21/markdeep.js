@@ -1840,7 +1840,7 @@ function markdeepToHTML(str, elementMode) {
     // separately
     function makeHeaderFunc(level) {
         return function (match, header) {
-            return '\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
+            return '\n\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
                 '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n\n';
         }
     }
@@ -1994,7 +1994,7 @@ function markdeepToHTML(str, elementMode) {
 
     // For headers, we consume leading and trailing whitespace to avoid creating an
     // extra paragraph tag around the header itself.
-    
+
     // Setext-style H1: Text with ======== right under it
     str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*={3,}[ \t]*\n\s*/g, makeHeaderFunc(1));
     
@@ -2064,7 +2064,7 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // The bibliography entry:
-    str = str.rp(/\n\[#(\S+)\]: ((?:.+?\n?)*)/g, function (match, symbolicName, entry) {
+    str = str.rp(/\n\[#(\S+)\]:[ \t]+((?:[ \t]*\S[^\n]*\n?)*)/g, function (match, symbolicName, entry) {
         symbolicName = symbolicName.trim();
         return '<div ' + protect('class="bib"') + '>[<a ' + protect('class="target" name="citation-' + symbolicName.toLowerCase() + '"') + 
             '>&nbsp;</a><b>' + symbolicName + '</b>] ' + entry + '</div>';
@@ -3843,7 +3843,7 @@ if (! window.alreadyProcessedMarkdeep) {
         source = unescapeHTMLEntities(source);
         var markdeepHTML = markdeepToHTML(source, false);
 
-        //console.log(markdeepHTML); // Final processed source 
+        // console.log(markdeepHTML); // Final processed source 
         
         // Need MathJax if $$ ... $$, \( ... \), or \begin{
         var needMathJax = option('detectMath') &&
