@@ -930,11 +930,23 @@ function nodeToMarkdeepSource(node, leaveEscapes) {
     If there is a caption, it will appear in the afterString and not be parsed.
 */
 function extractDiagram(sourceString) {
+    // Returns the number of wide Unicode symbols (outside the BMP) in string s between indices
+    // start and end - 1
+    function unicodeSyms(s, start, end) {
+        var p = start;
+        for (var i = start; i < end; ++i, ++p) {
+            var c = s.charCodeAt(p);
+            p += (c >= 0xD800) && (c <= 0xDBFF);
+        }
+        return p - end;
+    }
+
     function advance() {
         nextLineBeginning = sourceString.indexOf('\n', lineBeginning) + 1;
+        wideCharacters = unicodeSyms(sourceString, lineBeginning + xMin, lineBeginning + xMax);
         textOnLeft  = textOnLeft  || /\S/.test(sourceString.ss(lineBeginning, lineBeginning + xMin));
         // Text on the right ... if the line is not all '*'        
-        textOnRight = textOnRight || /[^ *\t\n\r]/.test(sourceString.ss(lineBeginning + xMax + 1, nextLineBeginning));
+        textOnRight = textOnRight || /[^ *\t\n\r]/.test(sourceString.ss(lineBeginning + xMax + wideCharacters + 1, nextLineBeginning));
     }
 
     var noDiagramResult = {beforeString: sourceString, diagramString: '', alignmentHint: '', afterString: ''};
@@ -968,7 +980,7 @@ function extractDiagram(sourceString) {
             afterString: sourceString.ss(lineBeginning, i).rp(/[ \t]+$/, ' ')
         };
 
-        var nextLineBeginning = 0;
+        var nextLineBeginning = 0, wideCharacters = 0;
         var textOnLeft = false, textOnRight = false;
 
         advance();
@@ -992,14 +1004,14 @@ function extractDiagram(sourceString) {
             
             // See if there are markers at the correct locations on the next line
             if ((sourceString[lineBeginning + xMin] === DIAGRAM_MARKER) && 
-                (! textOnLeft || (sourceString[lineBeginning + xMax] === DIAGRAM_MARKER))) {
+                (! textOnLeft || (sourceString[lineBeginning + xMax + wideCharacters] === DIAGRAM_MARKER))) {
 
                 // See if there's a complete line of DIAGRAM_MARKER, which would end the diagram
                 var x;
                 for (x = xMin; (x < xMax) && (sourceString[lineBeginning + x] === DIAGRAM_MARKER); ++x) {}
            
                 var begin = lineBeginning + xMin;
-                var end   = lineBeginning + xMax;
+                var end   = lineBeginning + xMax + wideCharacters;
                 
                 if (! textOnLeft) {
                     // This may be an incomplete line
