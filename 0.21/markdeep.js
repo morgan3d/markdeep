@@ -2420,8 +2420,14 @@ function markdeepToHTML(str, elementMode) {
     // URL: <http://baz> or http://baz
     // Must be detected after [link]() processing 
     str = str.rp(/(?:<|(?!<)\b)(\w{3,6}:\/\/.+?)(?:$|>|(?=<)|(?=\s|\u00A0)(?!<))/g, function (match, url) {
+        var extra = '';
+        if (url[url.length - 1] == '.') {
+            // Accidentally sucked in a period at the end of a sentence
+            url = url.ss(0, url.length - 1);
+            extra = '.';
+        }
         // svn and perforce URLs are not hyperlinked. All others (http/https/ftp/mailto/tel, etc. are)
-        return '<a ' + ((url[0] !== 's' && url[0] !== 'p') ? protect('href="' + url + '" class="url"') : '') + '>' + url + '</a>';
+        return '<a ' + ((url[0] !== 's' && url[0] !== 'p') ? protect('href="' + url + '" class="url"') : '') + '>' + url + '</a>' + extra;
     });
 
     if (! elementMode) {
