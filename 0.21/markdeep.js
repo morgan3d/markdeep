@@ -1697,7 +1697,7 @@ function insertTableOfContents(s, protect) {
     // The location of the first header is indicative of the length of
     // the abstract...as well as where we insert. The first header may be accompanied by
     // <a name> tags, which we want to appear before.
-    var firstHeaderLocation = s.regexIndexOf(/((<a\s+\S+><\/a>)\s*)*?<h\d>/i);
+    var firstHeaderLocation = s.regexIndexOf(/((<a\s+\S+>&nbsp;<\/a>)\s*)*?<h\d>/i);
     if (firstHeaderLocation === -1) { firstHeaderLocation = 0; }
 
     var AFTER_TITLES = '<div class="afterTitles"><\/div>';
