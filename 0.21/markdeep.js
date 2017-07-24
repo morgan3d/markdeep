@@ -1674,7 +1674,7 @@ function insertTableOfContents(s, protect) {
         // Only insert for the first three levels
         if (level <= 3) {
             // Indent and append (the Array() call generates spaces)
-            fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '" class="level' + level + '">' + number + '&nbsp; ' + text + '</a><br/>\n';
+            fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
             
             if (level === 1) {
                 shortTOC += ' &middot; <a href="#' + name + '">' + text + '</a>';
