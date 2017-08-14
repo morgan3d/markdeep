@@ -2047,10 +2047,16 @@ function markdeepToHTML(str, elementMode) {
                 });
 
     // BLOCKQUOTE: > in front of a series of lines
-    str = str.rp(/(?:\n>.*){2,}/g, function (match) {
-        // Strip the leading '>'
-        return entag('blockquote', match.rp(/\n>/g, '\n'));
-    });
+    // Process iteratively to support nested blockquotes
+    var foundBlockquote = false;
+    do {
+        foundBlockquote = false;
+        str = str.rp(/(?:\n>.*){2,}/g, function (match) {
+            // Strip the leading '>'
+            foundBlockquote = true;
+            return entag('blockquote', match.rp(/\n>/g, '\n'));
+        });
+    } while (foundBlockquote);
 
 
     // FOOTNOTES/ENDNOTES: [^symbolic name]. Disallow spaces in footnote names to
