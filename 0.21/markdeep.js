@@ -1918,12 +1918,13 @@ function markdeepToHTML(str, elementMode) {
             var captionAbove = option('captionAbove', 'listing')
 
             // Insert paragraph close/open tags, since browsers force them anyway around pre tags
-            return '\n\n</p>' + (caption && captionAbove ? caption : '') +
+            // We need the indent in case this is a code block inside a list that is indented.
+            return '\n' + indent + '</p>' + (caption && captionAbove ? caption : '') +
                 protect(entag('pre', entag('code', highlighted.value), 'class="listing ' + cssClass + '"')) +
-                (caption && ! captionAbove ? caption : '') + '<p>\n\n';
+                (caption && ! captionAbove ? caption : '') + '<p>\n';
         });
     };
-    
+
     stylizeFence('tilde', '~');
     stylizeFence('backtick', '`');
 
@@ -2252,7 +2253,6 @@ function markdeepToHTML(str, elementMode) {
                 postSpaces;
         });
     } // while replacements made
-
 
     // Process these after links, so that URLs with underscores and tildes are protected.
 
