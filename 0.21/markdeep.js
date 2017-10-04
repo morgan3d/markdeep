@@ -2009,18 +2009,18 @@ function markdeepToHTML(str, elementMode) {
     // extra paragraph tag around the header itself.
 
     // Setext-style H1: Text with ======== right under it
-    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*={3,}[ \t]*\n\s*/g, makeHeaderFunc(1));
+    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*={3,}[ \t]*\n/g, makeHeaderFunc(1));
     
     // Setext-style H2: Text with -------- right under it
-    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*-{3,}[ \t]*\n\s*/g, makeHeaderFunc(2));
+    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*-{3,}[ \t]*\n/g, makeHeaderFunc(2));
 
     // ATX-style headers:
     for (var i = 6; i > 0; --i) {
-        str = str.rp(new RegExp(/^\s*/.source + '#{' + i + ',' + i +'}(?:[ \t])([^\n#]+)#*[ \t]*\n\\s*', 'gm'), 
+        str = str.rp(new RegExp(/^\s*/.source + '#{' + i + ',' + i +'}(?:[ \t])([^\n#]+)#*[ \t]*\n', 'gm'), 
                  makeHeaderFunc(i));
 
         // No-number headers
-        str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n#]+)\\(?#*\\)?\\n[ \t]*\n\\s*', 'gm'), 
+        str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n#]+)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
                      '\n</p>\n' + entag('div', '$1', protect('class="nonumberh' + i + '"')) + '\n<p>\n\n');
     }
 
