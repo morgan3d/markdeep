@@ -1174,9 +1174,8 @@ function replaceLists(s, protect) {
     var ATTRIBS = {'+': protect('class="plus"'), '-': protect('class="minus"'), '*': protect('class="asterisk"')};
     var NUMBER_ATTRIBS = protect('class="number"');
 
-    // Sometimes the list regexp grabs too much because subsequent
-    // lines are indented *less* than the first line. So, if that case
-    // is found, re-run the regexp.
+    // Sometimes the list regexp grabs too much because subsequent lines are indented *less*
+    // than the first line. So, if that case is found, re-run the regexp.
     while (keepGoing) {
         keepGoing = false;
         s = s.rp(LIST_BLOCK_REGEXP, function (match, prefix, block) {
@@ -1202,6 +1201,7 @@ function replaceLists(s, protect) {
                 attribs = attribs || NUMBER_ATTRIBS;
                 var isOrdered   = /^\d+\.[ \t]/.test(trimmed);
                 var isBlank     = trimmed === '';
+                var start       = isOrdered ? ' ' + protect('start=' + trimmed.match(/^\d+/)[0]) : '';
 
                 if (isOrdered || isUnordered) {
                     // Add the indentation for the bullet itself
@@ -1232,7 +1232,7 @@ function replaceLists(s, protect) {
                                        // Subtract off the two indent characters we added above
                                        indentChars: line.ss(0, indentLevel - 2)};
                             stack.push(current);
-                            result += '\n<' + current.tag + '>';
+                            result += '\n<' + current.tag + start + '>';
                         }
                     } else if (current.indentLevel !== -1) {
                         // End previous list item, if there was one
@@ -2276,8 +2276,10 @@ function markdeepToHTML(str, elementMode) {
     // ARROWS:
     str = str.rp(/(\s|^)<==(\s)/g, '$1\u21D0$2');
     str = str.rp(/(\s|^)->(\s)/g, '$1&rarr;$2');
+    str = str.rp(/(\s|^)-->(\s)/g, '$1&xrarr;$2');
     str = str.rp(/(\s|^)==>(\s)/g, '$1\u21D2$2');
     str = str.rp(/(\s|^)<-(\s)/g, '$1&larr;$2');
+    str = str.rp(/(\s|^)<--(\s)/g, '$1&xlarr;$2');
     str = str.rp(/(\s|^)<==>(\s)/g, '$1\u21D4$2');
     str = str.rp(/(\s|^)<->(\s)/g, '$1\u2194$2');
 
@@ -2313,7 +2315,7 @@ function markdeepToHTML(str, elementMode) {
     // work correctly
     str = replaceDefinitionLists(str, protect);
 
-    // LISTS: lines with -, +, *, or 1.
+    // LISTS: lines with -, +, *, or number.
     str = replaceLists(str, protect);
 
     // DEGREE: ##-degree
