@@ -1930,7 +1930,11 @@ function markdeepToHTML(str, elementMode) {
 
     // Protect raw <CODE> content
     str = str.rp(/(<code\b.*?<\/code>)/gi, protector);
-    
+
+    // Remove XML/HTML COMMENTS
+    str = str.rp(/<!--\s[\s\S]+?\s-->/g, '');
+
+    console.log(str);
     str = replaceDiagrams(str);
     
     // Protect SVG blocks (including the ones we just inserted)
@@ -2276,6 +2280,7 @@ function markdeepToHTML(str, elementMode) {
     // ARROWS:
     str = str.rp(/(\s|^)<==(\s)/g, '$1\u21D0$2');
     str = str.rp(/(\s|^)->(\s)/g, '$1&rarr;$2');
+    // (this requires having removed HTML comments first)
     str = str.rp(/(\s|^)-->(\s)/g, '$1&xrarr;$2');
     str = str.rp(/(\s|^)==>(\s)/g, '$1\u21D2$2');
     str = str.rp(/(\s|^)<-(\s)/g, '$1&larr;$2');
