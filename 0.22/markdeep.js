@@ -623,7 +623,55 @@ var HUNGARIAN = {
     }
 };
 
+// Translated by Takashi Masuyama
+var JAPANESE = {
+    keyword: {
+        table:     '表',
+        figure:    '図',
+        listing:   '一覧',
+        diagram:   '図',
+        contents:  '目次',
 
+        sec:       '章',
+        section:   '節',
+        subsection: '項',
+
+        Monday:    '月',
+        Tuesday:   '火',
+        Wednesday: '水',
+        Thursday:  '木',
+        Friday:    '金',
+        Saturday:  '土',
+        Sunday:    '日',
+
+        January:   '1月',
+        February:  '2月',
+        March:     '3月',
+        April:     '4月',
+        May:       '5月',
+        June:      '6月',
+        July:      '7月',
+        August:    '8月',
+        September: '9月',
+        October:   '10月',
+        November:  '11月',
+        December:  '12月',
+
+        jan: '1月',
+        feb: '2月',
+        mar: '3月',
+        apr: '4月',
+        may: '5月',
+        jun: '6月',
+        jul: '7月',
+        aug: '8月',
+        sep: '9月',
+        oct: '10月',
+        nov: '11月',
+        dec: '12月'
+    }
+};    
+    
 // Translated by Sandor Berczi
 var GERMAN = {
     keyword: {
@@ -737,6 +785,7 @@ var DEFAULT_OPTIONS = {
 };
 
 
+// See http://www.i18nguy.com/unicode/language-identifiers.html for keys
 var LANG_TABLE = {
     en: {keyword:{}},        
     ru: RUSSIAN,
@@ -745,7 +794,8 @@ var LANG_TABLE = {
     bg: BULGARIAN,
     de: GERMAN,
     hu: HUNGARIAN,
-    sv: SWEDISH
+    sv: SWEDISH,
+    ja: JAPANESE
 // Awaiting localization by a native speaker:
 //    es: SPANISH
 //    ...
@@ -1934,7 +1984,6 @@ function markdeepToHTML(str, elementMode) {
     // Remove XML/HTML COMMENTS
     str = str.rp(/<!--\s[\s\S]+?\s-->/g, '');
 
-    console.log(str);
     str = replaceDiagrams(str);
     
     // Protect SVG blocks (including the ones we just inserted)
