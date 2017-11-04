@@ -1952,8 +1952,8 @@ function markdeepToHTML(str, elementMode) {
     // processing so that their code is protected from further
     // Markdown processing
     var stylizeFence = function (cssClass, symbol) {
-        var pattern = new RegExp('\n([ \t]*)' + symbol + '{3,}(.*)\n([\\s\\S]+?)\n\\1' + symbol + '{3,}\n([ \t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
-        str = str.rp(pattern, function(match, indent, lang, sourceCode, caption) {
+        var pattern = new RegExp('\\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S*)([ \\t]+.+)?\n([\\s\\S]+?)\n\\1' + symbol + '{3,}\\s*\n([ \t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
+        str = str.rp(pattern, function(match, indent, lang, cssSubClass, sourceCode, caption) {
             if (caption) {
                 caption = caption.trim();
                 caption = '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption.ss(1, caption.length - 1) + '</div>\n';
@@ -1964,13 +1964,38 @@ function markdeepToHTML(str, elementMode) {
             // Remove the block's own indentation from each line of sourceCode
             sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
 
-            var highlighted = hljs.highlightAuto(sourceCode, lang);
             var captionAbove = option('captionAbove', 'listing')
 
+            
+            var nextSourceCode, nextLang, nextCssSubClass;
+            var body = '';
+            do {
+                nextSourceCode = nextLang = nextCssSubClass = undefined;
+                sourceCode = sourceCode.rp(new RegExp('\\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S+)([ \\t]+.+)?\n([\\s\\S]*)'),
+                                           function (match, indent, lang, cssSubClass, everythingElse) {
+                                               nextLang = [lang];
+                                               nextCssSubClass = cssSubClass;
+                                               nextSourceCode = everythingElse;
+                                               return '';
+                                           });
+
+                // Highlight and append this block
+                var highlighted = hljs.highlightAuto(sourceCode, lang).value;
+                if (cssSubClass) {
+                    highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
+                }
+                body += highlighted;
+
+                // Advance the next nested block
+                sourceCode = nextSourceCode;
+                lang = nextLang;
+                cssSubClass = nextCssSubClass;
+            } while (sourceCode);
+            
             // Insert paragraph close/open tags, since browsers force them anyway around pre tags
             // We need the indent in case this is a code block inside a list that is indented.
             return '\n' + indent + '</p>' + (caption && captionAbove ? caption : '') +
-                protect(entag('pre', entag('code', highlighted.value), 'class="listing ' + cssClass + '"')) +
+                protect(entag('pre', entag('code', body), 'class="listing ' + cssClass + '"')) +
                 (caption && ! captionAbove ? caption : '') + '<p>\n';
         });
     };
