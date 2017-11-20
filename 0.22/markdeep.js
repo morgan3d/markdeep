@@ -147,7 +147,7 @@ var STYLESHEET = entag('style',
 
      // Justification tends to handle URLs and code blocks poorly
      // when inside of a bullet, so disable it there
-    'li{text-align:left};' +
+    '.md li{text-align:left};' +
 
      // Force captions on line listings down close and then center them
     '.md div.tilde{' +
@@ -236,17 +236,17 @@ var STYLESHEET = entag('style',
     // makes "//" look better.
     '.md a{font-family:Georgia,Palatino,\'Times New Roman\'}' +
 
-    'h1,.tocHeader,.nonumberh1{' +
+    '.m1 h1,.md .tocHeader,.md .nonumberh1{' +
     'border-bottom:3px solid;' +
     'font-size:20px;' +
     'font-weight:bold;' +
     '}' +
 
-    'h1,.nonumberh1{' +
+    '.md h1,.md .nonumberh1{' +
     'counter-reset: h2 h3 h4 h5 h6' +
     '}' +
 
-    'h2,.nonumberh2{' +
+    '.md h2,.md .nonumberh2{' +
     'counter-reset: h3 h4 h5 h6;' +
     'border-bottom:2px solid #999;' +
     'color:#555;' +
@@ -254,15 +254,15 @@ var STYLESHEET = entag('style',
     'font-size:18px;' +
     '}' +
 
-    'h3,h4,h5,h6,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
+    '.md h3,.md h4,.md h5,.md h6,.md .nonumberh3,.md .nonumberh4,.md .nonumberh5,.md .nonumberh6{' +
     'font-family:Helvetica,Arial,sans-serif;' +
     'color:#555;' +
     'font-size:16px;' +
     '}' +
 
-    'h3{counter-reset:h4 h5 h6}' +
-    'h4{counter-reset:h5 h6}' +
-    'h5{counter-reset:h6}' +
+    '.md h3{counter-reset:h4 h5 h6}' +
+    '.md h4{counter-reset:h5 h6}' +
+    '.md h5{counter-reset:h6}' +
 
     '.md div.table{' +
     'margin:16px 0 16px 0' +
@@ -908,7 +908,7 @@ function sectionNumberingStylesheet() {
     var s = '';
 
     for (var i = 1; i <= 6; ++i) {
-        s += 'h' + i + '::before {\ncontent:';
+        s += '.md h' + i + '::before {\ncontent:';
         for (var j = 1; j <= i; ++j) {
             s += 'counter(h' + j + ') "' + ((j < i) ? '.' : ' ') + '"';
         }
