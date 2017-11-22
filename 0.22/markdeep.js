@@ -3859,7 +3859,29 @@ if (! window.alreadyProcessedMarkdeep) {
             return STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
         }
     });
- 
+
+    var MATHJAX_CONFIG ='<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' +
+        '<span style="display:none">' +
+        // Custom definitions (NC == \newcommand)
+        '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^{\\large\\circ}}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand') +
+        '</span>\n'
+    var MATHJAX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+
+    function loadMathJax() {
+        // Dynamically load mathjax
+        var script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = MATHJAX_URL;
+        document.getElementsByTagName("head")[0].appendChild(script);
+    }
+
+    function needsMathJax(html) {
+        // Need MathJax if $$ ... $$, \( ... \), or \begin{
+        return option('detectMath') &&
+            ((html.search(/(?:\$\$[\s\S]+\$\$)|(?:\\begin{)/m) !== -1) || 
+             (html.search(/\\\(.*\\\)/) !== -1));
+    }
+    
     var mode = option('mode');
     switch (mode) {
     case 'script':
@@ -3887,16 +3909,20 @@ if (! window.alreadyProcessedMarkdeep) {
                 }
                 element.outerHTML = '<center class="md">' + diagramToSVG(removeLeadingSpace(src), '') + '</center>';
             });
-        
+
+        var anyNeedsMathJax = false;
         toArray(document.getElementsByClassName('markdeep')).concat(toArray(document.getElementsByTagName('markdeep'))).forEach(
             function (src) {
                 var dst = document.createElement('div');
-                dst.innerHTML = markdeepToHTML(removeLeadingSpace(unescapeHTMLEntities(src.innerHTML)), true);
+                var html = markdeepToHTML(removeLeadingSpace(unescapeHTMLEntities(src.innerHTML)), true);
+                anyNeedsMathJax = anyNeedsMathJax || needsMathJax(html);
+                dst.innerHTML = html;
                 src.parentNode.replaceChild(dst, src);
             });
 
-        // Include our stylesheet even if there are no tags, but not the BODY_STYLESHEET
-        document.head.innerHTML = window.markdeep.stylesheet() + document.head.innerHTML;
+        // Include our stylesheet even if there are no MARKDEEP tags, but do not include the BODY_STYLESHEET.
+        document.head.innerHTML = window.markdeep.stylesheet() + document.head.innerHTML + (anyNeedsMathJax ? MATHJAX_CONFIG : '');
+        loadMathJax();
         return;
     }
     
@@ -3949,18 +3975,10 @@ if (! window.alreadyProcessedMarkdeep) {
         var markdeepHTML = markdeepToHTML(source, false);
 
         // console.log(markdeepHTML); // Final processed source 
-        
-        // Need MathJax if $$ ... $$, \( ... \), or \begin{
-        var needMathJax = option('detectMath') &&
-            ((markdeepHTML.search(/(?:\$\$[\s\S]+\$\$)|(?:\\begin{)/m) !== -1) || 
-             (markdeepHTML.search(/\\\(.*\\\)/) !== -1));
-        
-        if (needMathJax) {
-            // Custom definitions (NC == \newcommand)
-            var MATHJAX_COMMANDS = '$$NC{\\n}{\\hat{n}}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^{\\large\\circ}}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand');
 
-            markdeepHTML = '<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' +
-                '<span style="display:none">' + MATHJAX_COMMANDS + '</span>\n' + markdeepHTML; 
+        var needMathJax = needsMathJax(markdeepHTML);
+        if (needMathJax) {
+            markdeepHTML = MATHJAX_CONFIG + markdeepHTML; 
         }
         
         markdeepHTML += MARKDEEP_FOOTER;
@@ -3978,20 +3996,13 @@ if (! window.alreadyProcessedMarkdeep) {
             var text = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8">' + head + document.head.innerHTML + markdeepHTML;
             if (needMathJax) {
                 // Dynamically load mathjax
-                text += '<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>';
+                text += '<script src="' + MATHJAX_URL +'"></script>';
             }
             document.body.innerHTML = entag('code', escapeHTMLEntities(text));
         } else {
             document.head.innerHTML = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8">' + head + document.head.innerHTML;
             document.body.innerHTML = markdeepHTML;
-            if (needMathJax) {
-                // Dynamically load mathjax
-                var script = document.createElement("script");
-                script.type = "text/javascript";
-
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
-                document.getElementsByTagName("head")[0].appendChild(script);
-            }
+            if (needMathJax) { loadMathJax(); }            
         }
 
         document.body.style.visibility = 'visible';
