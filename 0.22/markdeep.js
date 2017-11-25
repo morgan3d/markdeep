@@ -35,7 +35,6 @@ highlight.min.js 9.5.0 (C) 2016 Ivan Sagalaev https://highlightjs.org/*/
 
 var MARKDEEP_FOOTER = '<div class="markdeepFooter"><i>formatted by <a href="http://casual-effects.com/markdeep" style="color:#999">Markdeep&nbsp;0.22&nbsp;&nbsp;</a></i><div style="display:inline-block;font-size:13px;font-family:\'Times New Roman\',serif;vertical-align:middle;transform:translate(-3px,-1px)rotate(135deg);">&#x2712;</div></div>';
 
-
 // For minification. This is admittedly scary.
 var _ = String.prototype;
 _.rp = _.replace;
@@ -371,7 +370,97 @@ var STYLESHEET = entag('style',
 
     '.md .longTOC .level1{font-weight:600;display:block;padding-top:12px;margin:0 0 -20px}' +
      
-    '.md .shortTOC{text-align:center;font-weight:bold;margin-top:15px;font-size:14px}');
+    '.md .shortTOC{text-align:center;font-weight:bold;margin-top:15px;font-size:14px}' +
+
+    '.md .admonition{' +
+         'position:relative;' +
+         'margin:1em 0;' +
+         'padding:.4rem 1rem;' +
+         'border-radius:.2rem;' +
+         'border-left:2.5rem solid rgba(68,138,255,.4);' +
+         'background-color:rgba(68,138,255,.15);' +
+     '}' +
+
+     '.md .admonition-title{' +
+         'font-weight:bold;' +
+         'border-bottom:solid 1px rgba(68,138,255,.4);' +
+         'padding-bottom:4px;' +
+         'margin-bottom:4px;' +
+         'margin-left: -1rem;' +
+         'padding-left:1rem;' +
+         'margin-right:-1rem;' +
+         'border-color:rgba(68,138,255,.4)' +
+     '}' +
+
+    '.md .admonition.tip{' +
+       'border-left:2.5rem solid rgba(50,255,90,.4);' +
+       'background-color:rgba(50,255,90,.15)' +
+                       '}' +
+                       
+     '.md .admonition.tip::before{' +
+       'content:"\\24d8";' +
+    'font-weight:bold;' +
+    'font-size:150%;' +
+    'position:relative;' +
+    'top:4px;' +
+    'color:black;' +
+    'left:-2.95rem;' +
+    'display:block;' +
+    'width:0;' +
+    'height:0' +
+'}' +
+
+'.md .admonition.tip>.admonition-title{' +
+    'border-color:rgba(50,255,90,.4)' +
+'}' +
+
+     '.md .admonition.warn,.md .admonition.warning{' +
+       'border-left:2.5rem solid rgba(255,145,0,.4);' +
+       'background-color:rgba(255,145,0,.15)' +
+     '}' +
+
+     '.md .admonition.warn::before,.md .admonition.warning::before{' +
+       'content:"\\26A0";' +
+    'font-weight:bold;' +
+    'font-size:150%;' +
+    'position:relative;' +
+    'top:1px;' +
+    'color:black;' +
+    'left:-2.95rem;' +
+    'display:block;' +
+    'width:0;' +
+    'height:0' +
+'}' +
+
+'.md .admonition.warn>.admonition-title{' +
+    'border-color:rgba(255,145,0,.4)' +
+'}' +
+
+'.md .admonition.error{' +
+    'border-left: 2.5rem solid rgba(255,23,68,.4);'+    
+    'background-color:rgba(255,23,68,.15)' +
+'}' +
+
+'.md .admonition.error>.admonition-title{' +
+    'border-color:rgba(255,23,68,.4)'+
+'}' +
+
+'.md .admonition.error::before{' + 
+    'content: "\\2612";' +
+    'font-family:"Arial";' +
+    'font-weight:600;' +
+    'font-size:200%;' +
+    'position:relative;' +
+    'color:black;' +
+    'top:-2px;' +
+    'left:-3rem;' +
+    'display:block;' +
+    'width:0;' +
+    'height:0' +
+                       '}' +
+                       
+                       '.md .admonition p:last-child{margin-bottom:0}' 
+);
 
 var MARKDEEP_LINE = '<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>';
 
@@ -2107,6 +2196,13 @@ function markdeepToHTML(str, elementMode) {
 
     // PAGE BREAK or HORIZONTAL RULE: +++++
     str = str.rp(/\n[ \t]*\+{5,}[ \t]*\n/g, '\n<hr ' + protect('class="pagebreak"') + '/>\n');
+
+    // ADMONITION: !!! (class) (title)\n body
+    str = str.rp(/^!!![ \t]*([^\s"'><&\:]*)\:?(.*)\n([ \t]{3,}.*\s*\n)*/gm, function (match, cssClass, title) {
+        // Have to extract the body by splitting match because the regex doesn't capture the body correctly in the multi-line case
+        match = match.trim();
+        return '\n\n' + entag('div', ((title ? entag('div', title, protect('class="admonition-title"')) + '\n' : '') + match.ss(match.indexOf('\n'))).trim(), protect('class="admonition ' + cssClass.toLowerCase().trim() + '"')) + '\n\n';
+    });
 
     // FANCY QUOTE in a blockquote:
     // > " .... "
