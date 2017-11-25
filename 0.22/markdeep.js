@@ -395,14 +395,14 @@ var STYLESHEET = entag('style',
     '.md .admonition.tip{' +
        'border-left:2.5rem solid rgba(50,255,90,.4);' +
        'background-color:rgba(50,255,90,.15)' +
-                       '}' +
+    '}' +
                        
-     '.md .admonition.tip::before{' +
+    '.md .admonition.tip::before{' +
        'content:"\\24d8";' +
-    'font-weight:bold;' +
+      'font-weight:bold;' +
     'font-size:150%;' +
     'position:relative;' +
-    'top:4px;' +
+    'top:3px;' +
     'color:black;' +
     'left:-2.95rem;' +
     'display:block;' +
@@ -424,7 +424,7 @@ var STYLESHEET = entag('style',
     'font-weight:bold;' +
     'font-size:150%;' +
     'position:relative;' +
-    'top:1px;' +
+    'top:3px;' +
     'color:black;' +
     'left:-2.95rem;' +
     'display:block;' +
