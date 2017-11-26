@@ -45,6 +45,10 @@ body {
     text-align: inherit;
 }
 
+.md div.subtitle {
+    text-align: inherit;
+}
+
 /* faint border below headings */
 .md h1, .md h2, .md h3, .md h4,
 .md .nonumberh1, .md .nonumberh2, .md .nonumberh3, .md .nonumberh4 {

@@ -424,7 +424,7 @@ var STYLESHEET = entag('style',
        'font-weight:bold;' +
        'font-size:150%;' +
        'position:relative;' +
-       'top:3px;' +
+       'top:2px;' +
        'color:rgba(128,73,0,.8);' +
        'left:-2.95rem;' +
        'display:block;' +
