@@ -117,7 +117,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.md .longTOC center, .md .mediumTOC center, .md .shortTOC center {
+.md .longTOC center, .md .mediumTOC center, .md .shortTOC center, .md .tocHeader {
     text-align: left;
 }
 .md .longTOC b, .md .mediumTOC b, .md .shortTOC b {
