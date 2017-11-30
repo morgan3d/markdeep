@@ -204,7 +204,7 @@ var STYLESHEET = entag('style',
     'clear:both' +
     '}' +
 
-    'h1,h2,h3,h4,h5,h6,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
+    '.md h1,.md h2,.md h3,.md h4,.md h5,.md h6,.md .nonumberh1,.md .nonumberh2,.md .nonumberh3,.md .nonumberh4,.md .nonumberh5,.md .nonumberh6{' +
      'page-break-after:avoid;break-after:avoid' +
     '}'+
 
@@ -235,7 +235,7 @@ var STYLESHEET = entag('style',
     // makes "//" look better.
     '.md a{font-family:Georgia,Palatino,\'Times New Roman\'}' +
 
-    '.m1 h1,.md .tocHeader,.md .nonumberh1{' +
+    '.md h1,.md .tocHeader,.md .nonumberh1{' +
     'border-bottom:3px solid;' +
     'font-size:20px;' +
     'font-weight:bold;' +
