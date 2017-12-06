@@ -13,10 +13,16 @@ body {
 /* if screen is wide enough, put table of contents on the right side */
 @media screen and (min-width: 64em) {
     .md .longTOC, .md .mediumTOC, .md .shortTOC {
-	position: fixed;
         max-width: 20em;
 	left: 54em;
         display:block;
+        position: fixed;
+        top:0;
+        bottom:0;
+        overflow-y:scroll;
+        margin-top:0;
+        margin-bottom:0;
+        padding-top:1em;
     }
 }
 
@@ -98,15 +104,18 @@ body {
     padding: .4rem;
     border-left: .1rem solid #3f51b5;
 }
+
 .md .tocHeader {
     margin: 0;
     padding: 0;
     border: none;
     font-size: inherit;
 }
+
 .md .tocNumber {
     display: none;
 }
+
 .md .longTOC .level1, .md .mediumTOC .level1, .md .shortTOC .level1 {
     font-weight: inherit;
     padding: 0;
@@ -117,12 +126,19 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
 .md .longTOC center, .md .mediumTOC center, .md .shortTOC center, .md .tocHeader {
     text-align: left;
 }
+
 .md .longTOC b, .md .mediumTOC b, .md .shortTOC b {
     font-weight: 400;
 }
+
+.md .longTOC center b, .md .mediumTOC center b, .md .shortTOC center b {
+    font-weight: bold;
+}
+
 .md .longTOC a, .md .mediumTOC a, .md .shortTOC a {
     color: black;
 }
