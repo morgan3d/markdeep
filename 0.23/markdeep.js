@@ -511,7 +511,10 @@ var FRENCH = {
         sep: 'sept',
         oct: 'oct',
         nov: 'nov',
-        dec: 'déc'
+        dec: 'déc',
+
+        '&ldquo;': '&laquo;&nbsp;',
+        '&rtquo;': '&nbsp;&raquo;'
     }
 };
 
@@ -561,7 +564,10 @@ var BULGARIAN = {
         sep: 'септ',
         oct: 'окт',
         nov: 'ноем',
-        dec: 'дек'
+        dec: 'дек',
+
+        '&ldquo;': '&bdquo;',
+        '&rdquo;': '&rdquo;'
     }
 };
 
@@ -611,7 +617,10 @@ var RUSSIAN = {
         sep: 'сент',
         oct: 'окт',
         nov: 'ноябрь',
-        dec: 'дек'
+        dec: 'дек',
+        
+        '&ldquo;': '«',
+        '&rdquo;': '»'
     }
 };
 
@@ -660,7 +669,10 @@ var POLISH = {
         sep: 'wrz',
         oct: 'paź',
         nov: 'lis',
-        dec: 'gru'
+        dec: 'gru',
+        
+        '&ldquo;': '&bdquo;',
+        '&rdquo;': '&rdquo;'
     }
 };
 
@@ -710,7 +722,10 @@ var HUNGARIAN = {
         sep: 'szept',
         oct: 'okt',
         nov: 'nov',
-        dec: 'dec'
+        dec: 'dec',
+
+        '&ldquo;': '&bdquo;',
+        '&rdquo;': '&rdquo;'
     }
 };
 
@@ -759,7 +774,10 @@ var JAPANESE = {
         sep: '9月',
         oct: '10月',
         nov: '11月',
-        dec: '12月'
+        dec: '12月',
+
+        '&ldquo;': '「',
+        '&rdquo;': '」'
     }
 };    
     
@@ -809,7 +827,10 @@ var GERMAN = {
         sep: 'Sep',
         oct: 'Okt',
         nov: 'Nov',
-        dec: 'Dez'
+        dec: 'Dez',
+        
+        '&ldquo;': '&bdquo;',
+        '&rdquo;': '&ldquo;'
     }
 };
 
@@ -857,7 +878,10 @@ var SWEDISH = {
         sep: 'sep',
         oct: 'okt',
         nov: 'nov',
-        dec: 'dec'
+        dec: 'dec',
+        
+        '&ldquo;': '&rdquo;',
+        '&rdquo;': '&rdquo;'
     }
 };
    
@@ -1435,6 +1459,7 @@ function replaceScheduleLists(str, protect) {
     var EVENTS = /(?:[ \t]*\n)?((?:[ \t]+.+\n(?:[ \t]*\n){0,3})*)/.source;
     var ENTRY = DATE_AND_TITLE + EVENTS;
 
+    var BLANK_LINE = '\n[ \t]*\n';
     var ENTRY_REGEXP = new RegExp(ENTRY, 'gm');
 
     var rowAttribs = protect('valign="top"');
@@ -1452,11 +1477,9 @@ function replaceScheduleLists(str, protect) {
 
     try {
         var scheduleNumber = 0;
-        str = 
-            str.rp(new RegExp('(' + ENTRY + '){2,}', 'gm'),
-                   function (schedule) {
+        str = str.rp(new RegExp(BLANK_LINE + '(' + ENTRY + '){2,}', 'gm'),
+                     function (schedule) {
                        ++scheduleNumber;
-
                        // Each entry has the form {date:date, title:string, text:string}
                        var entryArray = [];
 
@@ -1677,11 +1700,11 @@ function replaceScheduleLists(str, protect) {
                            schedule += entry.text;
                        });
 
-                       return calendar + entag('table', schedule, protect('class="schedule"')) + '\n\n';
-                   });
+                       return '\n\n' + calendar + entag('table', schedule, protect('class="schedule"')) + '\n\n';
+                     });
     } catch (ignore) {
-        // Maybe this wasn't a schedule after all, since we couldn't parse a date
-        console.log(ignore + ' in a Markdeep schedule list');
+        // Maybe this wasn't a schedule after all, since we couldn't parse a date. Don't alarm
+        // the user, though
     }
 
     return str;
@@ -2444,10 +2467,10 @@ function markdeepToHTML(str, elementMode) {
     // STRIKETHROUGH: ~~text~~
     str = str.rp(/\~\~([^~].*?)\~\~/g, entag('del', '$1'));
 
-    // SMART DOUBLE QUOTES: "a -> &ldquo;   z"  -> &rdquo;
+    // SMART DOUBLE QUOTES: "a -> localized &ldquo;   z"  -> localized &rdquo;
     // Allow situations such as "foo"==>"bar" and foo:"bar", but not 3' 9"
-    str = str.rp(/(^|[ \t->])(")(?=\w)/gm, '$1&ldquo;');
-    str = str.rp(/([A-Za-z\.,:;\?!=<])(")(?=$|\W)/gm, '$1&rdquo;');
+    str = str.rp(/(^|[ \t->])(")(?=\w)/gm, '$1' + keyword('&ldquo;'));
+    str = str.rp(/([A-Za-z\.,:;\?!=<])(")(?=$|\W)/gm, '$1' + keyword('&rdquo;'));
     
     // ARROWS:
     str = str.rp(/(\s|^)<==(\s)/g, '$1\u21D0$2');
