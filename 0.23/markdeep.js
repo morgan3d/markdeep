@@ -2299,7 +2299,7 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // E-MAIL ADDRESS: <foo@bar.baz> or foo@bar.baz
-    str = str.rp(/(?:<|(?!<)\b)(\S+@(\S+\.)+?\S{3,}?)(?:$|>|(?=<)|(?=\s)(?!>))/g, function (match, addr) {
+    str = str.rp(/(?:<|(?!<)\b)(\S+@(\S+\.)+?\S{2,}?)(?:$|>|(?=<)|(?=\s)(?!>))/g, function (match, addr) {
         return '<a ' + protect('href="mailto:' + addr + '"') + '>' + addr + '</a>';
     });
 
