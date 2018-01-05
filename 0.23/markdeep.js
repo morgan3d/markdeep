@@ -435,7 +435,7 @@ var STYLESHEET = entag('style',
        'height:0' +
      '}' +
 
-     '.md .admonition.warn>.admonition-title{' +  
+     '.md .admonition.warn>.admonition-title,.md .admonition.warning>.admonition-title{' +
       'border-color:rgba(255,145,0,.4)' +
      '}' +
 
