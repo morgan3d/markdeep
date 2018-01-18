@@ -7,11 +7,13 @@
 
 @import url('https://fonts.googleapis.com/css?family=Teko:700');
 
+@media screen {
 body {
   background: #000;
   color: #ccc;
   font-family: Arial, Helvetica, "sans serif";
   text-align: left;
+}
 }
 
 .md div.title {
@@ -40,9 +42,14 @@ body {
   font-family: Teko, Arial;
   font-size: 150%;
   padding-bottom: 0px;
-  background: -webkit-linear-gradient(#f9deae, #a87215);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+}
+
+@media screen {
+  .md h1, .md h2, .md h3, .md h4, .md h5, .md h6, .md div.nonumberh1, .md div.nonumberh2,.md div.nonumberh3, .md div.nonumberh4, .md div.nonumberh5, .md div.nonumberh6 {
+    background: -webkit-linear-gradient(#f9deae, #a87215);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 .md svg.diagram {
@@ -68,4 +75,45 @@ body {
 
 div.markdeepFooter, div.markdeepFooter a {
   color: #bc9249 !important;
+}
+
+b, em.asterisk {
+    font-style: normal; font-weight: bold;
+}
+
+@media screen {
+    b, em.asterisk {
+        color: #CBA;
+    }
+}
+
+a em.asterisk {
+    color: #6dafff;
+}
+
+.md h2, .md .nonumberh2 {
+    font-size: 125%
+}
+.md h3, .md h4, .md h5, .md h6, .md div.nonumberh3, .md div.nonumberh4, .md div.nonumberh5, .md div.nonumberh6 {
+    font-size: 115%
+}
+
+@media screen {
+    .md table.table td {
+        border: 1px solid #513302;
+    }
+    
+    .md table.table th {
+        background: #af730c;
+        background: -webkit-linear-gradient(#d3a658, #af730c);
+        border: none;
+    }
+    
+    .md table.table th:last-child {
+        border-right: 1px solid #845509;
+    }
+    
+    .md table.table tr:nth-child(even) {
+        background-color: #231601;
+    }
 }
