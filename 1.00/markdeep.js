@@ -572,6 +572,59 @@ var BULGARIAN = {
 };
 
 
+// Translated by Tiago Antão
+var PORTUGUESE = {
+    keyword: {
+        table:     'tabela',
+        figure:    'figura',
+        listing:   'lista',
+        diagram:   'diagrama',
+        contents:  'conteúdo',
+
+        sec:       'sec',
+        section:   'secção',
+        subsection: 'subsecção',
+
+        Monday:    'Segunda-feira',
+        Tuesday:   'Terça-feira',
+        Wednesday: 'Quarta-feira',
+        Thursday:  'Quinta-feira',
+        Friday:    'Sexta-feira',
+        Saturday:  'Sábado',
+        Sunday:    'Domingo',
+
+        January:   'Janeiro',
+        February:  'Fevereiro',
+        March:     'Março',
+        April:     'Abril',
+        May:       'Maio',
+        June:      'Junho', 
+        July:      'Julho',
+        August:    'Agosto', 
+        September: 'Setembro', 
+        October:   'Outubro', 
+        November:  'Novembro',
+        December:  'Dezembro',
+
+        jan: 'jan',
+        feb: 'fev',
+        mar: 'mar',
+        apr: 'abr',
+        may: 'mai',
+        jun: 'jun',
+        jul: 'jul',
+        aug: 'ago',
+        sep: 'set',
+        oct: 'oct',
+        nov: 'nov',
+        dec: 'dez',
+
+        '&ldquo;': '&laquo;',
+        '&rtquo;': '&raquo;'
+    }
+};
+
+    
 var RUSSIAN = {
     keyword: {
         table:     'таблица',
@@ -910,6 +963,7 @@ var LANG_TABLE = {
     de: GERMAN,
     hu: HUNGARIAN,
     sv: SWEDISH,
+    pt: PORTUGUESE,
     ja: JAPANESE
 // Awaiting localization by a native speaker:
 //    es: SPANISH
