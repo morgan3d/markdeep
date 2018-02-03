@@ -2191,9 +2191,9 @@ function markdeepToHTML(str, elementMode) {
 
     // Protect the very special case of img tags with newlines and
     // breaks in them AND mismatched angle brackets. This happens for
-    // gravizo graphs.
+    // Gravizo graphs.
     str = str.rp(/<img\s+src=(["'])[\s\S]*?\1\s*>/gi, function (match, quote) {
-        // Strip the "<img " and ">", and then protect:
+        // Strip the "<img " and ">", and then protect the interior:
         return "<img " + protect(match.ss(5, match.length - 1)) + ">";
     });
 
@@ -2404,8 +2404,8 @@ function markdeepToHTML(str, elementMode) {
     // a really special case needed to handle the newlines and potential
     // nested parentheses. Use the pattern from http://blog.stevenlevithan.com/archives/regex-recursion
     // (could be extended to multiple nested parens if needed)
-    str = str.rp(/\(http:\/\/g.gravizo.com\/g\?((?:[^\(\)]|\([^\(\)]*\))*)\)/gi, function(match, url) {
-        return "(http://g.gravizo.com/g?" + encodeURIComponent(url) + ")";
+    str = str.rp(/\(http:\/\/g.gravizo.com\/(.*g)\?((?:[^\(\)]|\([^\(\)]*\))*)\)/gi, function(match, protocol, url) {
+        return "(http://g.gravizo.com/" + protocol + "?" + encodeURIComponent(url) + ")";
     });
 
     // HYPERLINKS: [text](url attribs)
