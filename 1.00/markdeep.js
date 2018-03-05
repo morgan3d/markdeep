@@ -108,6 +108,9 @@ var STYLESHEET = entag('style',
     'body{' +
     'counter-reset: h1 h2 h3 h4 h5 h6 paragraph' +
     '}' +
+
+    // Avoid header/footer in print to PDF. See https://productforums.google.com/forum/#!topic/chrome/LBMUDtGqr-0
+    '@page{margin:0;size:auto}' +
                        
     '.md code,pre{' +
     'font-family:' + codeFontStack + ';' +
