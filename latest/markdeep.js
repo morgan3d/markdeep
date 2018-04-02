@@ -627,7 +627,57 @@ var PORTUGUESE = {
     }
 };
 
-    
+var ITALIAN = {
+    keyword: {
+        table:     'tabella',
+        figure:    'figura',
+        listing:   'lista',
+        diagram:   'diagramma',
+        contents:  'indice',
+
+        sec:       'sez',
+        section:   'sezione',
+        subsection: 'paragrafo',
+
+        Monday:    'lunedì',
+        Tuesday:   'martedì',
+        Wednesday: 'mercoledì',
+        Thursday:  'giovedì',
+        Friday:    'venerdì',
+        Saturday:  'sabato',
+        Sunday:    'domenica',
+
+        January:   'Gennaio',
+        February:  'Febbraio',
+        March:     'Marzo',
+        April:     'Aprile',
+        May:       'Maggio',
+        June:      'Giugno', 
+        July:      'Luglio',
+        August:    'Agosto', 
+        September: 'Settembre', 
+        October:   'Ottobre', 
+        November:  'Novembre',
+        December:  'Dicembre',
+
+        jan: 'gen',
+        feb: 'feb',
+        mar: 'mar',
+        apr: 'apr',
+        may: 'mag',
+        jun: 'giu',
+        jul: 'lug',
+        aug: 'ago',
+        sep: 'set',
+        oct: 'ott',
+        nov: 'nov',
+        dec: 'dic',
+
+        '&ldquo;': '&ldquo;',
+        '&rtquo;': '&rdquo;'
+    }
+};
+
 var RUSSIAN = {
     keyword: {
         table:     'таблица',
@@ -967,7 +1017,8 @@ var LANG_TABLE = {
     hu: HUNGARIAN,
     sv: SWEDISH,
     pt: PORTUGUESE,
-    ja: JAPANESE
+    ja: JAPANESE,
+    it: ITALIAN
 // Awaiting localization by a native speaker:
 //    es: SPANISH
 //    ...
@@ -2762,6 +2813,18 @@ function markdeepToHTML(str, elementMode) {
     return '<span class="md">' + entag('p', str) + '</span>';
 }
 
+/** Workaround for IE11 */
+function strToArray(s) {
+    if (Array.from) {
+        return Array.from(s);
+    } else {
+        var a = [];
+        for (var i = 0; i < s.length; ++i) {
+            a[i] = s[i];
+        }
+        return a;
+    }
+}
 
 /**
    Adds whitespace at the end of each line of str, so that all lines have equal length in
@@ -2772,7 +2835,7 @@ function equalizeLineLengths(str) {
     var lineArray = str.split('\n');
     var longest = 0;
     lineArray.forEach(function(line) {
-        longest = max(longest, Array.from(line).length);
+        longest = max(longest, strToArray(line).length);
     });
 
     // Worst case spaces needed for equalizing lengths
@@ -2783,7 +2846,7 @@ function equalizeLineLengths(str) {
     lineArray.forEach(function(line) {
         // Append the needed number of spaces onto each line, and
         // reconstruct the output with newlines
-        result += line + spaces.ss(Array.from(line).length) + '\n';
+        result += line + spaces.ss(strToArray(line).length) + '\n';
     });
 
     return result;
@@ -2940,7 +3003,7 @@ function diagramToSVG(diagramString, alignmentHint) {
         // Convert the string to an array to better handle greater-than 16-bit unicode
         // characters, which JavaScript does not process correctly with indices. Do this after
         // the above string processing.
-        str = Array.from(str);
+        str = strToArray(str);
         grid.width = str.indexOf('\n');
 
         /** Mark this location. Takes a Vec2 or (x, y) */
