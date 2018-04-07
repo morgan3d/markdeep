@@ -2709,15 +2709,15 @@ function markdeepToHTML(str, elementMode) {
                maybeShowLabel(_ref);
     });
 
-    // FIGURE, TABLE, and LISTING references:
+    // FIGURE, TABLE, DIAGRAM, and LISTING references:
     // (must come after figure/table/listing processing, obviously)
-    str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst\.)\s+\[([^\s\]]+)\]/gi, function (match, _type, _ref) {
+    str = str.rp(RegExp('\\b(fig\\.|tbl\\.|lst\\.|' + keyword('figure') + '|' + keyword('table') + '|' + keyword('listing') + '|' + keyword('diagram') + ')\\s+\\[([^\\s\\]]+)\\]', 'gi'), function (match, _type, _ref) {
         // Fix abbreviations
         var type = _type.toLowerCase();
         switch (type) {
-        case 'fig.': type = 'figure'; break;
-        case 'tbl.': type = 'table'; break;
-        case 'lst.': type = 'listing'; break;
+        case 'fig.': type = keyword('figure').toLowerCase(); break;
+        case 'tbl.': type = keyword('table').toLowerCase(); break;
+        case 'lst.': type = keyword('listing').toLowerCase(); break;
         }
 
         // Clean up the reference
