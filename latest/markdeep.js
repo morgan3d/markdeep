@@ -521,6 +521,59 @@ var FRENCH = {
     }
 };
 
+// Translated by "Warmist"
+var LITHUANIAN = {
+    keyword: {
+        table:     'lentelė',
+        figure:    'paveikslėlis',
+        listing:   'sąrašas',
+        diagram:   'diagrama',
+        contents:  'Turinys',
+
+        sec:       'sk',
+        section:   'skyrius',
+        subsection: 'poskyris',
+
+        Monday:    'pirmadienis',
+        Tuesday:   'antradienis',
+        Wednesday: 'trečiadienis',
+        Thursday:  'ketvirtadienis',
+        Friday:    'penktadienis',
+        Saturday:  'šeštadienis',
+        Sunday:    'sekmadienis',
+
+        January:   'Sausis',
+        February:  'Vasaris',
+        March:     'Kovas',
+        April:     'Balandis',
+        May:       'Gegužė',
+        June:      'Birželis',
+        July:      'Liepa',
+        August:    'Rugpjūtis',
+        September: 'Rugsėjis',
+        October:   'Spalis',
+        November:  'Lapkritis',
+        December:  'Gruodis',
+
+        jan: 'saus',
+        feb: 'vas',
+        mar: 'kov',
+        apr: 'bal',
+        may: 'geg',
+        jun: 'birž',
+        jul: 'liep',
+        aug: 'rugpj',
+        sep: 'rugs',
+        oct: 'spal',
+        nov: 'lapkr',
+        dec: 'gruod',
+
+        '&ldquo;': '&bdquo;',
+        '&rtquo;': '&ldquo;'
+    }
+};
+
+    
 // Translated by Zdravko Velinov
 var BULGARIAN = {
     keyword: {
@@ -1018,7 +1071,8 @@ var LANG_TABLE = {
     sv: SWEDISH,
     pt: PORTUGUESE,
     ja: JAPANESE,
-    it: ITALIAN
+    it: ITALIAN,
+    lt: LITHUANIAN
 // Awaiting localization by a native speaker:
 //    es: SPANISH
 //    ...
