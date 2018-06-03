@@ -680,6 +680,61 @@ var PORTUGUESE = {
     }
 };
 
+
+// Translated by Jan Toušek
+var CZECH = {
+    keyword: {
+        table:     'Tabulka',
+        figure:    'Obrázek',
+        listing:   'Seznam',
+        diagram:   'Diagram',
+
+        contents:  'Obsah',
+
+        sec:       'kap.',  // Abbreviation for section
+        section:   'kapitola',
+        subsection:'podkapitola',
+
+        Monday:    'pondělí',
+        Tuesday:   'úterý',
+        Wednesday: 'středa',
+        Thursday:  'čtvrtek',
+        Friday:    'pátek',
+        Saturday:  'sobota',
+        Sunday:    'neděle',
+
+        January:   'leden',
+        February:  'únor',
+        March:     'březen',
+        April:     'duben',
+        May:       'květen',
+        June:      'červen',
+        July:      'červenec',
+        August:    'srpen',
+        September: 'září',
+        October:   'říjen',
+        November:  'listopad',
+        December:  'prosinec',
+
+        jan: 'led',
+        feb: 'úno',
+        mar: 'bře',
+        apr: 'dub',
+        may: 'kvě',
+        jun: 'čvn',
+        jul: 'čvc',
+        aug: 'srp',
+        sep: 'zář',
+        oct: 'říj',
+        nov: 'lis',
+        dec: 'pro',
+
+        '&ldquo;': '&bdquo;',
+        '&rdquo;': '&ldquo;'
+    }
+};
+
+    
 var ITALIAN = {
     keyword: {
         table:     'tabella',
@@ -1072,7 +1127,8 @@ var LANG_TABLE = {
     pt: PORTUGUESE,
     ja: JAPANESE,
     it: ITALIAN,
-    lt: LITHUANIAN
+    lt: LITHUANIAN,
+    cz: CZECH
 // Awaiting localization by a native speaker:
 //    es: SPANISH
 //    ...
