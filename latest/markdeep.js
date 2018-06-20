@@ -2752,7 +2752,7 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/<p>[\s\n]*<\/p>/gi, '');
     
     // Reference links
-    str = str.rp(/\[(.+?)\]\[(.*?)\]/g, function (match, text, symbolicName) {
+    str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\[(.*?)\]/g, function (match, pre, text, symbolicName) {
         // Empty symbolic name is replaced by the text
         if (! symbolicName.trim()) {
             symbolicName = text;
@@ -2765,7 +2765,7 @@ function markdeepToHTML(str, elementMode) {
             return '?';
         } else {
             t.used = true;
-            return '<a ' + protect('href="' + t.link + '"') + '>' + text + '</a>';
+            return pre + '<a ' + protect('href="' + t.link + '"') + '>' + text + '</a>';
         }
     });
 
