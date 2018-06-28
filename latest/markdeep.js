@@ -464,7 +464,26 @@ var STYLESHEET = entag('style',
     'height:0' +
    '}' +
                        
-   '.md .admonition p:last-child{margin-bottom:0}' 
+   '.md .admonition p:last-child{margin-bottom:0}'  +
+
+   '.md li.checked,.md li.unchecked{'+
+    'list-style:none;'+
+    'overflow:visible;'+
+    'text-indent:-1.2em'+
+                       '}' +
+                       
+   '.md li.checked:before,.md li.unchecked:before{' +
+   'content:"\\2611";' +
+   'display:block;'+
+   'float:left;' +
+   'width:1em;' +
+   'font-size:120%'+
+                       '}'+
+                       
+   '.md li.unchecked:before{'+
+   'content:"\\2610"' +
+   '}'
+
 );
 
 var MARKDEEP_LINE = '<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>';
@@ -1544,20 +1563,28 @@ function replaceTables(s, protect) {
 
 
 function replaceLists(s, protect) {
+    // Identify task list bullets in a few patterns and reformat them to a standard format for
+    // easier processing.
+    s = s.rp(/^(\s*)(?:-\s*)?(?:\[ \]|\u2610)(\s+)/mg, '$1\u2610$2');
+    s = s.rp(/^(\s*)(?:-\s*)?(?:\[x\]|\u2611)(\s+)/mg, '$1\u2611$2');
+        
     // Identify list blocks:
-    // Blank line or line ending in colon, line that starts with #., *, +, or -,
+    // Blank line or line ending in colon, line that starts with #., *, +, -, ☑, or ☐
     // and then any number of lines until another blank line
     var BLANK_LINES = /\n\s*\n/.source;
 
     // Preceding line ending in a colon
+
+    // \u2610 is the ballot box (unchecked box) character
     var PREFIX     = /[:,]\s*\n/.source;
     var LIST_BLOCK_REGEXP = 
         new RegExp('(' + PREFIX + '|' + BLANK_LINES + '|<p>\s*\n|<br/>\s*\n?)' +
-                   /((?:[ \t]*(?:\d+\.|-|\+|\*)(?:[ \t]+.+\n(?:[ \t]*\n)?)+)+)/.source, 'gm');
+                   /((?:[ \t]*(?:\d+\.|-|\+|\*|\u2611|\u2610)(?:[ \t]+.+\n(?:[ \t]*\n)?)+)+)/.source, 'gm');
 
     var keepGoing = true;
 
-    var ATTRIBS = {'+': protect('class="plus"'), '-': protect('class="minus"'), '*': protect('class="asterisk"')};
+    var ATTRIBS = {'+': protect('class="plus"'), '-': protect('class="minus"'), '*': protect('class="asterisk"'),
+                   '\u2611': protect('class="checked"'), '\u2610': protect('class="unchecked"')};
     var NUMBER_ATTRIBS = protect('class="number"');
 
     // Sometimes the list regexp grabs too much because subsequent lines are indented *less*
@@ -1627,7 +1654,7 @@ function replaceLists(s, protect) {
                     
                     if (current) {
                         // Add the list item
-                        result += '\n' + current.indentChars + '<li ' + attribs + '>' + trimmed.rp(/^(\d+\.|-|\+|\*) /, '');
+                        result += '\n' + current.indentChars + '<li ' + attribs + '>' + trimmed.rp(/^(\d+\.|-|\+|\*|\u2611|\u2610) /, '');
                     } else {
                         // Just reached something that is *less* indented than the root--
                         // copy forward and then re-process that list
