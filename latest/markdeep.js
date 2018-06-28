@@ -1284,7 +1284,7 @@ function nodeToMarkdeepSource(node, leaveEscapes) {
     // will try to close by inserting the matching close tags at the end of the
     // document. Remove anything that looks like that and comes *after*
     // the first fallback style.
-    source = source.rp(/<style class="fallback">[\s\S]*<\/style>/gi, '');
+    //source = source.rp(/<style class="fallback">[\s\S]*?<\/style>/gi, '');
     
     // Remove artificially inserted close tags from URLs and
     source = source.rp(/<\/https?:.*>|<\/ftp:.*>|<\/[^ "\t\n>]+@[^ "\t\n>]+>/gi, '');
@@ -2915,6 +2915,7 @@ function markdeepToHTML(str, elementMode) {
     // Remove any bogus leading close-paragraph tag inserted by our extra newlines
     str = str.rp(/^\s*<\/p>/, '');
 
+
     // If not in element mode and not an INSERT child, maybe add a TOC
     if (! elementMode) {// && ! myURLParse[2]) {
         var temp = insertTableOfContents(str, protect);
@@ -4352,7 +4353,6 @@ if (! window.alreadyProcessedMarkdeep) {
     var markdeepProcessor = function() {
         // Recompute the source text from the current version of the document
         var source = nodeToMarkdeepSource(document.body);
-
         var markdeepHTML = markdeepToHTML(source, false);
 
         // console.log(markdeepHTML); // Final processed source 
@@ -4433,7 +4433,7 @@ if (! window.alreadyProcessedMarkdeep) {
 
             --numIncludeChildrenLeft;
 
-            // console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
+            //console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
             
             if (numIncludeChildrenLeft <= 0) {
                 if (IAmAChild) {
@@ -4457,7 +4457,7 @@ if (! window.alreadyProcessedMarkdeep) {
         }
 
         ++numIncludeChildrenLeft;
-        // console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
+        //console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
         
         // Replace this tag with a frame that loads the document.  Once loaded, it will
         // send a message with its contents for use as a replacement.
