@@ -2820,10 +2820,13 @@ function markdeepToHTML(str, elementMode) {
         allHeaders.forEach(function (header) {
             header = removeHTMLTags(header.ss(4, header.length - 5)).trim();
             var link = '<a ' + protect('href="#' + mangle(header) + '"') + '>';
+
+            var sectionExp = '(' + keyword('section') + '|' + keyword('subsection') + ')';
+            var headerExp = '(\\b' + escapeRegExpCharacters(header) + ')';
+            
             // Search for links to this section
-            str = str.rp(RegExp("(\\b" + escapeRegExpCharacters(header) + ")(?=\\s" + keyword('subsection') + "|\\s" + 
-                                keyword('section') + ")", 'gi'),
-                         link + "$1</a>"); 
+            str = str.rp(RegExp(headerExp + '\\s+' + sectionExp, 'gi'), link + "$1</a> $2");
+            str = str.rp(RegExp(sectionExp + '\\s+' + headerExp, 'gi'), '$1 ' + link + "$2</a>");
         });
     }
 
