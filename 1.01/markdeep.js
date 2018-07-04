@@ -2544,7 +2544,8 @@ function markdeepToHTML(str, elementMode) {
     // (process before reference links to avoid ambiguity on the captions)
     str = replaceTables(str, protect);
 
-    // REFERENCE-LINKS: [foo][] or [bar][foo] + [foo]: http://foo.com
+    // REFERENCE-LINK TABLE: [foo]: http://foo.com
+    // (must come before reference images and reference links in processing)
     str = str.rp(/^\[([^\^#].*?)\]:(.*?)$/gm, function (match, symbolicName, url) {
         referenceLinkTable[symbolicName.toLowerCase().trim()] = {link: url.trim(), used: false};
         return '';
@@ -2616,6 +2617,22 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/(^|[^!])\[[ \t]*?\]\(("?)([^<>\s"]+?)\2\)/g, function (match, pre, maybeQuote, url) {
         return pre + '<a ' + protect('href="' + url + '"') + '>' + url + '</a>';
     });
+
+    // REFERENCE IMAGE: ![...][ref attribs]
+    // Rewrite as a regular image for further processing
+    str = str.rp(/(!\[[^\[\]]*?\])\[("?)([^"<>\s]+?)\2(\s[^\]]*?)?\]/, function (match, caption, maybeQuote, symbolicName, attribs) {
+        symbolicName = symbolicName.toLowerCase().trim();
+        var t = referenceLinkTable[symbolicName];
+        if (! t) {
+            console.log("Reference image '" + symbolicName + "' never defined");
+            return '?';
+        } else {
+            t.used = true;
+            var s = caption + '(' + t.link + (t.attribs || '') + ')';
+            return s;
+        }
+    });
+
 
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
@@ -2781,7 +2798,7 @@ function markdeepToHTML(str, elementMode) {
     // Remove empty paragraphs (mostly avoided by the above, but some can still occur)
     str = str.rp(/<p>[\s\n]*<\/p>/gi, '');
     
-    // Reference links
+    // REFERENCE LINK
     str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\[(.*?)\]/g, function (match, pre, text, symbolicName) {
         // Empty symbolic name is replaced by the text
         if (! symbolicName.trim()) {
