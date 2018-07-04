@@ -2083,6 +2083,9 @@ function insertTableOfContents(s, protect) {
 
         table[removeHTMLTags(text).trim().toLowerCase()] = number;
 
+        // Remove links from the title itself
+        text = text.rp(/<a\s.*>(.*?)<\/a>/g, '$1');
+
         // Only insert for the first three levels
         if (level <= 3) {
             // Indent and append (the Array() call generates spaces)
@@ -2094,7 +2097,7 @@ function insertTableOfContents(s, protect) {
                 ++numAboveLevel1;
             }
         }
-        
+
         return entag('a', '&nbsp;', protect('class="target" name="' + name + '"')) + header;
     });
 
