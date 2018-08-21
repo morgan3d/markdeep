@@ -1349,7 +1349,7 @@ function extractDiagram(sourceString) {
         wideCharacters = unicodeSyms(sourceString, lineBeginning + xMin, lineBeginning + xMax);
         textOnLeft  = textOnLeft  || /\S/.test(sourceString.ss(lineBeginning, lineBeginning + xMin));
         noRightBorder = noRightBorder || (sourceString[lineBeginning + xMax + wideCharacters] !== '*');
-        
+
         // Text on the right ... if the line is not all '*'
         textOnRight = ! noRightBorder && (textOnRight || /[^ *\t\n\r]/.test(sourceString.ss(lineBeginning + xMax + wideCharacters + 1, nextLineBeginning)));
     }
