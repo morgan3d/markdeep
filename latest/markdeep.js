@@ -2264,7 +2264,7 @@ function markdeepToHTML(str, elementMode) {
     }
 
     // SECTION HEADERS
-    // This is common code for numbered headers. Nno-number ATX headers are processed
+    // This is common code for numbered headers. No-number ATX headers are processed
     // separately
     function makeHeaderFunc(level) {
         return function (match, header) {
@@ -2450,8 +2450,10 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/(\\begin\{eqnarray\}[\s\S]*?\\end\{eqnarray\})/g, protector);
     str = str.rp(/(\\begin\{equation\*\}[\s\S]*?\\end\{equation\*\})/g, protector);
 
-    // For headers, we consume leading and trailing whitespace to avoid creating an
-    // extra paragraph tag around the header itself.
+    // HEADERS
+    //
+    // We consume leading and trailing whitespace to avoid creating an extra paragraph tag
+    // around the header itself.
 
     // Setext-style H1: Text with ======== right under it
     str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*={3,}[ \t]*\n/g, makeHeaderFunc(1));
@@ -2460,12 +2462,20 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*-{3,}[ \t]*\n/g, makeHeaderFunc(2));
 
     // ATX-style headers:
+    //
+    //  # Foo #
+    //  # Foo
+    //  (# Bar)
+    //
+    // If note that '#' in the title are only stripped if they appear at the end, in
+    // order to allow headers with # in the title.
+
     for (var i = 6; i > 0; --i) {
-        str = str.rp(new RegExp(/^\s*/.source + '#{' + i + ',' + i +'}(?:[ \t])([^\n#]+)#*[ \t]*\n', 'gm'), 
+        str = str.rp(new RegExp(/^\s*/.source + '#{' + i + ',' + i +'}(?:[ \t])([^\n]+?)#*[ \t]*\n', 'gm'), 
                  makeHeaderFunc(i));
 
         // No-number headers
-        str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n#]+)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
+        str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n]+?)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
                      '\n</p>\n' + entag('div', '$1', protect('class="nonumberh' + i + '"')) + '\n<p>\n\n');
     }
 
