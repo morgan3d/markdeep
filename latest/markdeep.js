@@ -149,7 +149,7 @@ var STYLESHEET = entag('style',
 
      // Justification tends to handle URLs and code blocks poorly
      // when inside of a bullet, so disable it there
-    '.md li{text-align:left}' +
+    '.md li{text-align:left;text-indent:0}' +
 
      // Make code blocks use 4-space tabs
     '.md pre.listing {tab-size:4;-moz-tab-size:4;-o-tab-size:4}' +
