@@ -1071,13 +1071,14 @@ var GERMAN = {
 var SWEDISH = {
     keyword: {
         table:     'tabell',
-        figure:    'figur',
+        figure:    'illustration',
         listing:   'lista',
         diagram:   'diagram',
 
         contents:  'innehållsförteckning',
-        sec:       'sek',
-        subsection:'undersektion',
+        sec:       'kap',
+        section:   'kapitel',
+        subsection:'avsnitt',
 
         Monday:    'måndag',
         Tuesday:   'tisdag',
