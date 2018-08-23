@@ -2574,9 +2574,12 @@ function markdeepToHTML(str, elementMode) {
         var hash;
 
         // Detect videos
-        if (/(\.mp4|\.m4v|\.avi|\.mpg|\.mov|\.webm)$/i.test(url)) {
+        if (/\.(mp4|m4v|avi|mpg|mov|webm)$/i.test(url)) {
             // This is video. Any attributes provided will override the defaults given here
             img = '<video ' + protect('class="markdeep" src="' + url + '"' + attribs + ' width="480px" controls="true"') + '/>';
+        } else if (/\.(mp3|mp2|ogg|wav|m4a|aac|flac)$/i.test(url)) {
+            // TODO
+            img = '<audio ' + protect('class="markdeep" controls ' + attribs + '><source src="' + url + '">') + '</audio>';
         } else if (hash = url.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/\S*?v=|youtu\.be\/)([\w\d-]+)(&.*)?$/i)) {
             // Youtube video
             img = '<iframe ' + protect('class="markdeep" src="https://www.youtube.com/embed/' + hash[1] + '"' + attribs + ' width="480px" height="300px" frameborder="0" allowfullscreen webkitallowfullscreen mozallowfullscreen') + '></iframe>';
