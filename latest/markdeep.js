@@ -147,12 +147,16 @@ var STYLESHEET = entag('style',
     'page-break-inside:avoid' +
     '}' +
 
-     // Justification tends to handle URLs and code blocks poorly
-     // when inside of a bullet, so disable it there
+    // Justification tends to handle URLs and code blocks poorly
+    // when inside of a bullet, so disable it there
     '.md li{text-align:left;text-indent:0}' +
 
-     // Make code blocks use 4-space tabs
-    '.md pre.listing {tab-size:4;-moz-tab-size:4;-o-tab-size:4}' +
+    // Make code blocks use 4-space tabs.
+    // Set up a line number counter.
+    '.md pre.listing {tab-size:4;-moz-tab-size:4;-o-tab-size:4;counter-reset:line}' +
+
+    '.md pre.listing .linenumbers span.line:before{width:26px;margin-left:-12px;font-size:80%;text-align:right;counter-increment:line;' +
+    'content:counter(line);display:inline-block;border-right:1px solid #ddd;padding-right:8px;margin-right:8px;color:#888}' +
 
      // Force captions on line listings down close and then center them
     '.md div.tilde{' +
@@ -2348,9 +2352,14 @@ function markdeepToHTML(str, elementMode) {
 
                 // Highlight and append this block
                 var highlighted = hljs.highlightAuto(sourceCode, lang).value;
+
+                // Mark each line as a span to support line numbers
+                highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '$1', 'class="line"'));
+
                 if (cssSubClass) {
                     highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
                 }
+
                 body += highlighted;
 
                 // Advance the next nested block
