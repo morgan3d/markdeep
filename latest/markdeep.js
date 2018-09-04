@@ -155,8 +155,8 @@ var STYLESHEET = entag('style',
     // Set up a line number counter.
     '.md pre.listing {tab-size:4;-moz-tab-size:4;-o-tab-size:4;counter-reset:line}' +
 
-    '.md pre.listing .linenumbers span.line:before{width:26px;margin-left:-12px;font-size:80%;text-align:right;counter-increment:line;' +
-    'content:counter(line);display:inline-block;border-right:1px solid #ddd;padding-right:8px;margin-right:8px;color:#888}' +
+    '.md pre.listing .linenumbers span.line:before{width:30px;margin-left:-52px;font-size:80%;text-align:right;counter-increment:line;' +
+    'content:counter(line);display:inline-block;padding-right:13px;margin-right:8px;color:#ccc}' +
 
      // Force captions on line listings down close and then center them
     '.md div.tilde{' +
@@ -355,7 +355,9 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md code{' +
-    'white-space:pre;' +
+    'white-space:pre-wrap;' +
+    'word-break:break-all;overflow-wrap:break-word;' +
+    'text-align:left;' +
     'page-break-inside:avoid' +
     '}' +
 
