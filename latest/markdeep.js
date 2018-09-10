@@ -353,7 +353,7 @@ var STYLESHEET = entag('style',
 
     '.md code{' +
     'white-space:pre-wrap;' +
-    'word-break:break-all;overflow-wrap:break-word;' +
+    'overflow-wrap:break-word;' +
     'text-align:left;' +
     'page-break-inside:avoid' +
     '}' +
