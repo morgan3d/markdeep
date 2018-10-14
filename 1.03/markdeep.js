@@ -2062,6 +2062,9 @@ function insertTableOfContents(s, protect) {
     // to insert at the end.
     var fullTOC = '';
     var shortTOC = '';
+
+    // names of parent sections
+    var nameStack = [];
     
     // headerCounter[i] is the current counter for header level (i - 1)
     var headerCounter = [0];
@@ -2073,22 +2076,33 @@ function insertTableOfContents(s, protect) {
         level = parseInt(level)
         text = text.trim();
         // If becoming more nested:
-        for (var i = currentLevel; i < level; ++i) { headerCounter[i] = 0; }
+        for (var i = currentLevel; i < level; ++i) {
+            nameStack[i] = '';
+            headerCounter[i] = 0;
+        }
         
         // If becoming less nested:
         headerCounter.splice(level, currentLevel - level);
+        nameStack.splice(level, currentLevel - level);
         currentLevel = level;
-        
+
         ++headerCounter[currentLevel - 1];
         
         // Generate a unique name for this element
         var number = headerCounter.join('.');
-        var name = 'toc' + number;
+
+        // legacy, for when toc links were based on
+        // numbers instead of mangled names
+        var oldname = 'toc' + number;
 
         table[removeHTMLTags(text).trim().toLowerCase()] = number;
 
         // Remove links from the title itself
         text = text.rp(/<a\s.*>(.*?)<\/a>/g, '$1');
+
+        nameStack[currentLevel - 1] = mangle(removeHTMLTags(text));
+
+        var name = nameStack.join('/');
 
         // Only insert for the first three levels
         if (level <= 3) {
@@ -2102,7 +2116,7 @@ function insertTableOfContents(s, protect) {
             }
         }
 
-        return entag('a', '&nbsp;', protect('class="target" name="' + name + '"')) + header;
+        return entag('a', '&nbsp;', protect('class="target" name="' + name + '"')) + entag('a', '&nbsp;', protect('class="target" name="' + oldname + '"')) + header;
     });
 
     if (shortTOC.length > 0) {
