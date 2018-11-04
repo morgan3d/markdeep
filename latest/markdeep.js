@@ -1,5 +1,5 @@
 /**
-  markdeep.js
+  Markdeep.js
   Version 1.03
 
   Copyright 2015-2018, Morgan McGuire, http://casual-effects.com
@@ -4444,7 +4444,7 @@ if (! window.alreadyProcessedMarkdeep) {
                 // Dynamically load mathjax
                 text += '<script src="' + MATHJAX_URL +'"></script>';
             }
-            document.body.innerHTML = entag('code', escapeHTMLEntities(text));
+            document.body.innerHTML = entag('pre', escapeHTMLEntities(text));
         } else {
             document.head.innerHTML = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8">' + head + document.head.innerHTML;
             document.body.innerHTML = markdeepHTML;
