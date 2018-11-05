@@ -129,15 +129,6 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md .image{display:inline-block}' +
-    '.md div.imagecaption,.md div.tablecaption,.md div.listingcaption{' +
-    'margin:5px 5px 5px 5px;' +
-    'text-align: justify;' +
-    'font-style:italic' +
-    '}' +
-
-    '.md div.imagecaption{' +
-    'margin-bottom:0' +
-    '}' +
 
     '.md img{' +
     'max-width:100%;' +
@@ -159,6 +150,16 @@ var STYLESHEET = entag('style',
     '.md div.tilde{' +
     'margin:20px 0 -10px;' +
     'text-align:center' + 
+    '}' +
+
+    '.md div.imagecaption,.md div.tablecaption,.md div.listingcaption{' +
+    'margin:8px 5px 12px;' +
+    'text-align: justify;' +
+    'font-style:italic' +
+    '}' +
+
+    '.md div.imagecaption{' +
+    'margin-bottom:0' +
     '}' +
 
     '.md blockquote.fancyquote{' + 
