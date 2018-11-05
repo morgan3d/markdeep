@@ -153,7 +153,7 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md div.imagecaption,.md div.tablecaption,.md div.listingcaption{' +
-    'margin:8px 5px 12px;' +
+    'margin:7px 5px 12px;' +
     'text-align: justify;' +
     'font-style:italic' +
     '}' +
