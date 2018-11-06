@@ -236,6 +236,9 @@ var STYLESHEET = entag('style',
     'stroke:none' +
     '}' +
 
+    // printing scale and margins
+    '@media print{@page{margin:1in 5mm;transform: scale(150%)}}' +
+                       
     // pagebreak hr
     '@media print{.md .pagebreak{page-break-after:always;visibility:hidden}}' +
 
