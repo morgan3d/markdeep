@@ -2629,6 +2629,13 @@ function markdeepToHTML(str, elementMode) {
         return img;
     };
 
+    // Reformat equation links that have brackets: eqn [foo] --> eqn \ref{foo} so that
+    // mathjax can process them.
+    str = str.rp(/\b(equation|eqn\.|eq\.)\s*\[([^\s\]]+)\]/gi, function (match, eq, label) {
+        return eq + ' \\ref{' + label + '}';
+    });
+
+
     // Reformat figure links that have subfigure labels in parentheses, to avoid them being
     // processed as links
     str = str.rp(/\b(figure|fig\.|table|tbl\.|listing|lst\.)\s*\[([^\s\]]+)\](?=\()/gi, function (match) {
