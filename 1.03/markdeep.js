@@ -2975,8 +2975,13 @@ function markdeepToHTML(str, elementMode) {
                 var subtitles = match.ss(match.indexOf('\n', match.indexOf('</strong>')));
                 subtitles = subtitles ? subtitles.rp(/[ \t]*(\S.*?)\n/g, '<div class="subtitle"> $1 </div>\n') : '';
                 
-                // Remove all tags from the title when inside the <TITLE> tag
-                return entag('title', removeHTMLTags(title)) + maybeShowLabel(window.location.href, 'center') +
+                // Remove all tags from the title when inside the <TITLE> tag, as well
+                // as unicode characters that don't render well in tabs and window bars.
+                // These regexps look like they are full of spaces but are actually various
+                // unicode space characters. http://jkorpela.fi/chars/spaces.html
+                title = removeHTMLTags(title).replace(/[     ]/g, '').replace(/[         　]/g, ' ');
+                
+                return entag('title', title) + maybeShowLabel(window.location.href, 'center') +
                     '<div class="title"> ' + title + 
                     ' </div>\n' + subtitles + '<div class="afterTitles"></div>\n';
             });
