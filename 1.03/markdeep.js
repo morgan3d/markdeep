@@ -1219,7 +1219,7 @@ function maybeShowLabel(url, tag) {
 
 // Returns the localized version of word, defaulting to the word itself
 function keyword(word) {
-    return option('lang').keyword[word.toLowerCase()] || word;
+    return option('lang').keyword[word] || option('lang').keyword[word.toLowerCase()] || word;
 }
 
 
@@ -1786,7 +1786,7 @@ function replaceScheduleLists(str, protect) {
                                        }
                                        
                                        // Reconstruct standardized date format
-                                       date = day + ' ' + month + ' ' + year;
+                                       date = day + ' ' + keyword(month) + ' ' + year;
                                        
                                        // Detect the month
                                        var monthNumber = parseInt(month) - 1;
