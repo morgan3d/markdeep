@@ -203,6 +203,7 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md small{font-size:60%}' +
+    '.md big{font-size:150%}' +
 
     '.md div.title,contents,.md .tocHeader,h1,h2,h3,h4,h5,h6,.md .shortTOC,.md .mediumTOC,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
     'font-family:Verdana,Helvetica,Arial,sans-serif;' +
