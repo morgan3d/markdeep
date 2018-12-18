@@ -4476,8 +4476,13 @@ if (! window.alreadyProcessedMarkdeep) {
             setTimeout(function () {
                 var anchor = document.getElementsByName(window.location.href.substring(hashIndex + 1));
                 if (anchor.length > 0) { anchor[0].scrollIntoView(); }
+                if (window.markdeepOptions) (window.markdeepOptions.onLoad || Math.cos)();
             }, 100);
+        } else if (window.markdeepOptions && window.markdeepOptions.onLoad) {
+            // Wait for the DOM to update
+            setTimeout(window.markdeepOptions.onLoad, 100);
         }
+           
     };
 
     ///////////// INSERT command processing
