@@ -4469,6 +4469,15 @@ if (! window.alreadyProcessedMarkdeep) {
         }
 
         document.body.style.visibility = 'visible';
+
+        var hashIndex = window.location.href.indexOf('#');
+        if (hashIndex > -1) {
+            // Scroll to the target; needed when loading is too fast (ironically)
+            setTimeout(function () {
+                var anchor = document.getElementsByName(window.location.href.substring(hashIndex + 1));
+                if (anchor.length > 0) { anchor[0].scrollIntoView(); }
+            }, 100);
+        }
     };
 
     ///////////// INSERT command processing
@@ -4564,6 +4573,6 @@ if (! window.alreadyProcessedMarkdeep) {
         setTimeout(markdeepProcessor, 1);
     }
 }
-
+    
 })();
 
