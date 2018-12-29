@@ -2060,7 +2060,7 @@ function replaceDefinitionLists(s, protect) {
 
 /** Inserts a table of contents in the document and then returns
     [string, table], where the table maps strings to levels. */
-function insertTableOfContents(s, protect) {
+function insertTableOfContents(s, protect, exposer) {
 
     // Gather headers for table of contents (TOC). We
     // accumulate a long and short TOC and then choose which
@@ -2080,6 +2080,7 @@ function insertTableOfContents(s, protect) {
     s = s.rp(/<h([1-6])>(.*?)<\/h\1>/gi, function (header, level, text) {
         level = parseInt(level)
         text = text.trim();
+        
         // If becoming more nested:
         for (var i = currentLevel; i < level; ++i) {
             nameStack[i] = '';
@@ -2100,12 +2101,14 @@ function insertTableOfContents(s, protect) {
         // numbers instead of mangled names
         var oldname = 'toc' + number;
 
-        table[removeHTMLTags(text).trim().toLowerCase()] = number;
+        var cleanText = removeHTMLTags(exposer(text)).trim().toLowerCase();
+        
+        table[cleanText] = number;
 
         // Remove links from the title itself
         text = text.rp(/<a\s.*>(.*?)<\/a>/g, '$1');
 
-        nameStack[currentLevel - 1] = mangle(removeHTMLTags(text));
+        nameStack[currentLevel - 1] = mangle(cleanText);
 
         var name = nameStack.join('/');
 
@@ -2121,7 +2124,9 @@ function insertTableOfContents(s, protect) {
             }
         }
 
-        return entag('a', '&nbsp;', protect('class="target" name="' + name + '"')) + entag('a', '&nbsp;', protect('class="target" name="' + oldname + '"')) + header;
+        return entag('a', '&nbsp;', protect('class="target" name="' + name + '"')) +
+            entag('a', '&nbsp;', protect('class="target" name="' + oldname + '"')) +
+            header;
     });
 
     if (shortTOC.length > 0) {
@@ -2266,12 +2271,14 @@ function markdeepToHTML(str, elementMode) {
         return PROTECT_CHARACTER + i + PROTECT_CHARACTER;
     }
 
+    var exposeRan = false;
     /** Given the escaped identifier string from protect(), returns
         the orginal string. */
     function expose(i) {
         // Strip the escape character and parse, then look up in the
         // dictionary.
         var j = parseInt(i.ss(1, i.length - 1).rp(/z/g, 'x'), PROTECT_RADIX);
+        exposeRan = true;
         return protectedStringArray[j];
     }
 
@@ -2290,7 +2297,7 @@ function markdeepToHTML(str, elementMode) {
     // separately
     function makeHeaderFunc(level) {
         return function (match, header) {
-            return '\n\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header)) + '"') + 
+            return '\n\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header.rp(PROTECT_REGEXP, expose))) + '"') + 
                 '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n\n';
         }
     }
@@ -2605,7 +2612,6 @@ function markdeepToHTML(str, elementMode) {
             // This is video. Any attributes provided will override the defaults given here
             img = '<video ' + protect('class="markdeep" src="' + url + '"' + attribs + ' width="480px" controls="true"') + '/>';
         } else if (/\.(mp3|mp2|ogg|wav|m4a|aac|flac)$/i.test(url)) {
-            // TODO
             img = '<audio ' + protect('class="markdeep" controls ' + attribs + '><source src="' + url + '">') + '</audio>';
         } else if (hash = url.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/\S*?v=|youtu\.be\/)([\w\d-]+)(&.*)?$/i)) {
             // Youtube video
@@ -2667,8 +2673,8 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // REFERENCE IMAGE: ![...][ref attribs]
-    // Rewrite as a regular image for further processing
-    str = str.rp(/(!\[[^\[\]]*?\])\[("?)([^"<>\s]+?)\2(\s[^\]]*?)?\]/, function (match, caption, maybeQuote, symbolicName, attribs) {
+    // Rewrite as a regular image for further processing below
+    str = str.rp(/(!\[(?:[\s\S]+?)?\])\[("?)([^"<>\s]+?)\2(\s[^\]]*?)?\]/g, function (match, caption, maybeQuote, symbolicName, attribs) {
         symbolicName = symbolicName.toLowerCase().trim();
         var t = referenceLinkTable[symbolicName];
         if (! t) {
@@ -2680,7 +2686,6 @@ function markdeepToHTML(str, elementMode) {
             return s;
         }
     });
-
 
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
@@ -2994,7 +2999,7 @@ function markdeepToHTML(str, elementMode) {
 
     // If not in element mode and not an INSERT child, maybe add a TOC
     if (! elementMode) {// && ! myURLParse[2]) {
-        var temp = insertTableOfContents(str, protect);
+        var temp = insertTableOfContents(str, protect, function (text) {return text.rp(PROTECT_REGEXP, expose)});
         str = temp[0];
         var toc = temp[1];
         // SECTION LINKS: Replace sec. [X], section [X], subsection [X]
@@ -3011,9 +3016,16 @@ function markdeepToHTML(str, elementMode) {
 
     // Expose all protected values. We may need to do this
     // recursively, because pre and code blocks can be nested.
-    while (str.indexOf(PROTECT_CHARACTER) + 1) {
+    var maxIterations = 50;
+
+    exposeRan = true;
+    while ((str.indexOf(PROTECT_CHARACTER) + 1) && exposeRan && (maxIterations > 0)) {
+        exposeRan = false;
         str = str.rp(PROTECT_REGEXP, expose);
+        --maxIterations;
     }
+    
+    if (maxIterations <= 0) { console.log('WARNING: Ran out of iterations while expanding protected substrings'); }
 
     // Warn about unused references
     Object.keys(referenceLinkTable).forEach(function (key) {
