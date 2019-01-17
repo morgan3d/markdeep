@@ -2382,7 +2382,12 @@ function markdeepToHTML(str, elementMode) {
                 } else if (lang === undefined) {
                     result = hljs.highlightAuto(sourceCode);
                 } else {
-                    result = hljs.highlight(lang, sourceCode, true);
+                    try {
+                        result = hljs.highlight(lang, sourceCode, true);
+                    } catch (e) {
+                        // Some unknown language specified. Force to no formatting.
+                        result = hljs.highlightAuto(sourceCode, []);
+                    }
                 }
                 
                 var highlighted = result.value;
