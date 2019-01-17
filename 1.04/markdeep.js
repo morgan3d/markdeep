@@ -2354,8 +2354,6 @@ function markdeepToHTML(str, elementMode) {
                 caption = caption.trim();
                 caption = '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption.ss(1, caption.length - 1) + '</div>\n';
             }
-            lang = lang ? lang.trim() : undefined;
-
             // Remove the block's own indentation from each line of sourceCode
             sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
 
@@ -2375,7 +2373,8 @@ function markdeepToHTML(str, elementMode) {
                                            });
 
                 // Highlight and append this block
-                var result = lang ? hljs.highlight(lang, sourceCode, true) : hljs.highlightAuto(sourceCode);
+                lang = lang ? lang.trim() : undefined;
+                var result = (lang && lang !== 'none') ? hljs.highlight(lang, sourceCode, true) : hljs.highlightAuto(sourceCode);
                 var highlighted = result.value;
 
                 // Mark each line as a span to support line numbers
