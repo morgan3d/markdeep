@@ -2376,7 +2376,15 @@ function markdeepToHTML(str, elementMode) {
 
                 // Highlight and append this block
                 lang = lang ? lang.trim() : undefined;
-                var result = (lang && lang !== 'none') ? hljs.highlight(lang, sourceCode, true) : hljs.highlightAuto(sourceCode);
+                var result;
+                if (lang === 'none') {
+                    result = hljs.highlightAuto(sourceCode, []);
+                } else if (lang === undefined) {
+                    result = hljs.highlightAuto(sourceCode);
+                } else {
+                    result = hljs.highlight(lang, sourceCode, true);
+                }
+                
                 var highlighted = result.value;
 
                 // Mark each line as a span to support line numbers
