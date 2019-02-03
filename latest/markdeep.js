@@ -1137,6 +1137,7 @@ var DEFAULT_OPTIONS = {
     hideEmptyWeekends:  true,
     showLabels:         false,
     sortScheduleLists:  true,
+    definitionStyle:    'auto',
     captionAbove:       {diagram: false,
                          image:   false,
                          table:   false,
@@ -2032,7 +2033,8 @@ function replaceDefinitionLists(s, protect) {
                  });
 
                  var result = '';
-                 if (longestDefinition < 160) {
+                 var definitionStyle = option('definitionStyle');
+                 if ((definitionStyle === 'short') || ((definitionStyle !== 'long') && (longestDefinition < 160))) {
                      var rowAttribs = protect('valign=top');
                      // This list has short definitions. Format it as a table
                      list.forEach(function (entry) {
