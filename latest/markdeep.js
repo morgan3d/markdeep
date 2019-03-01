@@ -1138,6 +1138,7 @@ var DEFAULT_OPTIONS = {
     showLabels:         false,
     sortScheduleLists:  true,
     definitionStyle:    'auto',
+    scrollThreshold:    80,
     captionAbove:       {diagram: false,
                          image:   false,
                          table:   false,
@@ -4434,6 +4435,13 @@ if (! window.alreadyProcessedMarkdeep) {
             if (isMarkdeepScriptName(node.src)) {
                 node.parentNode.removeChild(node);
             }
+        });
+        
+        // Add an event handler for scrolling
+        const scrollThreshold = parseInt(option('scrollThreshold'));
+        document.addEventListener('scroll', function () {
+            const b = document.body, c = b.classList, s = 'scrolled';
+            if (b.scrollTop > scrollThreshold) c.add(s); else c.remove(s);
         });
         
         // Hide the body while formatting
