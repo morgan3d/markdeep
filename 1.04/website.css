@@ -38,7 +38,7 @@ body {
 
 
 /* no numbering of headings */
-.md h1:before, .md h2:before, .md h3:before, .md h4:before { content: none; }
+.md h1:before, .md h2:before, .md h3:before, .md h4:before, .md h5:before, .md h6:before { content: none; }
 
 .md .longTOC a {
     color: #000;
@@ -62,7 +62,7 @@ body {
     font-weight: 800;
 }
 
-.md h1, .md h2, .md h3, .md h4 {
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
     color: #00c8c8;
     border-color: inherit;
 }
