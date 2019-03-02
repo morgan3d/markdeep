@@ -214,6 +214,8 @@ var STYLESHEET = entag('style',
     'border-top:none;' +
     'clear:both' +
     '}' +
+                       
+    '.md .tocTop {display:none}' +
 
     '.md h1,.md h2,.md h3,.md h4,.md h5,.md h6,.md .nonumberh1,.md .nonumberh2,.md .nonumberh3,.md .nonumberh4,.md .nonumberh5,.md .nonumberh6{' +
      'page-break-after:avoid;break-after:avoid' +
@@ -2070,7 +2072,7 @@ function insertTableOfContents(s, protect, exposer) {
     // Gather headers for table of contents (TOC). We
     // accumulate a long and short TOC and then choose which
     // to insert at the end.
-    var fullTOC = '';
+    var fullTOC = '<a href="#" class="tocTop">(Top)</a><br/>\n';
     var shortTOC = '';
 
     // names of parent sections
