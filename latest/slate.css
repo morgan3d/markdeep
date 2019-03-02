@@ -3,6 +3,7 @@
 body {
     position: absolute;
     left: 200px;
+    right:0px;
     margin: 0px;
     padding: 0px;
     max-width: unset;
@@ -133,16 +134,16 @@ body {
     border: 1px solid #777;
     font-size: 100%;
     overflow: scroll;
-    width: 90%;
     box-shadow: 0px 1px 2px rgba(0,0,0,0.5);
+    text-overflow: "\22ef";
 }
 
 .md pre.listing code {
     background: none;
     color: unset;
     font-weight: unset;
-    /* white-space: pre;
-    overflow-wrap: unset; */
+     white-space: pre;
+    overflow-wrap: unset;
 }
 
 .hljs-comment,.hljs-quote{color:#a0f0aa}.hljs-variable,.hljs-template-variable,.hljs-tag,.hljs-name,.hljs-selector-id,.hljs-selector-class,.hljs-regexp,.hljs-deletion{color:#cc6666}.hljs-number,.hljs-built_in,.hljs-builtin-name,.hljs-literal,.hljs-type,.hljs-params,.hljs-meta,.hljs-link{color:#de935f}.hljs-attribute{color:#f0c674}.hljs-string,.hljs-symbol,.hljs-bullet,.hljs-addition{color:#b5bd68}.hljs-title,.hljs-section{color:#81a2be}.hljs-keyword,.hljs-selector-tag{color:#b294bb}.hljs{display:block;overflow-x:auto;background:#1d1f21;color:#c5c8c6;padding:.5em}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:bold}
