@@ -1140,7 +1140,7 @@ var DEFAULT_OPTIONS = {
     showLabels:         false,
     sortScheduleLists:  true,
     definitionStyle:    'auto',
-    scrollThreshold:    80,
+    scrollThreshold:    90,
     captionAbove:       {diagram: false,
                          image:   false,
                          table:   false,
