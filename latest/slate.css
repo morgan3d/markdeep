@@ -188,6 +188,7 @@ body {
 .md .admonition.warn, .md .admonition.warning {
     border: 1px solid rgba(255,170,0,1);
     border-left: 2.5rem solid rgba(255,170,0,1);
+    background: #202020;
 }
 .md .admonition.warn .admonition-title, .md .admonition.warning .admonition-title {
     border-bottom: 1px solid rgba(68,138,255,1);
@@ -196,6 +197,7 @@ body {
 .md .admonition.tip {
     border: 1px solid rgba(68,138,255,1);
     border-left: 2.5rem solid rgba(68,138,255,1);
+    background: #202020;
 }
 .md .admonition.tip .admonition-title {
     border-bottom: 1px solid rgba(68,138,255,1);
@@ -204,6 +206,7 @@ body {
 .md .admonition.error {
     border: 1px solid rgba(255,23,68,1);
     border-left: 2.5rem solid rgba(255,23,68,1);
+    background: #202020;
 }
 .md .admonition.error .admonition-title {
     border-bottom: 1px solid rgba(255,23,68,1);
