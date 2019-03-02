@@ -153,3 +153,20 @@ body {
 .md svg.diagram .opendot {
   fill: #000;
 }
+
+.md table.table {
+    box-shadow: 0px 1px 2px rgba(0,0,0,0.5);
+    background-color: #2a2a2a;
+}
+
+.md table.table tr:nth-child(even) {
+    background-color: #202020;
+}
+
+.md table.table td, .md table.table th {
+    border: 1px solid #202020;
+}
+
+.md table.table th {
+    color: #000;
+}
