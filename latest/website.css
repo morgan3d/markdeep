@@ -17,7 +17,7 @@ body {
 .md .longTOC {
     width: 170px;
     display: block;
-    border-right: 3px solid #2583e3;
+    border-right: 3px solid #00c8c8;
     overflow-y:scroll;
     font-size: 15px;
     font-family: inherit;
@@ -63,7 +63,7 @@ body {
 }
 
 .md h1, .md h2, .md h3, .md h4 {
-    color: #2583e3;
+    color: #00c8c8;
     border-color: inherit;
 }
 
@@ -88,9 +88,9 @@ body {
     padding-left: 10px;
     padding-top: 20px;
     padding-bottom: 20px;
-    text-shadow: 0px 0px 3px #2583e3;
-    background-color: #2583e3;
-    background-image: url('banner.png');
+    text-shadow: 0px 0px 3px #00c8c8;
+    background-color: #00c8c8;
+    background-image: url('https://casual-effects.com/markdeep/latest/website-banner.png');
     background-repeat: no-repeat;
     background-position: top right;
     background-size: contain;
