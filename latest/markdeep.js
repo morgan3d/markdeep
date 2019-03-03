@@ -111,9 +111,10 @@ var STYLESHEET = entag('style',
     // Avoid header/footer in print to PDF. See https://productforums.google.com/forum/#!topic/chrome/LBMUDtGqr-0
     '@page{margin:0;size:auto}' +
                        
-    '.md code,pre{' +
+    '.md code,.md pre{' +
     'font-family:' + codeFontStack + ';' +
     'font-size:' + codeFontSize + ';' +
+    'text-align:left;' +
     'line-height:140%' + 
     '}' +
 
@@ -363,8 +364,8 @@ var STYLESHEET = entag('style',
     '.md code{' +
     'white-space:pre-wrap;' +
     'overflow-wrap:break-word;' +
-    'text-align:left;' +
-    'page-break-inside:avoid' +
+    'page-break-inside:avoid;' +
+    'text-overflow:ellipses' +
     '}' +
 
     '.md .endnote{' +
