@@ -362,11 +362,11 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md code{' +
-    'white-space:pre-wrap;' +
+    'white-space:pre;' +
     'overflow-wrap:break-word;' +
     'page-break-inside:avoid;' +
     'text-overflow:ellipses' +
-    '}' +
+    '} @media print{.md code{white-space:pre-wrap}}' +
 
     '.md .endnote{' +
     'font-size:13px;' +
