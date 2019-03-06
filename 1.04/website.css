@@ -5,12 +5,15 @@ body {
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     text-align: left;
     left: 200px;
+    right: 0px;
     margin: 0;
     padding: 0;
     max-width: none;
     color: #555;
     font-size: 15px;
     padding-right: 20px;
+    overflow-x: hidden;
+    text-overflow: ellipses;
 }
 
 
@@ -21,6 +24,7 @@ body {
     overflow-y:scroll;
     font-size: 15px;
     font-family: inherit;
+    background: #FFF;
     
     position: absolute;
     top: 90px;
@@ -32,8 +36,9 @@ body {
 
 .scrolled .md .longTOC {
     position: fixed;
-    left: 10px;
+    left: 0px;
     top: 0px;
+    border-left: 10px solid #fff; 
 }
 
 
