@@ -110,7 +110,7 @@ var STYLESHEET = entag('style',
 
     // Avoid header/footer in print to PDF. See https://productforums.google.com/forum/#!topic/chrome/LBMUDtGqr-0
     '@page{margin:0;size:auto}' +
-                       
+
     '.md code,.md pre{' +
     'font-family:' + codeFontStack + ';' +
     'font-size:' + codeFontSize + ';' +
@@ -143,8 +143,8 @@ var STYLESHEET = entag('style',
     '.md li{text-align:left;text-indent:0}' +
 
     // Make code blocks use 4-space tabs.
-                       // Set up a line number counter. Do NOT use "overflow: scroll" or it will force scrollbars even when unused on Windows.
-                       // Don't use text-overflow:ellipsis; which on mac just makes the line short even when scrolled
+    // Set up a line number counter. Do NOT use "overflow: scroll" or it will force scrollbars even when unused on Windows.
+    // Don't use text-overflow:ellipsis; which on mac just makes the line short even when scrolled
     '.md pre.listing {width:100%;tab-size:4;-moz-tab-size:4;-o-tab-size:4;counter-reset:line;overflow-x:auto;resize:horizontal}' +
 
     '.md pre.listing .linenumbers span.line:before{width:30px;margin-left:-28px;font-size:80%;text-align:right;counter-increment:line;' +
@@ -363,9 +363,8 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md code{' +
-    'white-space:pre;' +
     'page-break-inside:avoid;' +
-    '} @media print{.md code{white-space:pre-wrap}}' +
+    '} @media print{.md .listing code{white-space:pre-wrap}}' +
 
     '.md .endnote{' +
     'font-size:13px;' +
