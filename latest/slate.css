@@ -103,47 +103,6 @@ body {
     color: unset;
 }
 
-
-.md .admonition {
-    position: unset;
-    box-shadow: 0px 1px 2px rgba(0,0,0,0.5);
-    background: #202020;
-    border: 1px solid rgba(68,138,255,1);
-    border-left: 2.5rem solid rgba(68,138,255,1);
-}
-
-.md .admonition-title {
-    border-bottom: 1px solid rgba(68,138,255,1);
-}
-
-.md .admonition.warn, .md .admonition.warning {
-    border: 1px solid rgba(255,170,0,1);
-    border-left: 2.5rem solid rgba(255,170,0,1);
-    background: #202020;
-}
-
-.md .admonition.warn .admonition-title, .md .admonition.warning .admonition-title {
-    border-bottom: 1px solid rgba(68,138,255,1);
-}
-
-.md .admonition.tip {
-    border: 1px solid rgba(68,138,255,1);
-    border-left: 2.5rem solid rgba(68,138,255,1);
-    background: #202020;
-}
-.md .admonition.tip .admonition-title {
-    border-bottom: 1px solid rgba(68,138,255,1);
-}
-
-.md .admonition.error {
-    border: 1px solid rgba(255,23,68,1);
-    border-left: 2.5rem solid rgba(255,23,68,1);
-    background: #202020;
-}
-.md .admonition.error .admonition-title {
-    border-bottom: 1px solid rgba(255,23,68,1);
-}
-
 /* Dark mode on screen */
 @media screen {
     .md .longTOC {
@@ -235,5 +194,45 @@ body {
     .md div.title, .md h1, .md h2, .md h3, .md h4, .md h5, .md h6, .md .longTOC a, .md .longTOC code, .md a:link, .md a:visited {
         text-shadow: 0px 1px 2px rgba(0,0,0,0.5);
     }
+
+.md .admonition {
+    position: unset;
+    box-shadow: 0px 1px 2px rgba(0,0,0,0.5);
+    background: #202020;
+    border: 1px solid rgba(68,138,255,1);
+    border-left: 2.5rem solid rgba(68,138,255,1);
+}
+
+.md .admonition-title {
+    border-bottom: 1px solid rgba(68,138,255,1);
+}
+
+.md .admonition.warn, .md .admonition.warning {
+    border: 1px solid rgba(255,170,0,1);
+    border-left: 2.5rem solid rgba(255,170,0,1);
+    background: #202020;
+}
+
+.md .admonition.warn .admonition-title, .md .admonition.warning .admonition-title {
+    border-bottom: 1px solid rgba(68,138,255,1);
+}
+
+.md .admonition.tip {
+    border: 1px solid rgba(68,138,255,1);
+    border-left: 2.5rem solid rgba(68,138,255,1);
+    background: #202020;
+}
+.md .admonition.tip .admonition-title {
+    border-bottom: 1px solid rgba(68,138,255,1);
+}
+
+.md .admonition.error {
+    border: 1px solid rgba(255,23,68,1);
+    border-left: 2.5rem solid rgba(255,23,68,1);
+    background: #202020;
+}
+.md .admonition.error .admonition-title {
+    border-bottom: 1px solid rgba(255,23,68,1);
+}
 }
 
