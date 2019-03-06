@@ -143,10 +143,10 @@ var STYLESHEET = entag('style',
     '.md li{text-align:left;text-indent:0}' +
 
     // Make code blocks use 4-space tabs.
-    // Set up a line number counter.
-    '.md pre.listing {tab-size:4;-moz-tab-size:4;-o-tab-size:4;counter-reset:line;text-overflow:ellipsis;overflow:scroll}' +
+    // Set up a line number counter. Do NOT use "overflow: scroll" or it will force scrollbars even when unused on Windows
+    '.md pre.listing {width:100%;tab-size:4;-moz-tab-size:4;-o-tab-size:4;counter-reset:line;text-overflow:ellipsis;overflow-x:auto;resize:horizontal}' +
 
-    '.md pre.listing .linenumbers span.line:before{width:30px;margin-left:-52px;font-size:80%;text-align:right;counter-increment:line;' +
+    '.md pre.listing .linenumbers span.line:before{width:30px;margin-left:-28px;font-size:80%;text-align:right;counter-increment:line;' +
     'content:counter(line);display:inline-block;padding-right:13px;margin-right:8px;color:#ccc}' +
 
      // Force captions on line listings down close and then center them
@@ -363,7 +363,6 @@ var STYLESHEET = entag('style',
 
     '.md code{' +
     'white-space:pre;' +
-    'overflow-wrap:break-word;' +
     'page-break-inside:avoid;' +
     '} @media print{.md code{white-space:pre-wrap}}' +
 
