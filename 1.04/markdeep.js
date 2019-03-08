@@ -764,7 +764,7 @@ var CZECH = {
     }
 };
 
-    
+
 var ITALIAN = {
     keyword: {
         table:     'tabella',
@@ -1078,18 +1078,70 @@ var GERMAN = {
     }
 };
 
+// Translated by Marcelo Arroyo
+var SPANISH = {
+    keyword: {
+        table:     'Tabla',
+        figure:    'Figura',
+        listing:   'Listado',
+        diagram:   'Diagrama',
+        contents:  'Tabla de Contenidos',
+
+        sec:       'sec',
+        section:   'Sección',
+        subsection: 'Subsección',
+
+        Monday:    'Lunes',
+        Tuesday:   'Martes',
+        Wednesday: 'Miércoles',
+        Thursday:  'Jueves',
+        Friday:    'Viernes',
+        Saturday:  'Sábado',
+        Sunday:    'Domingo',
+
+        January:   'Enero',
+        February:  'Febrero',
+        March:     'Marzo',
+        April:     'Abril',
+        May:       'Mayo',
+        June:      'Junio',
+        July:      'Julio',
+        August:    'Agosto',
+        September: 'Septiembre',
+        October:   'Octubre',
+        November:  'Noviembre',
+        December:  'Diciembre',
+
+        jan: 'ene',
+        feb: 'feb',
+        mar: 'mar',
+        apr: 'abr',
+        may: 'may',
+        jun: 'jun',
+        jul: 'jul',
+        aug: 'ago',
+        sep: 'sept',
+        oct: 'oct',
+        nov: 'nov',
+        dec: 'dic',
+
+        '&ldquo;': '&laquo;&nbsp;',
+        '&rtquo;': '&nbsp;&raquo;'
+    }
+};
+
 // Translated by Nils Nilsson
 var SWEDISH = {
     keyword: {
         table:     'tabell',
-        figure:    'illustration',
+        figure:    'figur',
         listing:   'lista',
         diagram:   'diagram',
 
-        contents:  'innehållsförteckning',
-        sec:       'kap',
-        section:   'kapitel',
-        subsection:'avsnitt',
+        contents:  'Innehållsförteckning',
+        sec:       'sek',
+        section:   'avsnitt',
+        subsection:'underavsnitt',
 
         Monday:    'måndag',
         Tuesday:   'tisdag',
@@ -1161,10 +1213,10 @@ var LANG_TABLE = {
     ja: JAPANESE,
     it: ITALIAN,
     lt: LITHUANIAN,
-    cz: CZECH
-// Awaiting localization by a native speaker:
-//    es: SPANISH
-//    ...
+    cz: CZECH,
+    es: SPANISH
+    // Contribute your language here! I only accept translations
+    // from native speakers.
 };
 
 [].slice.call(document.getElementsByTagName('meta')).forEach(function(elt) {
@@ -3182,7 +3234,7 @@ function diagramToSVG(diagramString, alignmentHint) {
     var VERTEX_CHARACTERS                = UNDIRECTED_VERTEX_CHARACTERS + ".'";
 
     // GRAY[i] is the Unicode block character for (i+1)/4 level gray
-    var GRAY_CHARACTERS = '\u2591\u2592\u2593\u2594\u2589';
+    var GRAY_CHARACTERS = '\u2591\u2592\u2593\u2588';
 
     // TRI[i] is a right-triangle rotated by 90*i
     var TRI_CHARACTERS  = '\u25E2\u25E3\u25E4\u25E5';
