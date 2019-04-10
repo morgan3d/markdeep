@@ -236,7 +236,15 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md svg.diagram .opendot{' +
-    'fill:#FFF' +
+    'fill:none' +
+    '}' +
+
+    '.md svg.diagram .shadeddot{' +
+    'fill:#CCC' +
+    '}' +
+
+    '.md svg.diagram .dotteddot{' +
+    'stroke:#000;stroke-dasharray:4;fill:none' +
     '}' +
 
     '.md svg.diagram text{' +
@@ -1140,8 +1148,8 @@ var SWEDISH = {
 
         contents:  'Innehållsförteckning',
         sec:       'sek',
-        section:   'avsnitt',
-        subsection:'underavsnitt',
+        section:   'sektion',
+        subsection:'sektion',
 
         Monday:    'måndag',
         Tuesday:   'tisdag',
@@ -3228,7 +3236,7 @@ function diagramToSVG(diagramString, alignmentHint) {
     // The order of the following is based on rotation angles
     // and is used for ArrowSet.toSVG
     var ARROW_HEAD_CHARACTERS            = '>v<^';
-    var POINT_CHARACTERS                 = 'o*';
+    var POINT_CHARACTERS                 = 'o*◌○◍●';
     var JUMP_CHARACTERS                  = '()';
     var UNDIRECTED_VERTEX_CHARACTERS     = "+";
     var VERTEX_CHARACTERS                = UNDIRECTED_VERTEX_CHARACTERS + ".'";
@@ -3716,9 +3724,9 @@ function diagramToSVG(diagramString, alignmentHint) {
                 svg += '<path d="M ' + dn + ' C ' + cdn + cup + up + '" style="fill:none;"/>';
 
             } else if (isPoint(decoration.type)) {
-
+                var cls = {'*':'closed', 'o':'open', '◌':'dotted', '○':'open', '◍':'shaded', '●':'closed'}[decoration.type];
                 svg += '<circle cx="' + (C.x * SCALE) + '" cy="' + (C.y * SCALE * ASPECT) +
-                       '" r="' + (SCALE - STROKE_WIDTH) + '" class="' + ((decoration.type === '*') ? 'closed' : 'open') + 'dot"/>';
+                       '" r="' + (SCALE - STROKE_WIDTH) + '" class="' + cls + 'dot"/>';
             } else if (isGray(decoration.type)) {
                 
                 var shade = Math.round((3 - GRAY_CHARACTERS.indexOf(decoration.type)) * 63.75);
