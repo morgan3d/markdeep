@@ -2637,7 +2637,7 @@ function markdeepToHTML(str, elementMode) {
     // FOOTNOTES/ENDNOTES: [^symbolic name]. Disallow spaces in footnote names to
     // make parsing unambiguous. Consume leading space before the footnote.
     str = str.rp(/[ \t]*\[\^(\S+)\](?!:)|(^[^\n]*\S)[ \t]*\[\^(\S+)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
-        let symbolicName = (symbolicNameA || symbolicNameB).toLowerCase().trim();
+        var symbolicName = (symbolicNameA || symbolicNameB).toLowerCase().trim();
 
         if (! (symbolicName in endNoteTable)) {
             ++endNoteCount;
@@ -2651,7 +2651,7 @@ function markdeepToHTML(str, elementMode) {
     // CITATIONS: [#symbolicname]
     // The reference: (don't use \S+ because it can grab trailing punctuation)
     str = str.rp(/\[#([^\)\(\[\]\.#\s]+)\](?!:)|(^[^\n]*\S[^\n]*)\[#([^\)\(\[\]\.#\s]+)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
-        let symbolicName = (symbolicNameA || symbolicNameB).trim();
+        var symbolicName = (symbolicNameA || symbolicNameB).trim();
         return (prefix || '') + '[<a ' + protect('href="#citation-' + symbolicName.toLowerCase() + '"') + 
             '>' + symbolicName + '</a>]';
     });
