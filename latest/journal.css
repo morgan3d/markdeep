@@ -16,6 +16,11 @@ body {
 .md .nonumberh1, .md .nonumberh2, .md .nonumberh3, .md .nonumberh4, .md .nonumberh5, .md .nonumberh6,
 .md .shortTOC, .md .mediumTOC, .md .longTOC {
     font-family: inherit;
+    overflow-x: hidden !important;
+}
+
+img.markdeep {
+    max-width: 350px;
 }
 
 .md .tocHeader {
@@ -113,22 +118,25 @@ body {
 @media screen {
     body {
         position: absolute;
-        left: 0px;
-        right: 230px;
+        left: 240px;
+        margin-right: 0px;
+        margin-left: 10px;
+        right: 0px;
         overflow: auto;
+        max-width: none;
     }
     
     .md .longTOC {
         display: block;
         white-space: nowrap;    
-        width: 225px;
-        border-left: 1px solid #777;
+        width: 240px;
+        border-right: 1px solid #777;
         overflow-y:scroll;
         font-size: 13px;
         font-family: inherit;
         background: #eee;
         position: fixed;
-        right: 0px;
+        left: 0px;
         top: 0px;
         bottom:0px;
         margin: 0px;
