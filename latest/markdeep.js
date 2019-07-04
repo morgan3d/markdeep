@@ -1199,6 +1199,7 @@ var DEFAULT_OPTIONS = {
     showLabels:         false,
     sortScheduleLists:  true,
     definitionStyle:    'auto',
+    linkAPIDefinitions: false,
     scrollThreshold:    90,
     captionAbove:       {diagram: false,
                          image:   false,
@@ -3118,6 +3119,28 @@ function markdeepToHTML(str, elementMode) {
         }
     });
 
+    if (option('linkAPIDefinitions')) {
+        // Find link targets for APIs
+        var apiDefined = {};
+        str = str.rp(/<dt><code>([A-Za-z_][A-Za-z_\.0-9:\->]*)([\(\[<])/g, function (match, name, next) {
+            var linkName = name + (next === '<' ? '' : next);
+            apiDefined[linkName] = true;
+            // The extra space added to the code tag below is to
+            // prevent the link finding code from finding this (since
+            // we don't have lookbehinds in JavaScript to recognize
+            // the <dt>)
+            return '<dt><a name="apiDefinition_' + linkName + '"></a><code >' + name + next;
+        });
+
+        // Now find potential links
+        str = str.rp(/<code>([A-Za-z_][A-Za-z_\.0-9:\->]*)(\(\)|\[\])?<\/code>/g, function (match, name, next) {
+            var linkName = name + (next ? next[0] : '');
+            return (apiDefined[linkName] === true) ? entag('a', match, 'href="#apiDefinition_' + linkName + '"') : match;
+        });
+    }
+           
+    console.log(str);
+    
     return '<span class="md">' + entag('p', str) + '</span>';
 }
 
