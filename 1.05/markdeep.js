@@ -2487,7 +2487,7 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/(<code\b.*?<\/code>)/gi, protector);
 
     // Remove XML/HTML COMMENTS
-    str = str.rp(/<!--\s[\s\S]+?\s-->/g, '');
+    str = str.rp(/<!--[^-][\s\S]*?-->/g, '');
 
     str = replaceDiagrams(str);
     
@@ -2637,7 +2637,19 @@ function markdeepToHTML(str, elementMode) {
 
     // FOOTNOTES/ENDNOTES: [^symbolic name]. Disallow spaces in footnote names to
     // make parsing unambiguous. Consume leading space before the footnote.
-    str = str.rp(/[ \t]*\[\^(\S+)\](?!:)|(^[^\n]*\S)[ \t]*\[\^(\S+)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
+    str = str.rp(/[ \t]*\[\^([^\]\n\t ]+)\](?!:)/g, function (match, symbolicNameA) {
+        var symbolicName = symbolicNameA.toLowerCase().trim();
+
+        if (! (symbolicName in endNoteTable)) {
+            ++endNoteCount;
+            endNoteTable[symbolicName] = endNoteCount;
+        }
+
+        return '<sup><a ' + protect('href="#endnote-' + symbolicName + '"') + 
+            '>' + endNoteTable[symbolicName] + '</a></sup>';
+    })
+    /*
+    str = str.rp(/[ \t]*\[\^([^\]\n\t ]+)\](?!:)|^([^\n]*\S)[ \t]*\[\^([^\]\n\t ]+)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
         var symbolicName = (symbolicNameA || symbolicNameB).toLowerCase().trim();
 
         if (! (symbolicName in endNoteTable)) {
@@ -2647,7 +2659,8 @@ function markdeepToHTML(str, elementMode) {
 
         return (prefix || '') + '<sup><a ' + protect('href="#endnote-' + symbolicName + '"') + 
             '>' + endNoteTable[symbolicName] + '</a></sup>';
-    });
+    })
+*/;
 
     // CITATIONS: [#symbolicname]
     // The reference: (don't use \S+ because it can grab trailing punctuation)
@@ -2769,7 +2782,9 @@ function markdeepToHTML(str, elementMode) {
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
     var imageGridRowAttribs = protect('valign="top"');
-    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*)+\n/g, function (match) {
+    // This regex is the pattern for multiple images followed by an optional single image in case the last row is ragged
+    // with only one extra
+    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*)+(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\))[ \t]*)?\n/g, function (match) {
         var table = '';
 
         // Break into rows:
@@ -3123,19 +3138,19 @@ function markdeepToHTML(str, elementMode) {
         // Find link targets for APIs
         var apiDefined = {};
         str = str.rp(/<dt><code>([A-Za-z_][A-Za-z_\.0-9:\->]*)([\(\[<])/g, function (match, name, next) {
-            var linkName = name + (next === '<' ? '' : next);
+            var linkName = name + (next === '<' ? '' : next === '(' ? '-fcn' : next === '[' ? '-array' : next);
             apiDefined[linkName] = true;
             // The extra space added to the code tag below is to
             // prevent the link finding code from finding this (since
             // we don't have lookbehinds in JavaScript to recognize
             // the <dt>)
-            return '<dt><a name="apiDefinition_' + linkName + '"></a><code >' + name + next;
+            return '<dt><a name="apiDefinition-' + linkName + '"></a><code >' + name + next;
         });
 
         // Now find potential links
         str = str.rp(/<code>([A-Za-z_][A-Za-z_\.0-9:\->]*)(\(\)|\[\])?<\/code>/g, function (match, name, next) {
-            var linkName = name + (next ? next[0] : '');
-            return (apiDefined[linkName] === true) ? entag('a', match, 'href="#apiDefinition_' + linkName + '"') : match;
+            var linkName = name + (next ? (next[0] === '(' ? '-fcn' : next[0] === '[' ? '-array' : next[0]) : '');
+            return (apiDefined[linkName] === true) ? entag('a', match, 'href="#apiDefinition-' + linkName + '"') : match;
         });
     }
            
