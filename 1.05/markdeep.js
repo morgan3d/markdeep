@@ -3139,8 +3139,6 @@ function markdeepToHTML(str, elementMode) {
         });
     }
            
-    console.log(str);
-    
     return '<span class="md">' + entag('p', str) + '</span>';
 }
 
