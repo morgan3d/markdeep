@@ -4583,7 +4583,8 @@ if (! window.alreadyProcessedMarkdeep) {
         
         // Replace the document. If using MathJax, include the custom Markdeep definitions
         var longDocument = source.length > 1000;
-        var head = BODY_STYLESHEET + STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
+        var META = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+        var head = META + BODY_STYLESHEET + STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
         if (longDocument) {
             // Add more spacing before the title in a long document
             head += entag('style', 'div.title { padding-top: 40px; } div.afterTitles { height: 15px; }');
@@ -4591,14 +4592,14 @@ if (! window.alreadyProcessedMarkdeep) {
 
         if (window.location.href.search(/\?.*export.*/i) !== -1) {
             // Export mode
-            var text = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8">' + head + document.head.innerHTML + markdeepHTML;
+            var text = head + document.head.innerHTML + markdeepHTML;
             if (needMathJax) {
                 // Dynamically load mathjax
                 text += '<script src="' + MATHJAX_URL +'"></script>';
             }
             document.body.innerHTML = entag('pre', escapeHTMLEntities(text));
         } else {
-            document.head.innerHTML = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8">' + head + document.head.innerHTML;
+            document.head.innerHTML = head + document.head.innerHTML;
             document.body.innerHTML = markdeepHTML;
             if (needMathJax) { loadMathJax(); }            
         }
