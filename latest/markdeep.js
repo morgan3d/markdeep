@@ -160,7 +160,7 @@ var STYLESHEET = entag('style',
 
     '.md div.imagecaption,.md div.tablecaption,.md div.listingcaption{' +
     'margin:7px 5px 12px;' +
-    'text-align: justify;' +
+    'text-align:justify;' +
     'font-style:italic' +
     '}' +
 
@@ -211,7 +211,7 @@ var STYLESHEET = entag('style',
     '.md small{font-size:60%}' +
     '.md big{font-size:150%}' +
 
-    '.md div.title,contents,.md .tocHeader,h1,h2,h3,h4,h5,h6,.md .shortTOC,.md .mediumTOC,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
+    '.md div.title,contents,.md .tocHeader,.md h1,.md h2,.md h3,.md h4,.md h5,.md h6,.md .shortTOC,.md .mediumTOC,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{' +
     'font-family:Verdana,Helvetica,Arial,sans-serif;' +
     'margin:13.4px 0 13.4px;' +
     'padding:15px 0 3px;' +
@@ -238,7 +238,7 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md svg.diagram .opendot{' +
-    'fill:none' +
+    'fill:#fff' +
     '}' +
 
     '.md svg.diagram .shadeddot{' +
@@ -282,7 +282,7 @@ var STYLESHEET = entag('style',
     '}' +
 
     '.md h3,.md h4,.md h5,.md h6,.md .nonumberh3,.md .nonumberh4,.md .nonumberh5,.md .nonumberh6{' +
-    'font-family:Helvetica,Arial,sans-serif;' +
+    'font-family:Verdana,Helvetica,Arial,sans-serif;' +
     'color:#555;' +
     'font-size:16px;' +
     '}' +
@@ -309,7 +309,7 @@ var STYLESHEET = entag('style',
     'width:100%;' +
     'margin:auto;' +
     'font-size:11px;' +
-    'font-family:Helvetica,Arial,sans-serif' +
+    'font-family:Verdana,Helvetica,Arial,sans-serif' +
     '}' +
 
     '.md table.calendar th{' +
@@ -2311,26 +2311,25 @@ function markdeepToHTML(str, elementMode) {
     // In the private use area
     var PROTECT_CHARACTER = '\ue010';
 
-    // Use base 36 for encoding numbers
-    var PROTECT_RADIX     = 35;
+    // Use base 32 for encoding numbers, which is efficient in terms of 
+    // characters but avoids 'x' to avoid the pattern \dx\d, which Markdeep would
+    // beautify as a dimension
+    var PROTECT_RADIX     = 32;
     var protectedStringArray = [];
 
-    // Gives 1.5M possible sequences in base 56
+    // Gives 1e6 possible sequences in base 32, which should be sufficient
     var PROTECT_DIGITS    = 4;
 
     // Put the protect character at BOTH ends to avoid having the protected number encoding
     // look like an actual number to further markdown processing
-    var PROTECT_REGEXP    = RegExp(PROTECT_CHARACTER + '[0-9a-wyz]{' + PROTECT_DIGITS + ',' + PROTECT_DIGITS + '}' + PROTECT_CHARACTER, 'g');
+    var PROTECT_REGEXP    = RegExp(PROTECT_CHARACTER + '[0-9a-w]{' + PROTECT_DIGITS + ',' + PROTECT_DIGITS + '}' + PROTECT_CHARACTER, 'g');
 
     /** Given an arbitrary string, returns an escaped identifier
         string to temporarily replace it with to prevent Markdeep from
         processing the contents. See expose() */
     function protect(s) {
+        // Generate the replacement index, converted to an alphanumeric string
         var i = (protectedStringArray.push(s) - 1).toString(PROTECT_RADIX);
-
-        // Avoid the pattern "#x#", which Markdeep would interpret as a dimension eligible for
-        // beautification.
-        i = i.rp(/x/gi, 'z');
 
         // Ensure fixed length
         while (i.length < PROTECT_DIGITS) {
@@ -2346,7 +2345,7 @@ function markdeepToHTML(str, elementMode) {
     function expose(i) {
         // Strip the escape character and parse, then look up in the
         // dictionary.
-        var j = parseInt(i.ss(1, i.length - 1).rp(/z/g, 'x'), PROTECT_RADIX);
+        var j = parseInt(i.ss(1, i.length - 1), PROTECT_RADIX);
         exposeRan = true;
         return protectedStringArray[j];
     }
@@ -2666,10 +2665,18 @@ function markdeepToHTML(str, elementMode) {
 
     // CITATIONS: [#symbolicname]
     // The reference: (don't use \S+ because it can grab trailing punctuation)
-    str = str.rp(/\[#([^\)\(\[\]\.#\s]+)\](?!:)|(^[^\n]*\S[^\n]*)\[#([^\)\(\[\]\.#\s]+)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
-        var symbolicName = (symbolicNameA || symbolicNameB).trim();
-        return (prefix || '') + '[<a ' + protect('href="#citation-' + symbolicName.toLowerCase() + '"') + 
-            '>' + symbolicName + '</a>]';
+    str = str.rp(/\[(#[^\)\(\[\]\.#\s]+(?:[ \t]*,[ \t]*#(?:[^\)\(\[\]\.#\s]+))*)\](?!:)|(^[^\n]*\S[^\n]*)\[(#[^\)\(\[\]\.#\s]+(?:[ \t]*,[ \t]*#(?:[^\)\(\[\]\.#\s]+))*)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
+        var symbolicNameList = (symbolicNameA || symbolicNameB).trim();
+        // Parse the symbolicNameList
+        symbolicNameList = symbolicNameList.split(',');
+        var s = (prefix || '') + '[';
+        for (var i = 0; i < symbolicNameList.length; ++i) {
+            // Strip spaces and # signs
+            var name = symbolicNameList[i].rp(/#| /g, '');
+            s += entag('a', name, protect('href="#citation-' + name.toLowerCase() + '"'));
+            if (i < symbolicNameList.length - 1) { s += ', '; }
+        }
+        return s + ']';
     });
 
     // The bibliography entry:
@@ -2766,9 +2773,24 @@ function markdeepToHTML(str, elementMode) {
         return pre + '<a ' + protect('href="' + url + '"') + '>' + url + '</a>';
     });
 
+    var CAPTION_PROTECT_CHARACTER = '\ue011';
+    var protectedCaptionArray = [];
+    
+    // Temporarily protect image captions (or things that look like them) because the
+    // following code is really slow at parsing captions since they have regexps that are complicated
+    // to evaluate due to branching.
+    //
+    // The regexp is really just /.*?\n{0,5}.*/, but that executes substantially more slowly on Chrome.
+    str = str.rp(/!\[(.*?\n?.*?\n?.*?\n?.*?\n?.*?)\]([\[\(])/g, function (match, caption, bracket) {
+        // This is the same as the body of the protect() function, but using the protectedCaptionArray instead
+        var i = (protectedCaptionArray.push(caption) - 1).toString(PROTECT_RADIX);
+        while (i.length < PROTECT_DIGITS) { i = '0' + i; }
+        return '![' + CAPTION_PROTECT_CHARACTER + i + CAPTION_PROTECT_CHARACTER + ']' + bracket;
+    });
+    
     // REFERENCE IMAGE: ![...][ref attribs]
-    // Rewrite as a regular image for further processing below
-    str = str.rp(/(!\[(?:[\s\S]+?)?\])\[("?)([^"<>\s]+?)\2(\s[^\]]*?)?\]/g, function (match, caption, maybeQuote, symbolicName, attribs) {
+    // Rewrite as a regular image for further processing below.
+    str = str.rp(/(!\[.*?\])\[([^<>\[\]\s]+?)([ \t][^\n\[\]]*?)?\]/g, function (match, caption, symbolicName, attribs) {
         symbolicName = symbolicName.toLowerCase().trim();
         var t = referenceLinkTable[symbolicName];
         if (! t) {
@@ -2781,12 +2803,13 @@ function markdeepToHTML(str, elementMode) {
         }
     });
 
+    
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
     var imageGridRowAttribs = protect('valign="top"');
     // This regex is the pattern for multiple images followed by an optional single image in case the last row is ragged
     // with only one extra
-    str = str.rp(/(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*)+(?:\n(?:[ \t]*!\[[^\n]*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\))[ \t]*)?\n/g, function (match) {
+    str = str.rp(/(?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*)+(?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\))[ \t]*)?\n/g, function (match) {
         var table = '';
 
         // Break into rows:
@@ -2797,7 +2820,7 @@ function markdeepToHTML(str, elementMode) {
             row = row.trim();
             if (row) {
                 // Parse each image
-                table += entag('tr', row.rp(/[ \t]*!\[[^\n]*?\]\([^\)\s]+([^\)]*?)?\)/g, function(image, attribs) {
+                table += entag('tr', row.rp(/[ \t]*!\[.*?\]\([^\)\s]+([^\)]*?)?\)/g, function(image, attribs) {
                     //if (! /width|height/i.test(attribs) {
                         // Add a bogus "width" attribute to force the images to be hyperlinked to their
                         // full-resolution versions
@@ -2831,7 +2854,7 @@ function markdeepToHTML(str, elementMode) {
         loop = false;
 
         // CAPTIONED IMAGE: ![caption](url attribs)
-        str = str.rp(/(\s*)!\[([\s\S]+?)?\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
+        str = str.rp(/(\s*)!\[(.+?)\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
 
             loop = true;
             var divStyle = '';
@@ -2870,6 +2893,27 @@ function markdeepToHTML(str, elementMode) {
                 postSpaces;
         });
     } // while replacements made
+
+
+    // Uprotect image captions
+    var exposeCaptionRan = false;
+    var CAPTION_PROTECT_REGEXP    = RegExp(CAPTION_PROTECT_CHARACTER + '[0-9a-w]{' + PROTECT_DIGITS + ',' + PROTECT_DIGITS + '}' + CAPTION_PROTECT_CHARACTER, 'g');
+    /** Given the escaped identifier string from protect(), returns
+        the orginal string. */
+    function exposeCaption(i) {
+        // Strip the escape character and parse, then look up in the
+        // dictionary.
+        var j = parseInt(i.ss(1, i.length - 1), PROTECT_RADIX);
+        exposeCaptionRan = true;
+        return protectedCaptionArray[j];
+    }
+    exposeCaptionRan = true;
+    while ((str.indexOf(CAPTION_PROTECT_CHARACTER) + 1) && exposeCaptionRan) {
+        exposeCaptionRan = false;
+        str = str.rp(CAPTION_PROTECT_REGEXP, exposeCaption);
+    }
+    
+    ////////////////////////////////////////////
 
     // Process these after links, so that URLs with underscores and tildes are protected.
 
@@ -2946,10 +2990,11 @@ function markdeepToHTML(str, elementMode) {
 
     // Remove empty paragraphs (mostly avoided by the above, but some can still occur)
     str = str.rp(/<p>[\s\n]*<\/p>/gi, '');
-    
+
+
     // REFERENCE LINK
-    str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\[(.*?)\]/g, function (match, pre, text, symbolicName) {
-        // Empty symbolic name is replaced by the text
+    str = str.rp(/(^|[^!])\[([^\[\]]+)\]\[([^\[\]]*)\]/g, function (match, pre, text, symbolicName) {
+        // Empty symbolic name is replaced by the label text
         if (! symbolicName.trim()) {
             symbolicName = text;
         }
@@ -2999,7 +3044,7 @@ function markdeepToHTML(str, elementMode) {
         });
     }
 
-    // TABLE, LISTING, and FIGURE LABEL NUMBERING: Figure [symbol]:  Table [symbol]:  Listing [symbol]: Diagram [symbols]:
+    // TABLE, LISTING, and FIGURE LABEL NUMBERING: Figure [symbol]: Table [symbol]: Listing [symbol]: Diagram [symbol]:
 
     // This data structure maps caption types [by localized name] to a count of how many of
     // that type of object exist.
@@ -4453,12 +4498,18 @@ if (! window.alreadyProcessedMarkdeep) {
         }
     });
 
+    // Not needed: jax: ["input/TeX", "output/SVG"], 
     var MATHJAX_CONFIG ='<script type="text/x-mathjax-config">MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });</script>' +
         '<span style="display:none">' +
         // Custom definitions (NC == \newcommand)
         '$$NC{\\n}{\\hat{n}}NC{\\thetai}{\\theta_\\mathrm{i}}NC{\\thetao}{\\theta_\\mathrm{o}}NC{\\d}[1]{\\mathrm{d}#1}NC{\\w}{\\hat{\\omega}}NC{\\wi}{\\w_\\mathrm{i}}NC{\\wo}{\\w_\\mathrm{o}}NC{\\wh}{\\w_\\mathrm{h}}NC{\\Li}{L_\\mathrm{i}}NC{\\Lo}{L_\\mathrm{o}}NC{\\Le}{L_\\mathrm{e}}NC{\\Lr}{L_\\mathrm{r}}NC{\\Lt}{L_\\mathrm{t}}NC{\\O}{\\mathrm{O}}NC{\\degrees}{{^{\\large\\circ}}}NC{\\T}{\\mathsf{T}}NC{\\mathset}[1]{\\mathbb{#1}}NC{\\Real}{\\mathset{R}}NC{\\Integer}{\\mathset{Z}}NC{\\Boolean}{\\mathset{B}}NC{\\Complex}{\\mathset{C}}NC{\\un}[1]{\\,\\mathrm{#1}}$$\n'.rp(/NC/g, '\\newcommand') +
-        '</span>\n'
-    var MATHJAX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+        '</span>\n';
+
+    // The following option forces better rendering on some browsers, but also makes it impossible to copy-paste text with
+    // inline equations:
+    //
+    // 'config=TeX-MML-AM_SVG'
+    var MATHJAX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.6/MathJax.js?config=TeX-AMS-MML_HTMLorMML';
 
     function loadMathJax() {
         // Dynamically load mathjax
