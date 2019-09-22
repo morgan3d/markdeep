@@ -118,6 +118,10 @@ var STYLESHEET = entag('style',
     // Avoid header/footer in print to PDF. See https://productforums.google.com/forum/#!topic/chrome/LBMUDtGqr-0
     '@page{margin:0;size:auto}' +
 
+                       '#mdContextMenu{position:absolute;background:#383838;cursor:default;border:1px solid #999;color:#fff;padding:4px 0px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",sans-serif;font-size:85%;font-weight:600;border-radius:4px;box-shadow:0px 3px 10px rgba(0,0,0,35%)}' +
+                       '#mdContextMenu div{padding:0px 20px}' +
+                       '#mdContextMenu div:hover{background:#1659d1}' +
+                       
     '.md code,.md pre{' +
     'font-family:' + codeFontStack + ';' +
     'font-size:' + codeFontSize + ';' +
@@ -4633,6 +4637,84 @@ if (! window.alreadyProcessedMarkdeep) {
 
         // console.log(markdeepHTML); // Final processed source 
 
+        /////////////////////////////////////////////////////////////
+        // Add the section header event handlers
+
+        var onContextMenu = function (event) {
+            var menu = null;
+            try {
+            // Test for Header
+            var match = event.target.tagName.match(/^H(\d)$/);
+            if (! match) { return; }
+
+            // We are on a header
+            var level = parseInt(match[1]) || 1;
+
+            // Show the headerMenu
+            menu = document.getElementById('mdContextMenu');
+            if (! menu) { return; }
+
+            var sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
+            // Search backwards two siblings to grab the URL generated
+            var anchorNode = event.target.previousElementSibling.previousElementSibling;
+
+            var sectionName = event.target.innerText.trim();
+            var sectionLabel = sectionName.toLowerCase();
+            var anchor = anchorNode.name;
+            var url = location.pathname + '#' + anchor;
+
+            var shortUrl = url;
+            if (shortUrl.length > 15) {
+                shortUrl = url.ss(0, 5) + '&hellip;' + location.pathname.ss(location.pathname.length - 10) + '#' + anchor;
+            }
+            
+            var s = entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
+                         'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+
+            s += entag('div', 'Copy Markdeep &ldquo;' + sectionType + ' [' + sectionLabel + ']&rdquo;',
+                         'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+            s += entag('div', 'Copy HTML &ldquo;&lt;a href=\"' + shortUrl + '\"&gt;' + sectionName + '&lt;/a&gt;&rdquo;',
+                       'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+
+            menu.innerHTML = s;
+            menu.style.visibility = 'visible';
+            menu.style.left = event.pageX + 'px';
+            menu.style.top = event.pageY + 'px';
+
+            event.preventDefault();
+            return false;
+            } catch (e) {
+                // Something went wrong
+                console.log(e);
+                if (menu) { menu.style.visibility = 'hidden'; }
+            }
+        }
+
+        markdeepHTML += '<div id="mdContextMenu" style="visibility:hidden"></div>';
+        
+        document.addEventListener('contextmenu', onContextMenu, false);
+        document.addEventListener('mousedown', function (event) {
+            var menu = document.getElementById('mdContextMenu');
+            if (menu) {
+                for (var node = event.target; node; node = node.parentElement) {
+                    if (node === menu) { return; }
+                }
+                // Clicked off menu, so close it
+                menu.style.visibility = 'hidden';
+            }
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.keyCode === 27) {
+                var menu = document.getElementById('mdContextMenu');
+                if (menu) { menu.style.visibility = 'hidden'; }
+            }
+        });
+        
+
+        
+        /////////////////////////////////////////////////////////////
+        
         var needMathJax = needsMathJax(markdeepHTML);
         if (needMathJax) {
             markdeepHTML = MATHJAX_CONFIG + markdeepHTML; 
