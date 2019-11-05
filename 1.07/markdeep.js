@@ -167,17 +167,15 @@ var STYLESHEET = entag('style',
     'text-align:center' + 
     '}' +
 
-    '.md .imagecaption,.md div.tablecaption,.md div.listingcaption{' +
+    '.md .imagecaption,.md .tablecaption,.md .listingcaption{' +
+    'display:inline-block;' +
     'margin:7px 5px 12px;' +
     'text-align:justify;' +
     'font-style:italic' +
     '}' +
-
-    '.md .imagecaption{' +
-    'display: block;' +
-    'margin-bottom:0' +
-    '}' +
-
+                       
+    '.md img.pixel{image-rendering:-moz-crisp-edges;image-rendering:pixelated}' +
+                       
     '.md blockquote.fancyquote{' + 
     'margin:25px 0 25px;' +
     'text-align:left;' +
@@ -333,10 +331,6 @@ var STYLESHEET = entag('style',
     '.md .calendar .parenthesized{' +
     'color:#999;' + 
     'font-style:italic' +
-    '}' +
-
-    '.md div.tablecaption{' +
-    'text-align:center' +
     '}' +
 
     '.md table.table th{' +
@@ -531,6 +525,7 @@ var FRENCH = {
         sec:       'sec',
         section:   'section',
         subsection: 'paragraphe',
+        chapter:   'chapitre',
 
         Monday:    'lundi',
         Tuesday:   'mardi',
@@ -583,6 +578,7 @@ var LITHUANIAN = {
         sec:       'sk',
         section:   'skyrius',
         subsection: 'poskyris',
+        chapter:   'skyrius',
 
         Monday:    'pirmadienis',
         Tuesday:   'antradienis',
@@ -637,6 +633,7 @@ var BULGARIAN = {
         sec:       'сек',
         section:   'раздел',
         subsection: 'подраздел',
+        chapter:   'глава',
 
         Monday:    'понеделник',
         Tuesday:   'вторник',
@@ -690,6 +687,7 @@ var PORTUGUESE = {
         sec:       'sec',
         section:   'secção',
         subsection: 'subsecção',
+        chapter:   'capítulo',
 
         Monday:    'Segunda-feira',
         Tuesday:   'Terça-feira',
@@ -744,6 +742,7 @@ var CZECH = {
         sec:       'kap.',  // Abbreviation for section
         section:   'kapitola',
         subsection:'podkapitola',
+        chapter:   'kapitola',
 
         Monday:    'pondělí',
         Tuesday:   'úterý',
@@ -796,6 +795,7 @@ var ITALIAN = {
         sec:       'sez',
         section:   'sezione',
         subsection: 'paragrafo',
+        chapter:   'capitolo',
 
         Monday:    'lunedì',
         Tuesday:   'martedì',
@@ -848,6 +848,7 @@ var RUSSIAN = {
         sec:       'сек',
         section:   'раздел',
         subsection: 'подраздел',
+        chapter:   'глава',
 
         Monday:    'понедельник',
         Tuesday:   'вторник',
@@ -900,6 +901,7 @@ var POLISH = {
         sec:       'rozdz.',
         section:   'rozdział',
         subsection: 'podrozdział',
+        chapter:   'kapituła',
 
         Monday:    'Poniedziałek',
         Tuesday:   'Wtorek',
@@ -953,6 +955,7 @@ var HUNGARIAN = {
         sec:       'fej',  // Abbreviation for section
         section:   'fejezet',
         subsection:'alfejezet',
+        chapter:   'fejezet',
 
         Monday:    'hétfő',
         Tuesday:   'kedd',
@@ -1002,9 +1005,10 @@ var JAPANESE = {
         diagram:   '図',
         contents:  '目次',
 
-        sec:       '章',
+        sec:       '節',
         section:   '節',
         subsection: '項',
+        chapter:   '章',
 
         Monday:    '月',
         Tuesday:   '火',
@@ -1058,6 +1062,7 @@ var GERMAN = {
         sec:       'Kap',
         section:   'Kapitel',
         subsection:'Unterabschnitt',
+        chapter:   'Kapitel',
 
         Monday:    'Montag',
         Tuesday:   'Dienstag',
@@ -1110,6 +1115,7 @@ var SPANISH = {
         sec:       'sec',
         section:   'Sección',
         subsection: 'Subsección',
+        chapter:    'Capítulo',
 
         Monday:    'Lunes',
         Tuesday:   'Martes',
@@ -1162,6 +1168,7 @@ var SWEDISH = {
         sec:       'sek',
         section:   'sektion',
         subsection:'sektion',
+        chapter:   'kapitel',
 
         Monday:    'måndag',
         Tuesday:   'tisdag',
@@ -1634,7 +1641,7 @@ function replaceTables(s, protect) {
         result = entag('table', result, protect('class="table"'));
 
         if (caption) {
-            caption = entag('div', caption, protect('class="tablecaption"'));
+            caption = entag('center', entag('div', caption, protect('class="tablecaption"')));
             if (option('captionAbove', 'table')) {
                 result = caption + result;
             } else {
@@ -2430,7 +2437,7 @@ function markdeepToHTML(str, elementMode) {
         str = str.rp(pattern, function(match, indent, lang, cssSubClass, sourceCode, caption) {
             if (caption) {
                 caption = caption.trim();
-                caption = '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption.ss(1, caption.length - 1) + '</div>\n';
+                caption = entag('center', '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption.ss(1, caption.length - 1) + '</div>') + '\n';
             }
             // Remove the block's own indentation from each line of sourceCode
             sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
@@ -2726,9 +2733,10 @@ function markdeepToHTML(str, elementMode) {
             // This is video. Any attributes provided will override the defaults given here
             img = '<video ' + protect('class="markdeep" src="' + url + '"' + attribs + ' width="480px" controls="true"') + '/>';
         } else if (/\.(mp3|mp2|ogg|wav|m4a|aac|flac)$/i.test(url)) {
-            img = '<audio ' + protect('class="markdeep" controls ' + attribs + '><source src="' + url + '">') + '</audio>';
+            // Audio
+            img = '<audio ' + protect('class="markdeep" controls ' + attribs + '><source src="' + url + '"') + '></audio>';
         } else if (hash = url.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/\S*?v=|youtu\.be\/)([\w\d-]+)(&.*)?$/i)) {
-            // Youtube video
+            // YouTube video
             img = '<iframe ' + protect('class="markdeep" src="https://www.youtube.com/embed/' + hash[1] + '"' + attribs + ' width="480px" height="300px" frameborder="0" allowfullscreen webkitallowfullscreen mozallowfullscreen') + '></iframe>';
         } else if (hash = url.match(/^https:\/\/(?:www\.)?vimeo.com\/\S*?\/([\w\d-]+)$/i)) {
             // Vimeo video
@@ -2737,14 +2745,20 @@ function markdeepToHTML(str, elementMode) {
             // Image (trailing space is needed in case attribs must be quoted by the
             // browser...without the space, the browser will put the closing slash in the
             // quotes.)
-            img = '<img ' + protect('class="markdeep" src="' + url + '"' + attribs) + ' />';
 
-            // Check for width or height (or max-width and max-height). If they exist,
-            // link this to the full-size image as well. The current code ALWAYS makes
-            // this link.
-            //if (/\b(width|height)\b/i.test(attribs)) {
+            var classList = 'markdeep';
+            // Remove classes from attribs
+            attribs = attribs.rp(/class *= *(["'])([^'"]+)\1/, function (match, quote, cls) {
+                classList += ' ' + cls;
+                return '';
+            });
+            attribs = attribs.rp(/class *= *([^"' ]+)/, function (match, cls) {
+                classList += ' ' + cls;
+                return '';
+            });
+            
+            img = '<img ' + protect('class="' + classList + '" src="' + url + '"' + attribs) + ' />';
             img = entag('a', img, protect('href="' + url + '" target="_blank"'));
-            //}
         }
 
         return img;
@@ -2807,9 +2821,10 @@ function markdeepToHTML(str, elementMode) {
     var CAPTION_PROTECT_CHARACTER = '\ue011';
     var protectedCaptionArray = [];
     
-    // Temporarily protect image captions (or things that look like them) because the
-    // following code is really slow at parsing captions since they have regexps that are complicated
-    // to evaluate due to branching.
+    // Temporarily protect image captions (or things that look like
+    // them) because the following code is really slow at parsing
+    // captions since they have regexps that are complicated to
+    // evaluate due to branching.
     //
     // The regexp is really just /.*?\n{0,5}.*/, but that executes substantially more slowly on Chrome.
     str = str.rp(/!\[([^\n\]].*?\n?.*?\n?.*?\n?.*?\n?.*?)\]([\[\(])/g, function (match, caption, bracket) {
@@ -2906,7 +2921,7 @@ function markdeepToHTML(str, elementMode) {
                     return 'style="' + attrib + ':100%" ';
                 });
             }
-            
+
             var img = formatImage(match, url, attribs);
 
             if (iso) {
@@ -2919,9 +2934,12 @@ function markdeepToHTML(str, elementMode) {
             }
             var floating = !iso;
             
-            caption = entag('span', caption + maybeShowLabel(url), protect('class="imagecaption"'));
+            caption = entag('center', entag('span', caption + maybeShowLabel(url), protect('class="imagecaption"')));
+
+            // This code used to put floating images in <span> instead of <div>,
+            // but it wasn't clear why and this broke centered captions
             return preSpaces + 
-                entag(floating ? 'span' : 'div', (imageCaptionAbove ? caption : '') + img + (! imageCaptionAbove ? caption : ''), protect('class="image" style="' + divStyle + '"')) + 
+                entag('div', (imageCaptionAbove ? caption : '') + img + (! imageCaptionAbove ? caption : ''), protect('class="image" style="' + divStyle + '"')) + 
                 postSpaces;
         });
     } // while replacements made
@@ -3047,7 +3065,7 @@ function markdeepToHTML(str, elementMode) {
             header = removeHTMLTags(header.ss(4, header.length - 5)).trim();
             var link = '<a ' + protect('href="#' + mangle(header) + '"') + '>';
 
-            var sectionExp = '(' + keyword('section') + '|' + keyword('subsection') + ')';
+            var sectionExp = '(' + keyword('section') + '|' + keyword('subsection') + '|' + keyword('chapter') + ')';
             var headerExp = '(\\b' + escapeRegExpCharacters(header) + ')';
             
             // Search for links to this section
@@ -3156,7 +3174,7 @@ function markdeepToHTML(str, elementMode) {
         str = temp[0];
         var toc = temp[1];
         // SECTION LINKS: Replace sec. [X], section [X], subsection [X]
-        str = str.rp(RegExp('\\b(' + keyword('sec') + '\\.|' + keyword('section') + '|' + keyword('subsection') + ')\\s\\[(.+?)\\]', 'gi'), 
+        str = str.rp(RegExp('\\b(' + keyword('sec') + '\\.|' + keyword('section') + '|' + keyword('subsection') + '|' + keyword('chapter') + ')\\s\\[(.+?)\\]', 'gi'), 
                     function (match, prefix, ref) {
                         var link = toc[ref.toLowerCase().trim()];
                         if (link) {
