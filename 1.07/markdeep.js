@@ -2684,12 +2684,19 @@ function markdeepToHTML(str, elementMode) {
 */;
 
     // CITATIONS: [#symbolicname]
-    // The reference: (don't use \S+ because it can grab trailing punctuation)
-    str = str.rp(/\[(#[^\)\(\[\]\.#\s]+(?:[ \t]*,[ \t]*#(?:[^\)\(\[\]\.#\s]+))*)\](?!:)|(^[^\n]*\S[^\n]*)\[(#[^\)\(\[\]\.#\s]+(?:[ \t]*,[ \t]*#(?:[^\)\(\[\]\.#\s]+))*)\]/gm, function (match, symbolicNameA, prefix, symbolicNameB) {
-        var symbolicNameList = (symbolicNameA || symbolicNameB).trim();
+    // The bibliography entry:
+    str = str.rp(/\n\[#(\S+)\]:[ \t]+((?:[ \t]*\S[^\n]*\n?)*)/g, function (match, symbolicName, entry) {
+        symbolicName = symbolicName.trim();
+        return '<div ' + protect('class="bib"') + '>[<a ' + protect('class="target" name="citation-' + symbolicName.toLowerCase() + '"') + 
+            '>&nbsp;</a><b>' + symbolicName + '</b>] ' + entry + '</div>';
+    });
+    
+    // A reference:
+    // (must process AFTER the definitions, since the syntax is a subset)
+    str = str.rp(/\[(#[^\)\(\[\]\.#\s]+(?:\s*,\s*#(?:[^\)\(\[\]\.#\s]+))*)\]/g, function (match, symbolicNameList) {
         // Parse the symbolicNameList
         symbolicNameList = symbolicNameList.split(',');
-        var s = (prefix || '') + '[';
+        var s = '[';
         for (var i = 0; i < symbolicNameList.length; ++i) {
             // Strip spaces and # signs
             var name = symbolicNameList[i].rp(/#| /g, '');
@@ -2698,13 +2705,7 @@ function markdeepToHTML(str, elementMode) {
         }
         return s + ']';
     });
-
-    // The bibliography entry:
-    str = str.rp(/\n\[#(\S+)\]:[ \t]+((?:[ \t]*\S[^\n]*\n?)*)/g, function (match, symbolicName, entry) {
-        symbolicName = symbolicName.trim();
-        return '<div ' + protect('class="bib"') + '>[<a ' + protect('class="target" name="citation-' + symbolicName.toLowerCase() + '"') + 
-            '>&nbsp;</a><b>' + symbolicName + '</b>] ' + entry + '</div>';
-    });
+    
 
     // TABLES: line with | over line containing only | and -
     // (process before reference links to avoid ambiguity on the captions)
