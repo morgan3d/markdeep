@@ -4711,20 +4711,26 @@ if (! window.alreadyProcessedMarkdeep) {
             var sectionName = event.target.innerText.trim();
             var sectionLabel = sectionName.toLowerCase();
             var anchor = anchorNode.name;
-            var url = location.pathname + '#' + anchor;
+            var url = '' + location + '#' + anchor;
 
             var shortUrl = url;
-            if (shortUrl.length > 15) {
-                shortUrl = url.ss(0, 5) + '&hellip;' + location.pathname.ss(location.pathname.length - 10) + '#' + anchor;
+            if (shortUrl.length > 17) {
+                shortUrl = url.ss(0, 7) + '&hellip;' + location.pathname.ss(location.pathname.length - 8) + '#' + anchor;
             }
             
-            var s = entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
-                         'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+            var s = entag('div', 'Visit URL &ldquo;' + shortUrl + '&rdquo;',
+                       'onclick="(location=&quot;' + url + '&quot;)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+            s += entag('div', 'Copy URL &ldquo;' + shortUrl + '&rdquo;',
+                       'onclick="navigator.clipboard.writeText(&quot;' + url + '&quot)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+            s += entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
+                      'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
 
             s += entag('div', 'Copy Markdeep &ldquo;' + sectionType + ' [' + sectionLabel + ']&rdquo;',
-                         'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                       'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
                 
-            s += entag('div', 'Copy HTML &ldquo;&lt;a href=\"' + shortUrl + '\"&gt;' + sectionName + '&lt;/a&gt;&rdquo;',
+            s += entag('div', 'Copy HTML &ldquo;&lt;a href=&hellip;&gt;&rdquo;',
                        'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
 
             menu.innerHTML = s;
