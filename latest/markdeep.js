@@ -2658,7 +2658,8 @@ function markdeepToHTML(str, elementMode) {
 
     // FOOTNOTES/ENDNOTES: [^symbolic name]. Disallow spaces in footnote names to
     // make parsing unambiguous. Consume leading space before the footnote.
-    str = str.rp(/[ \t]*\[\^([^\]\n\t ]+)\](?!:)/g, function (match, symbolicNameA) {
+    function endNote(match, symbolicNameA) {
+        console.log(match, ',', symbolicNameA);
         var symbolicName = symbolicNameA.toLowerCase().trim();
 
         if (! (symbolicName in endNoteTable)) {
@@ -2668,7 +2669,10 @@ function markdeepToHTML(str, elementMode) {
 
         return '<sup><a ' + protect('href="#endnote-' + symbolicName + '"') + 
             '>' + endNoteTable[symbolicName] + '</a></sup>';
-    })
+    }    
+    str = str.rp(/[ \t]*\[\^([^\]\n\t ]+)\](?!:)/g, endNote);
+    str = str.rp(/(\S)[ \t]*\[\^([^\]\n\t ]+)\]/g, function(match, pre, symbolicNameA) { return pre + endNote(match, symbolicNameA); });
+
 
     // CITATIONS: [#symbolicname]
     // The bibliography entry:
@@ -4512,6 +4516,131 @@ function diagramToSVG(diagramString, alignmentHint) {
 }
 
 
+////////////////////////// Processing for INSERT HERE
+//
+// Insert command processing modifies the entire document and potentially
+// delays further processing, so it is handled specially and runs the main
+// markdeep processing as a callback
+//
+// node: the node being processed for markdeep. This is document.body
+// in markdeep mode, but may be another node in html or script mode.
+//
+// processMarkdeepCallback: function to run when insert is complete
+// to evaluate markdeep 
+function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
+    var myURLParse = /([^?]+)(?:\?id=(inc\d+)&p=([^&]+))?/.exec(location.href);
+
+    var myBase = removeFilename(myURLParse[1]);
+    var myID = myURLParse[2];
+    var parentBase = removeFilename(myURLParse[3] && decodeURIComponent(myURLParse[3]));
+    var childFrameStyle = 'display:none';
+    var includeCounter = 0;
+    var IAmAChild = myID; // !== undefined
+    var IAmAParent = false;
+    var numIncludeChildrenLeft = 0;
+    
+    // Helper function for use by children
+    function sendContentsToMyParent() {
+        // console.log(location.pathname + " sent message to parent");
+        // Send the document contents after the childFrame replaced itself
+        // (not the source variable captured when this function was defined!)
+        parent.postMessage(myID + '=' + document.body.innerHTML, '*');
+    }
+
+    // Strip the filename from the url, if there is one (and it is a string)
+    function removeFilename(url) {
+        return url && url.ss(0, url.lastIndexOf('/') + 1);
+    }
+
+    // Called when this entire document is ready for either markdeep
+    // processing or sending to its parent for markdeep processing.
+    //
+    // IAmAChild: Truish if this document is a child
+    //
+    // sourceArray: If known, source is the code for the nodes. If it was modified, it is not provided
+    function documentReady(IAmAChild, nodeArray, sourceArray) {
+        if (IAmAChild) {
+            // I'm a child and not waiting for my own children, so trigger the send now. My parent will
+            // do the processing.
+            
+            // console.log("Leaf node " + location.pathname + " sending to parent");
+            sendContentsToMyParent();
+        } else {
+            // No includes. Run markdeep processing after the rest of this file parses
+            
+            // console.log("non-parent, non-child Parent scheduling markdeepProcessor");
+            setTimeout(function () { insertDoneCallback(nodeArray, sourceArray) }, 1);
+        }
+    }
+     
+     function messageCallback(event) {
+         // Parse the message. Ensure that it is for the Markdeep/include.js system.
+         var childID = false;
+         var childBody = event.data.substring && event.data.replace(/^(inc\d+)=/, function (match, a) {
+             childID = a;
+             return '';
+         });
+         
+         if (childID) {
+             // This message event was for the Markdeep/include.js system
+             
+             //console.log(location.href + ' received a message from child ' + childID);
+
+             // Replace the corresponding node's contents
+             var childFrame = document.getElementById(childID);
+             childFrame.outerHTML = '\n' + childBody + '\n';
+
+             --numIncludeChildrenLeft;
+
+             //console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
+             
+             if (numIncludeChildrenLeft <= 0) {
+                 // This was the last child
+                 documentReady(IAmAChild, nodeArray);
+             }
+         }
+     };
+
+     // Find all insert statements in all nodes and replace them
+     for (var i = 0; i < sourceArray.length; ++i) {
+         sourceArray[i] = sourceArray[i].rp(/(?:^|\s)\(insert[ \t]+(\S+\.\S*)[ \t]+here\)\s/g, function(match, src) {
+             if (numIncludeChildrenLeft === 0) {
+                 // This is the first child observed. Prepare to receive messages from the
+                 // embedded children.
+                 IAmAParent = true;
+                 addEventListener("message", messageCallback);
+             }
+             
+             ++numIncludeChildrenLeft;
+             //console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
+             
+             // Replace this tag with a frame that loads the document.  Once loaded, it will
+             // send a message with its contents for use as a replacement.
+             var childID = 'inc' + (++includeCounter);
+             return '<iframe src="' + src + '?id=' + childID + '&p=' + encodeURIComponent(myBase) + 
+                 '" id="' + childID + '" style="' + childFrameStyle + '" content="text/html;charset=UTF-8"></iframe>';
+         });
+     }
+
+     // console.log('after insert: ' + source);
+
+     // Process all nodes
+     if (IAmAParent) {
+         // I'm waiting on children, so don't run the full processor
+         // yet, but do substitute the iframe code so that it can
+         // launch. I may be a child as well...this will be determined
+         // when numIncludeChildren hits zero.
+
+         for (var i = 0; i < sourceArray.length; ++i) {
+             nodeArray[i].innerHTML = sourceArray[i];
+         }
+     } else {
+         // The source was not modified
+         documentReady(IAmAChild, nodeArray, sourceArray);
+     }
+} // function processInsertCommands()
+
+ 
 /* xcode.min.js modified */
 var HIGHLIGHT_STYLESHEET =
         "<style>.hljs{display:block;overflow-x:auto;padding:0.5em;background:#fff;color:#000;-webkit-text-size-adjust:none}"+
@@ -4587,7 +4716,7 @@ if (! window.alreadyProcessedMarkdeep) {
             ((html.search(/(?:\$\$[\s\S]+\$\$)|(?:\\begin{)/m) !== -1) || 
              (html.search(/\\\(.*\\\)/) !== -1));
     }
-    
+
     var mode = option('mode');
     switch (mode) {
     case 'script':
@@ -4596,6 +4725,7 @@ if (! window.alreadyProcessedMarkdeep) {
 
     case 'html':
     case 'doxygen':
+        // Process explicit diagram tags by themselves
         toArray(document.getElementsByClassName('diagram')).concat(toArray(document.getElementsByTagName('diagram'))).forEach(
             function (element) {
                 var src = unescapeHTMLEntities(element.innerHTML);
@@ -4616,19 +4746,49 @@ if (! window.alreadyProcessedMarkdeep) {
                 element.outerHTML = '<center class="md">' + diagramToSVG(removeLeadingSpace(src), '') + '</center>';
             });
 
-        var anyNeedsMathJax = false;
-        toArray(document.getElementsByClassName('markdeep')).concat(toArray(document.getElementsByTagName('markdeep'))).forEach(
-            function (src) {
-                var dst = document.createElement('div');
-                var html = markdeepToHTML(removeLeadingSpace(unescapeHTMLEntities(src.innerHTML)), true);
-                anyNeedsMathJax = anyNeedsMathJax || needsMathJax(html);
-                dst.innerHTML = html;
-                src.parentNode.replaceChild(dst, src);
-            });
+        // Collect all nodes that will receive markdeep processing
+        var markdeepNodeArray = toArray(document.getElementsByClassName('markdeep')).concat(toArray(document.getElementsByTagName('markdeep')));
 
-        // Include our stylesheet even if there are no MARKDEEP tags, but do not include the BODY_STYLESHEET.
-        document.head.innerHTML = window.markdeep.stylesheet() + document.head.innerHTML + (anyNeedsMathJax ? MATHJAX_CONFIG : '');
-        loadMathJax();
+        // Extract the source code of markeep nodes
+        var sourceArray = markdeepNodeArray.map(function (node) {
+            return removeLeadingSpace(unescapeHTMLEntities(node.innerHTML));
+        });
+
+        // Process insert commands and then trigger markdeep processing
+        processInsertCommands(markdeepNodeArray, sourceArray, function (nodeArray, sourceArray) {
+            // Update sourceArray if needed because the source code was mutated
+            // by insert processing
+            sourceArray = sourceArray || nodeArray.map(function (node) {
+                return removeLeadingSpace(unescapeHTMLEntities(node.innerHTML));
+            });
+            
+            // Process all nodes, replacing them as we progress
+            var anyNeedsMathJax = false;
+            for (var i = 0; i < markdeepNodeArray.length; ++i) {
+                var oldNode = markdeepNodeArray[i];
+                var newNode = document.createElement('div');
+                var source = removeLeadingSpace(unescapeHTMLEntities(oldNode.innerHTML));
+                var html = markdeepToHTML(source, true);
+                anyNeedsMathJax = anyNeedsMathJax || needsMathJax(html);
+                newNode.innerHTML = html;
+                oldNode.parentNode.replaceChild(newNode, oldNode);
+            }
+
+            if (anyNeedsMathJax) { loadMathJax(); }
+
+            // Include our stylesheet even if there are no MARKDEEP tags, but do not include the BODY_STYLESHEET.
+            document.head.innerHTML = window.markdeep.stylesheet() + document.head.innerHTML + (anyNeedsMathJax ? MATHJAX_CONFIG : '');
+
+            // Remove fallback nodes
+            var fallbackNodes = document.getElementsByClassName('fallback');
+            for (var i = 0; i < fallbackNodes.length; ++i) {
+                fallbackNodes[i].remove();
+            }
+
+        });
+
+        window.alreadyProcessedMarkdeep = true;
+
         return;
     }
     
@@ -4680,9 +4840,12 @@ if (! window.alreadyProcessedMarkdeep) {
         return;
     }
 
-    var markdeepProcessor = function() {
+    // In the common case of no INSERT commands, source is the origina source
+    // passed to avoid reparsing.
+    var markdeepProcessor = function (source) {
         // Recompute the source text from the current version of the document
-        var source = nodeToMarkdeepSource(document.body);
+        // if it was unmodified
+        source = source || nodeToMarkdeepSource(document.body);
         var markdeepHTML = markdeepToHTML(source, false);
 
         // console.log(markdeepHTML); // Final processed source 
@@ -4693,53 +4856,65 @@ if (! window.alreadyProcessedMarkdeep) {
         var onContextMenu = function (event) {
             var menu = null;
             try {
-            // Test for Header
-            var match = event.target.tagName.match(/^H(\d)$/);
-            if (! match) { return; }
+                // Test for whether the click was on a header
+                var match = event.target.tagName.match(/^H(\d)$/);
+                if (! match) { return; }
 
-            // We are on a header
-            var level = parseInt(match[1]) || 1;
-
-            // Show the headerMenu
-            menu = document.getElementById('mdContextMenu');
-            if (! menu) { return; }
-
-            var sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
-            // Search backwards two siblings to grab the URL generated
-            var anchorNode = event.target.previousElementSibling.previousElementSibling;
-
-            var sectionName = event.target.innerText.trim();
-            var sectionLabel = sectionName.toLowerCase();
-            var anchor = anchorNode.name;
-            var url = '' + location + '#' + anchor;
-
-            var shortUrl = url;
-            if (shortUrl.length > 17) {
-                shortUrl = url.ss(0, 7) + '&hellip;' + location.pathname.ss(location.pathname.length - 8) + '#' + anchor;
-            }
-            
-            var s = entag('div', 'Visit URL &ldquo;' + shortUrl + '&rdquo;',
-                       'onclick="(location=&quot;' + url + '&quot;)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                // The event target is a header...ensure that it is a Markdeep header
+                // (we could be in HTML or Doxygen mode and have non-.md content in the
+                // same document)
+                var node = event.target;
+                while (node) {
+                    if (node.classList.contains('md')) { break } else { node = node.parentElement; }
+                }
+                if (! node) {
+                    // never found .md
+                    return;
+                }
+                    
+                // We are on a header
+                var level = parseInt(match[1]) || 1;
                 
-            s += entag('div', 'Copy URL &ldquo;' + shortUrl + '&rdquo;',
-                       'onclick="navigator.clipboard.writeText(&quot;' + url + '&quot)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                // Show the headerMenu
+                menu = document.getElementById('mdContextMenu');
+                if (! menu) { return; }
                 
-            s += entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
-                      'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
-
-            s += entag('div', 'Copy Markdeep &ldquo;' + sectionType + ' [' + sectionLabel + ']&rdquo;',
-                       'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                var sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
+                // Search backwards two siblings to grab the URL generated
+                var anchorNode = event.target.previousElementSibling.previousElementSibling;
                 
-            s += entag('div', 'Copy HTML &ldquo;&lt;a href=&hellip;&gt;&rdquo;',
-                       'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
-
-            menu.innerHTML = s;
-            menu.style.visibility = 'visible';
-            menu.style.left = event.pageX + 'px';
-            menu.style.top = event.pageY + 'px';
-
-            event.preventDefault();
-            return false;
+                var sectionName = event.target.innerText.trim();
+                var sectionLabel = sectionName.toLowerCase();
+                var anchor = anchorNode.name;
+                var url = '' + location + '#' + anchor;
+                
+                var shortUrl = url;
+                if (shortUrl.length > 17) {
+                    shortUrl = url.ss(0, 7) + '&hellip;' + location.pathname.ss(location.pathname.length - 8) + '#' + anchor;
+                }
+                
+                var s = entag('div', 'Visit URL &ldquo;' + shortUrl + '&rdquo;',
+                              'onclick="(location=&quot;' + url + '&quot;)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+                s += entag('div', 'Copy URL &ldquo;' + shortUrl + '&rdquo;',
+                           'onclick="navigator.clipboard.writeText(&quot;' + url + '&quot)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+                s += entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
+                           'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+                s += entag('div', 'Copy Markdeep &ldquo;' + sectionType + ' [' + sectionLabel + ']&rdquo;',
+                           'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+                s += entag('div', 'Copy HTML &ldquo;&lt;a href=&hellip;&gt;&rdquo;',
+                           'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                
+                menu.innerHTML = s;
+                menu.style.visibility = 'visible';
+                menu.style.left = event.pageX + 'px';
+                menu.style.top = event.pageY + 'px';
+                
+                event.preventDefault();
+                return false;
             } catch (e) {
                 // Something went wrong
                 console.log(e);
@@ -4767,7 +4942,6 @@ if (! window.alreadyProcessedMarkdeep) {
             }
         });
         
-
         
         /////////////////////////////////////////////////////////////
         
@@ -4822,99 +4996,11 @@ if (! window.alreadyProcessedMarkdeep) {
         }
            
     };
-
-    ///////////// INSERT command processing
-    // Helper function for use by children
-    function sendContentsToMyParent() {
-        // console.log(location.pathname + " sent message to parent");
-        // Send the document contents after the childFrame replaced itself
-        // (not the source variable captured when this function was defined!)
-        parent.postMessage(myID + '=' + document.body.innerHTML, '*');
-    }
-
-    // Strip the filename from the url, if there is one (and it is a string)
-    function removeFilename(url) {
-        return url && url.ss(0, url.lastIndexOf('/') + 1);
-    }
-
-    var myURLParse = /([^?]+)(?:\?id=(inc\d+)&p=([^&]+))?/.exec(location.href);
-
-    var myBase = removeFilename(myURLParse[1]);
-    var myID = myURLParse[2];
-    var parentBase = removeFilename(myURLParse[3] && decodeURIComponent(myURLParse[3]));
-    var childFrameStyle = 'display:none';
-    var includeCounter = 0;
-    var IAmAChild = myID; // !== undefined
-    var IAmAParent = false;
-    var numIncludeChildrenLeft = 0;
-
-    var messageCallback = function (event) {
-        // Parse the message. Ensure that it is for the Markdeep/include.js system.
-        var childID = false;
-        var childBody = event.data.substring && event.data.replace(/^(inc\d+)=/, function (match, a) {
-            childID = a;
-            return '';
-        });
-        
-        if (childID) {
-            // This message event was for the Markdeep/include.js system
-            
-            //console.log(location.href + ' received a message from child ' + childID);
-
-            // Replace the corresponding node's contents
-            var childFrame = document.getElementById(childID);
-            childFrame.outerHTML = '\n' + childBody + '\n';
-
-            --numIncludeChildrenLeft;
-
-            //console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
-            
-            if (numIncludeChildrenLeft <= 0) {
-                if (IAmAChild) {
-                    //console.log("Intermediate node " + location.pathname + " sending to parent");
-                    sendContentsToMyParent();
-                } else {
-                    // The entire document is complete, so run the markdeep processor
-                    // as soon as the document has recovered from our replacements
-                    setTimeout(markdeepProcessor, 1);
-                }
-            }
-        }
-    };
-
-    source = source.rp(/(?:^|\s)\(insert[ \t]+(\S+\.\S*)[ \t]+here\)\s/g, function(match, src) {
-        if (numIncludeChildrenLeft === 0) {
-            // This is the first child observed. Prepare to receive messages from the
-            // embedded children.
-            IAmAParent = true;
-            addEventListener("message", messageCallback);
-        }
-
-        ++numIncludeChildrenLeft;
-        //console.log(window.location.pathname, 'numIncludeChildrenLeft = ' + numIncludeChildrenLeft);
-        
-        // Replace this tag with a frame that loads the document.  Once loaded, it will
-        // send a message with its contents for use as a replacement.
-        var childID = 'inc' + (++includeCounter);
-        return '<iframe src="' + src + '?id=' + childID + '&p=' + encodeURIComponent(myBase) + 
-            '" id="' + childID + '" style="' + childFrameStyle + '" content="text/html;charset=UTF-8"></iframe>';
+    
+    // Process insert commands, and then run the markdeepProcessor on the document
+    processInsertCommands([document.body], [source], function (nodeArray, sourceArray) {
+        markdeepProcessor(sourceArray && sourceArray[0]);
     });
-
-    // console.log("after insert: "+ source);
-
-    if (IAmAParent) {
-        // I'm waiting on children, so don't run the full processor yet,
-        // but do substitute the iframe code so that it can launch.
-        document.body.innerHTML = source;
-    } else if (IAmAChild) {
-        // I'm a child and not a parent, so trigger the send now
-        // console.log("Leaf node " + location.pathname + " sending to parent");
-        sendContentsToMyParent();
-    } else {
-        // No includes. Run markdeep processing after the rest of this file parses
-        // console.log("non-parent, non-child Parent scheduling markdeepProcessor");
-        setTimeout(markdeepProcessor, 1);
-    }
 }
     
 })();
