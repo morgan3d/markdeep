@@ -2444,7 +2444,7 @@ function markdeepToHTML(str, elementMode) {
 
             var captionAbove = option('captionAbove', 'listing')
             var nextSourceCode, nextLang, nextCssSubClass;
-            var body = '';
+            var body = [];
 
             // Process multiple-listing blocks
             do {
@@ -2482,7 +2482,7 @@ function markdeepToHTML(str, elementMode) {
                     highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
                 }
 
-                body += highlighted;
+                body.push(highlighted);
 
                 // Advance the next nested block
                 sourceCode = nextSourceCode;
@@ -2493,7 +2493,7 @@ function markdeepToHTML(str, elementMode) {
             // Insert paragraph close/open tags, since browsers force them anyway around pre tags
             // We need the indent in case this is a code block inside a list that is indented.
             return '\n' + indent + '</p>' + (caption && captionAbove ? caption : '') +
-                protect(entag('pre', entag('code', body), 'class="listing ' + cssClass + '"')) +
+                protect(entag('pre', entag('code', body.join('')), 'class="listing ' + cssClass + '"')) +
                 (caption && ! captionAbove ? caption : '') + '<p>\n';
         });
     };
@@ -2659,7 +2659,6 @@ function markdeepToHTML(str, elementMode) {
     // FOOTNOTES/ENDNOTES: [^symbolic name]. Disallow spaces in footnote names to
     // make parsing unambiguous. Consume leading space before the footnote.
     function endNote(match, symbolicNameA) {
-        console.log(match, ',', symbolicNameA);
         var symbolicName = symbolicNameA.toLowerCase().trim();
 
         if (! (symbolicName in endNoteTable)) {
@@ -2972,8 +2971,10 @@ function markdeepToHTML(str, elementMode) {
 
     // SMART DOUBLE QUOTES: "a -> localized &ldquo;   z"  -> localized &rdquo;
     // Allow situations such as "foo"==>"bar" and foo:"bar", but not 3' 9"
-    str = str.rp(/(^|[ \t->])(")(?=\w)/gm, '$1' + keyword('&ldquo;'));
-    str = str.rp(/([A-Za-z\.,:;\?!=<])(")(?=$|\W)/gm, '$1' + keyword('&rdquo;'));
+    if (true) {
+        str = str.rp(/(^|[ \t->])(")(?=\w)/gm, '$1' + keyword('&ldquo;'));
+        str = str.rp(/([A-Za-z\.,:;\?!=<])(")(?=$|\W)/gm, '$1' + keyword('&rdquo;'));
+    }
     
     // ARROWS:
     str = str.rp(/(\s|^)<==(\s)/g, '$1\u21D0$2');
@@ -4541,10 +4542,64 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
     
     // Helper function for use by children
     function sendContentsToMyParent() {
+        var body = document.body.innerHTML;
+
+        // Fix relative URLs within the body
+        var baseref = document.baseURI.rp(/\/[^/]+$/, '/');
+        var serverref = baseref.match(/[^:/]{3,6}:\/\/[^/]*\//)[0];
+
+        // Cases where URLs appear:
+        //
+        // ![](...)
+        // [](...)
+        // [link]: ...
+        // <img src="...">
+        // <script src="...">
+        // <a href="...">
+        // <link href="...">
+        //
+        // A url is relative if it does not begin with '^[a-z]{3,6}://|^#'
+
+        // Protect code fences
+        // TODO
+
+        function makeAbsoluteURL(url) {
+            return (/^[a-z]{3,6}:\/\//.test(url)) ?
+                url :
+                (url[0] === '/') ?
+                // Make relative to server
+                serverref + url.ss(1) :
+                // Make relative to source document
+                baseref + url;
+        }
+
+        // Unquoted images and links
+        body = body.rp(/\]\([ \t]*([^#")][^ "\)]+)([ \t\)])/g, function (match, url, suffix) {
+            return '](' + makeAbsoluteURL(url) + suffix;
+        });
+        
+        // Quoted images and links
+        body = body.rp(/\]\([ \t]*"([^#"][^"]+)"([ \t\)])/g, function (match, url, suffix) {
+            return ']("' + makeAbsoluteURL(url) + '"' + suffix;
+        });
+
+        // Raw HTML
+        body = body.rp(/(src|href)=(["'])([^#>][^"'\n>]+)\2"/g, function (match, type, quot, url) {
+            return type + '=' + quot + makeAbsoluteURL(url) + quot;
+        });
+
+        // Reference links
+        body = body.rp(/(\n\[[^\]>\n \t]:[ \t]*)([^# \t][^ \t]+)"/g, function (match, prefix, url) {
+            return prefix + makeAbsoluteURL(url);
+        });
+
+        // Unprotect code fences
+        // TODO
+        
         // console.log(location.pathname + " sent message to parent");
         // Send the document contents after the childFrame replaced itself
         // (not the source variable captured when this function was defined!)
-        parent.postMessage(myID + '=' + document.body.innerHTML, '*');
+        parent.postMessage([myID, '=', body].join(''), '*');
     }
 
     // Strip the filename from the url, if there is one (and it is a string)
