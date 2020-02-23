@@ -4584,7 +4584,7 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
         });
 
         // Raw HTML
-        body = body.rp(/(src|href)=(["'])([^#>][^"'\n>]+)\2"/g, function (match, type, quot, url) {
+        body = body.rp(/(src|href)=(["'])([^#>][^"'\n>]+)\2/g, function (match, type, quot, url) {
             return type + '=' + quot + makeAbsoluteURL(url) + quot;
         });
 
@@ -4592,6 +4592,8 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
         body = body.rp(/(\n\[[^\]>\n \t]:[ \t]*)([^# \t][^ \t]+)"/g, function (match, prefix, url) {
             return prefix + makeAbsoluteURL(url);
         });
+
+        console.log(body);
 
         // Unprotect code fences
         // TODO
