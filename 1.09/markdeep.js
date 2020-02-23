@@ -1,6 +1,6 @@
 /**
   Markdeep.js
-  Version 1.09
+  Version 1.091
 
   Copyright 2015-2020, Morgan McGuire, https://casual-effects.com
   All rights reserved.
@@ -92,7 +92,7 @@ literal:"true false null unknown",built_in:"array bigint binary bit blob bool bo
 
 // Lucida Console on Windows has capital V's that look like lower case, so don't use it
 var codeFontStack = "Menlo,Consolas,monospace";
-var codeFontSize  = 105.1316178 / measureFontSize(codeFontStack) + 'px';
+var codeFontSize  = Math.round(6.5 * 105.1316178 / measureFontSize(codeFontStack)) + '%';// + 'px';
 
 var BODY_STYLESHEET = entag('style', 'body{max-width:680px;' +
     'margin:auto;' +
@@ -128,6 +128,8 @@ var STYLESHEET = entag('style',
     'text-align:left;' +
     'line-height:140%' + 
     '}' +
+
+    '.md .mediumToc code,.md longToc code,.md .shortToc code,.md h1 code,.md h2 code,.md h3 code,.md h4 code,.md h5 code,.md h6 code{font-size:unset}' +
 
     '.md div.title{' +
     'font-size:26px;' +
@@ -3217,6 +3219,11 @@ function markdeepToHTML(str, elementMode) {
             return '<dt><a name="apiDefinition-' + linkName + '"></a><code >' + name + next;
         });
 
+        // Hide links that are also inside of a <h#>...</h#>, where we don't want them
+        // modified by API links. Assume that these are on a single line. The space in
+        // the close tag prevents the next regexp from matching.
+        str = str.rp(/<h([1-9])>(.*<code>.*)<\/code>(.*<\/h\1>)/g, '<h$1>$2</code >$3');
+        
         // Now find potential links
         str = str.rp(/<code>([A-Za-z_][A-Za-z_\.0-9:\->]*)(\(\)|\[\])?<\/code>/g, function (match, name, next) {
             var linkName = name + (next ? (next[0] === '(' ? '-fcn' : next[0] === '[' ? '-array' : next[0]) : '');
@@ -3227,6 +3234,7 @@ function markdeepToHTML(str, elementMode) {
     return '<span class="md">' + entag('p', str) + '</span>';
 }
 
+ 
 /** Workaround for IE11 */
 function strToArray(s) {
     if (Array.from) {
