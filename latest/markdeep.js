@@ -4593,8 +4593,6 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
             return prefix + makeAbsoluteURL(url);
         });
 
-        console.log(body);
-
         // Unprotect code fences
         // TODO
         
