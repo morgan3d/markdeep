@@ -3162,7 +3162,7 @@ function markdeepToHTML(str, elementMode) {
 
 
     // If not in element mode and not an INSERT child, maybe add a TOC
-    if (! elementMode) {// && ! myURLParse[2]) {
+    if (! elementMode) {
         var temp = insertTableOfContents(str, protect, function (text) {return text.rp(PROTECT_REGEXP, expose)});
         str = temp[0];
         var toc = temp[1];
