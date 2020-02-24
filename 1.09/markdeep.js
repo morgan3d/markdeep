@@ -94,7 +94,7 @@ literal:"true false null unknown",built_in:"array bigint binary bit blob bool bo
 var codeFontStack = "Menlo,Consolas,monospace";
 var codeFontSize  = Math.round(6.5 * 105.1316178 / measureFontSize(codeFontStack)) + '%';// + 'px';
 
-var BODY_STYLESHEET = entag('style', 'body{max-width:680px;' +
+var BODY_STYLESHEET = entag('style', 'body#md{max-width:680px;' +
     'margin:auto;' +
     'padding:20px;' +
     'text-align:justify;' +
@@ -5043,6 +5043,10 @@ if (! window.alreadyProcessedMarkdeep) {
             if (needMathJax) { loadMathJax(); }            
         }
 
+        // Change the ID of the body, so that CSS can distinguish Markdeep
+        // controlling a whole document from Markdeep embedded within
+        // a document in HTML mode.
+        document.body.id = 'md';
         document.body.style.visibility = 'visible';
 
         var hashIndex = window.location.href.indexOf('#');
