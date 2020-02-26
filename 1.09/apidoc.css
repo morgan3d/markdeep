@@ -2,7 +2,7 @@
    and tweaked by Morgan McGuire.
    Licensed as public domain or BSD 2-clause, whichever is more convenient for you.
    Originally from https://github.com/aras-p/markdeep-docs-style */
-body {
+body#md {
     max-width: 50em;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     text-align: left;
