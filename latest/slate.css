@@ -1,6 +1,6 @@
 @font-face { font-family: Roboto; src: url(Roboto-Light.ttf) } 
 
-body {
+body#md {
     font-weight: 400;
     font-size: 16px;
     font-family: Arial, Helvetica, "sans serif";

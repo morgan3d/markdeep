@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Playfair+Display&display=swap');
 @import url('https://fonts.googleapis.com/css?family=Roboto+Slab:300,400,700&display=swap&subset=latin-ext');
 
-body {
+body#md {
     position: absolute;
     font-family: "Roboto Slab", "Helvetica Neue", Helvetica, Arial, sans-serif;
     text-align: left;

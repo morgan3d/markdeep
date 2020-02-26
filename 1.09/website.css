@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css?family=Raleway:800i');
 
-body {
+body#md {
     position: absolute;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     text-align: left;

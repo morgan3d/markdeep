@@ -20,7 +20,7 @@
     page-break-before: always;
 }
 
-body {
+body#md {
     width: 900px;
     max-width: 100%;
     font-size: 25px;

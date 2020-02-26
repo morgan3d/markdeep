@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,700&subset=cyrillic,greek,latin-ext');
 
-body {
+body#md {
     font-weight: 400;
     font-size: 16px;
     font-family: Arial, Helvetica, "sans serif";

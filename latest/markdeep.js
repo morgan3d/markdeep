@@ -1,6 +1,6 @@
 /**
   Markdeep.js
-  Version 1.091
+  Version 1.092
 
   Copyright 2015-2020, Morgan McGuire, https://casual-effects.com
   All rights reserved.
@@ -94,7 +94,7 @@ literal:"true false null unknown",built_in:"array bigint binary bit blob bool bo
 var codeFontStack = "Menlo,Consolas,monospace";
 var codeFontSize  = Math.round(6.5 * 105.1316178 / measureFontSize(codeFontStack)) + '%';// + 'px';
 
-var BODY_STYLESHEET = entag('style', 'body#md{max-width:680px;' +
+var BODY_STYLESHEET = entag('style', 'body{max-width:680px;' +
     'margin:auto;' +
     'padding:20px;' +
     'text-align:justify;' +
