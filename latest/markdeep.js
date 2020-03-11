@@ -80,7 +80,7 @@ function measureFontSize(fontStack) {
         ctx.font = '10pt ' + fontStack;
         return ctx.measureText("M").width;
     } catch (e) {
-        // Needed for Firefox include...iframe canvas doesn't work for some reason
+        // Needed for Firefox include...canvas doesn't work for some reason
         return 10;
     }
 }
@@ -144,7 +144,7 @@ var STYLESHEET = entag('style',
     'text-align:center' +
     '}' +
 
-    '.md iframe{width:100%;height:75vh;border:1px solid #000;border-radius:4px;background:#f5f5f4}' +
+    '.md iframe:not(.markdeep){width:100%;height:75vh;border:1px solid #000;border-radius:4px;background:#f5f5f4}' +
 
     '.md .image{display:inline-block}' +
 
