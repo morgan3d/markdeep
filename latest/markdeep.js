@@ -1377,7 +1377,7 @@ function sectionNumberingStylesheet() {
    it to legal HTML.
  */
 function nodeToMarkdeepSource(node, leaveEscapes) {
-    var source = node.innerHTML;
+    var source = node ? node.innerHTML : '';
 
     // Markdown uses <john@bar.com> e-mail syntax, which HTML parsing
     // will try to close by inserting the matching close tags at the end of the
@@ -4883,7 +4883,9 @@ if (! window.alreadyProcessedMarkdeep) {
         });
         
         // Hide the body while formatting
-        document.body.style.visibility = 'hidden';
+        if (document.body) {
+            document.body.style.visibility = 'hidden';
+        }
     }
       
     var source = nodeToMarkdeepSource(document.body);
