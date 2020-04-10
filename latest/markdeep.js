@@ -29,7 +29,7 @@
 */
 /**See https://casual-effects.com/markdeep for @license and documentation.
 markdeep.min.js 1.093 (C) 2020 Morgan McGuire 
-highlight.min.js 9.13.1 (C) 2017 Ivan Sagalaev https://highlightjs.org/*/
+highlight.min.js 10.0.0-beta.0 (C) 2020 Ivan Sagalaev https://highlightjs.org */
 (function() {
 'use strict';
 
