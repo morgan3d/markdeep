@@ -4736,10 +4736,8 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
                          var req = new XMLHttpRequest();
                          (function (childID, style) {
                              req.addEventListener("load", function () {
-                                 console.log(this.responseText);
-                                 setTimeout(function () {
-                                     document.getElementById(id).outerHTML =
-                                         entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style)});
+                                 document.getElementById(childID).outerHTML =
+                                     entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style);
                              });
                              req.overrideMimeType("text/plain; charset=x-user-defined");
                              req.open("GET", src); 
