@@ -4713,13 +4713,14 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
      for (var i = 0; i < sourceArray.length; ++i) {
          sourceArray[i] = sourceArray[i].rp(/(?:^|\s)\((insert|embed)[ \t]+(\S+\.\S*)[ \t]+(height=[a-zA-Z0-9.]+[ \t]+)?here\)\s/g, function(match, type, src, params) {
              var childID = 'inc' + (++includeCounter);
-             if (type === 'embed') {
+             var isHTML = src.toLowerCase().rp(/\?.*$/,'').endsWith('.html');
+             if (type === 'embed' || ! isHTML) {
                  // This is not embedding another markdeep file. Instead it is embedding
                  // some other kind of document.
                  var tag = 'iframe', url='src';
                  var style = params ? ' style="' + params.rp(/=/g, ':') + '"' : '';
                  
-                 if (isFirefox && ! src.toLowerCase().rp(/\?.*$/,'').endsWith('.html')) {
+                 if (isFirefox && ! isHTML) {
                      // Firefox doesn't handle embedding other non-html documents in iframes
                      // correctly (it tries to download them!), so we switch to an object
                      // tag--which seems to work identically to the embed tag on this browser.                     
@@ -4735,8 +4736,9 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
                          var req = new XMLHttpRequest();
                          (function (childID, style) {
                              req.addEventListener("load", function () {
-                                 document.getElementById(id).outerHTML =
-                                     entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style);
+                                 setTimeout(
+                                     document.getElementById(id).outerHTML =
+                                         entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style));
                              });
                              req.overrideMimeType("text/plain; charset=x-user-defined");
                              req.open("GET", src); 
