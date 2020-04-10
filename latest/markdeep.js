@@ -4715,7 +4715,7 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
              var childID = 'inc' + (++includeCounter);
              var isHTML = src.toLowerCase().rp(/\?.*$/,'').endsWith('.html');
              if (type === 'embed' || ! isHTML) {
-                 // This is not embedding another markdeep file. Instead it is embedding
+                 // This is not embedding another Markdeep file. Instead it is embedding
                  // some other kind of document.
                  var tag = 'iframe', url='src';
                  var style = params ? ' style="' + params.rp(/=/g, ':') + '"' : '';
@@ -4736,9 +4736,9 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
                          var req = new XMLHttpRequest();
                          (function (childID, style) {
                              req.addEventListener("load", function () {
-                                 setTimeout(
+                                 setTimeout(function () {
                                      document.getElementById(id).outerHTML =
-                                         entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style));
+                                         entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style)});
                              });
                              req.overrideMimeType("text/plain; charset=x-user-defined");
                              req.open("GET", src); 
