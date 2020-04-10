@@ -4709,16 +4709,42 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
 
      var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1 && navigator.userAgent.indexOf('Seamonkey') === -1;
     
-     // Find all insert statements in all nodes and replace them
+     // Find all insert or embed statements in all nodes and replace them
      for (var i = 0; i < sourceArray.length; ++i) {
-         sourceArray[i] = sourceArray[i].rp(/(?:^|\s)\(insert[ \t]+(\S+\.\S*)[ \t]+(height=[a-zA-Z0-9.]+[ \t]+)?here\)\s/g, function(match, src, params) {
-             if (! src.toLowerCase().rp(/\?.*$/,'').endsWith('.html')) {
+         sourceArray[i] = sourceArray[i].rp(/(?:^|\s)\((insert|embed)[ \t]+(\S+\.\S*)[ \t]+(height=[a-zA-Z0-9.]+[ \t]+)?here\)\s/g, function(match, type, src, params) {
+             var childID = 'inc' + (++includeCounter);
+             if (type === 'embed') {
                  // This is not embedding another markdeep file. Instead it is embedding
                  // some other kind of document.
                  var tag = 'iframe', url='src';
-                 if (isFirefox) { tag = 'object'; url = 'data'; }
-                 return entag(tag, '', 'class="textinsert" ' + url + '="' + src + '" ' + (params ? 'style="' + params.rp(/=/g, ':') + '"' : ''));
+                 var style = params ? ' style="' + params.rp(/=/g, ':') + '"' : '';
+                 
+                 if (isFirefox && ! src.toLowerCase().rp(/\?.*$/,'').endsWith('.html')) {
+                     // Firefox doesn't handle embedding other non-html documents in iframes
+                     // correctly (it tries to download them!), so we switch to an object
+                     // tag--which seems to work identically to the embed tag on this browser.                     
+                     tag = 'object'; url = 'data';
 
+                     // Firefox can be confused on a server (but not
+                     // locally) by misconfigured MIME types and show
+                     // nothing.  But if we know that we're on a
+                     // server, we can go ahead and make an
+                     // XMLHttpRequest() for the underlying document
+                     // directly. Replace the insert in this case.
+                     if (location.protocol.startsWith('http')) {
+                         var req = new XMLHttpRequest();
+                         (function (childID, style) {
+                             req.addEventListener("load", function () {
+                                 document.getElementById(id).outerHTML =
+                                     entag('iframe', '', 'class="textinsert" srcdoc="<pre>' + this.responseText.replace(/"/g, '&quot;') + '</pre>"' + style);
+                             });
+                             req.open("GET", src); 
+                             req.send();
+                         })(childID, style);
+                     }
+                 }
+
+                 return entag(tag, '', 'class="textinsert" id="' + childID + '" ' + url + '="' + src + '"' + style);
              }
              
              if (numIncludeChildrenLeft === 0) {
@@ -4733,7 +4759,6 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
              
              // Replace this tag with a frame that loads the document.  Once loaded, it will
              // send a message with its contents for use as a replacement.
-             var childID = 'inc' + (++includeCounter);
              return '<iframe src="' + src + '?id=' + childID + '&p=' + encodeURIComponent(myBase) + 
                  '" id="' + childID + '" style="' + childFrameStyle + '" content="text/html;charset=UTF-8"></iframe>';
          });
@@ -4959,7 +4984,7 @@ if (! window.alreadyProcessedMarkdeep) {
         return;
     }
 
-    // In the common case of no INSERT commands, source is the origina source
+    // In the common case of no INSERT commands, source is the original source
     // passed to avoid reparsing.
     var markdeepProcessor = function (source) {
         // Recompute the source text from the current version of the document
