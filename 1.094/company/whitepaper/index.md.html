@@ -1,0 +1,135 @@
+                             <meta charset="utf-8">
+                              **Document Title**
+                             Important Information
+
+
+(#) Document History
+
+Version | Date       | Authors                    | Description of Change
+--------|------------|----------------------------|-------------------------------------------
+1.0     | 2020-01-22 | Author One                 | Initial release
+        |            |                            |
+
+Overview
+========================================================================================
+
+This is a generic company whitepaper template for Markdeep. Replace the `company-logo-256.png`
+and `company-background.png` images for your organization and alter the colors as needed
+in `company-whitepaper.css`. Print to PDF to see how the page breaks affect formatting.
+The rest of this document is just a placeholder to show the styling.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
+anim id est laborum.
+
+
+Quantum Computing
+----------------------------------------------------------------------------------------
+
+Auctor
+----------------------------------------------------------------------------------------
+Imperdiet massa tincidunt nunc pulvinar sapien et ligula ullamcorper. Aliquam malesuada
+bibendum arcu vitae elementum curabitur vitae nunc. Arcu ac tortor dignissim convallis. 
+
+Enim tortor at auctor urna. Sapien et ligula ullamcorper malesuada. Fermentum odio eu 
+feugiat pretium nibh. 
+
+
+### Nanotech
+
+Sociis natoque penatibus et magnis. Ut consequat semper viverra nam libero justo laoreet.
+
+
+### Viverra
+
+Luctus accumsan tortor posuere ac ut consequat semper viverra. Donec pretium vulputate
+sapien nec sagittis aliquam malesuada. Interdum velit laoreet id donec ultrices tincidunt.
+
+
+#### Amet Nisl
+
+Amet nisl purus in mollis nunc sed id. Massa tincidunt nunc pulvinar sapien et ligula
+ullamcorper malesuada proin.
+
+Numbered list:
+1. This is a numbered list
+3. List number
+4. List number
+
+
+Bullets:
+- Bulleted list
+ - Level 2
+  - Level 3
+    - Level 4
+
+
+Geo-Engineering
+========================================================================================
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GLSL
+vec3 sphNormal(in vec3 pos, in vec4 sph) {
+   return normalize(pos-sph.xyz);
+}
+
+vec3 camera(vec2 U, vec2 r, vec3 ro, vec3 la, float fl) {
+   vec2 uv = (U - r*.5)/r.y;
+   vec3 fwd = normalize(la-ro),
+        rgt = normalize(vec3(fwd.z, 0., -fwd.x));
+   return normalize(fwd + fl*uv.x*rgt + fl*uv.y*cross(fwd, rgt));
+}
+
+float vMap(vec3 p) {
+   float hit = 0.0;
+   vec2 h2 = hash22(floor(p.xz*0.25));
+   if (p.z > 0.0) {
+       if (p.y < -10.0 && h2.x > 0.5) hit=1.0;
+       if (p.y > 10.0 && h2.y > 0.5) hit=1.0;
+   }
+   return hit;   
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Code listing]
+
+
+XR Future
+========================================================================================
+
+
+APIs
+========================================================================================
+
+******************************************************************
+*                                       ^ y
+*                                       | 
+*     .---------.                  .----|----.
+*     |         |                  |    |    |
+*     |    *-------> x             |    *--------> x
+*     |    |    |                  |         |
+*     '----|----'                  '---------'
+*          |
+*          v y
+******************************************************************
+[Figure 1: Coordinate Example]
+
+
+
+\pagebreak
+<small style="line-height:140%">
+**Notice**<br>
+The information provided in this specification is believed to be accurate and reliable as of the date provided. However, Company Corporation (“Company”) does not give any representations or warranties, expressed or implied, as to the accuracy or completeness of such information. Company shall have no liability for the consequences or use of such information or for any infringement of patents or other rights of third parties that may result from its use. This publication supersedes and replaces all other specifications for the product that may have been previously supplied.
+Company reserves the right to make corrections, modifications, enhancements, improvements, and other changes to this specification, at any time and/or to discontinue any product or service without notice. Customer should obtain the latest relevant specification before placing orders and should verify that such information is current and complete. 
+Company products are sold subject to the Company standard terms and conditions of sale supplied at the time of order acknowledgement, unless otherwise agreed in an individual sales agreement signed by authorized representatives of Company and customer. Company hereby expressly objects to applying any customer general terms and conditions with regards to the purchase of the Company product referenced in this specification.
+
+**Trademarks**<br>
+Company, the Company logo, etc. are trademarks and/or registered trademarks of Company Corporation in the U.S. and other countries. Other company and product names may be trademarks of the respective companies with which they are associated.
+Copyright © 2019 Company Corporation. All rights reserved.
+<small>
+
+<script>markdeepOptions = {tocStyle: 'long'};</script>
+<link rel="stylesheet" href="company-whitepaper.css">
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
