@@ -5001,15 +5001,15 @@ if (! window.alreadyProcessedMarkdeep) {
                 var sectionName = event.target.innerText.trim();
                 var sectionLabel = sectionName.toLowerCase();
                 var anchor = anchorNode.name;
-                var url = '' + location + '#' + anchor;
-                
+                var url = '' + location.origin + location.pathname + '#' + anchor;
+
                 var shortUrl = url;
                 if (shortUrl.length > 17) {
                     shortUrl = url.ss(0, 7) + '&hellip;' + location.pathname.ss(location.pathname.length - 8) + '#' + anchor;
                 }
                 
                 var s = entag('div', 'Visit URL &ldquo;' + shortUrl + '&rdquo;',
-                              'onclick="(location=&quot;' + url + '&quot;)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                              'onclick="(location=&quot;' + url + '&quot;)"');
                 
                 s += entag('div', 'Copy URL &ldquo;' + shortUrl + '&rdquo;',
                            'onclick="navigator.clipboard.writeText(&quot;' + url + '&quot)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
