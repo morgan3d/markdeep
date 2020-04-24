@@ -40,6 +40,15 @@ var MARKDEEP_FOOTER = '<div class="markdeepFooter"><i>formatted by <a href="http
 var _ = String.prototype;
 _.rp = _.replace;
 _.ss = _.substring;
+if (!_.endsWith) {
+    // For IE11
+    _.endsWith = function(S, L) {
+        if (L === undefined || L > this.length) {
+            L = this.length;
+        }
+        return this.ss(L - S.length, L) === S;
+    };
+}
 
 // Regular expression version of String.indexOf
 _.regexIndexOf = function(regex, startpos) {
