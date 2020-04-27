@@ -136,9 +136,9 @@ var STYLESHEET = entag('style',
     // Avoid header/footer in print to PDF. See https://productforums.google.com/forum/#!topic/chrome/LBMUDtGqr-0
     '@page{margin:0;size:auto}' +
 
-                       '#mdContextMenu{position:absolute;background:#383838;cursor:default;border:1px solid #999;color:#fff;padding:4px 0px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",sans-serif;font-size:85%;font-weight:600;border-radius:4px;box-shadow:0px 3px 10px rgba(0,0,0,35%)}' +
-                       '#mdContextMenu div{padding:0px 20px}' +
-                       '#mdContextMenu div:hover{background:#1659d1}' +
+    '#mdContextMenu{position:absolute;background:#383838;cursor:default;border:1px solid #999;color:#fff;padding:4px 0px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",sans-serif;font-size:85%;font-weight:600;border-radius:4px;box-shadow:0px 3px 10px rgba(0,0,0,35%)}' +
+    '#mdContextMenu div{padding:0px 20px}' +
+    '#mdContextMenu div:hover{background:#1659d1}' +
                        
     '.md code,.md pre{' +
     'font-family:' + codeFontStack + ';' +
