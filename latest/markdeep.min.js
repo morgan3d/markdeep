@@ -1230,7 +1230,61 @@ var SWEDISH = {
         '&rdquo;': '&rdquo;'
     }
 };
-   
+
+
+// Translated by Marc Izquierdo
+var CATALAN = {
+    keyword: {
+        table:     'Taula',
+        figure:    'Figura',
+        listing:   'Llistat',
+        diagram:   'Diagrama',
+        contents:  'Taula de Continguts',
+
+        sec:        'sec',
+        section:    'Secció',
+        subsection: 'Subsecció',
+        chapter:    'Capítol',
+
+        Monday:    'Dilluns',
+        Tuesday:   'Dimarts',
+        Wednesday: 'Dimecres',
+        Thursday:  'Dijous',
+        Friday:    'Divendres',
+        Saturday:  'Dissabte',
+        Sunday:    'Dimenge',
+
+        January:   'Gener',
+        February:  'Febrer',
+        March:     'Març',
+        April:     'Abril',
+        May:       'Maig',
+        June:      'Juny',
+        July:      'Juliol',
+        August:    'Agost',
+        September: 'Septembre',
+        October:   'Octubre',
+        November:  'Novembre',
+        December:  'Desembre',
+
+        jan: 'gen',
+        feb: 'feb',
+        mar: 'mar',
+        apr: 'abr',
+        may: 'mai',
+        jun: 'jun',
+        jul: 'jul',
+        aug: 'ago',
+        sep: 'sept',
+        oct: 'oct',
+        nov: 'nov',
+        dec: 'des',
+
+        '&ldquo;': '&laquo;&nbsp;',
+        '&rtquo;': '&nbsp;&raquo;'
+    }
+};
+ 
 var DEFAULT_OPTIONS = {
     mode:               'markdeep',
     detectMath:         true,
@@ -1266,7 +1320,9 @@ var LANG_TABLE = {
     it: ITALIAN,
     lt: LITHUANIAN,
     cz: CZECH,
-    es: SPANISH
+    es: SPANISH,
+    'es-ES': SPANISH,
+    'es-ca': CATALAN
     // Contribute your language here! I only accept translations
     // from native speakers.
 };
@@ -1684,7 +1740,7 @@ function replaceLists(s, protect) {
     // Identify task list bullets in a few patterns and reformat them to a standard format for
     // easier processing.
     s = s.rp(/^(\s*)(?:-\s*)?(?:\[ \]|\u2610)(\s+)/mg, '$1\u2610$2');
-    s = s.rp(/^(\s*)(?:-\s*)?(?:\[x\]|\u2611)(\s+)/mg, '$1\u2611$2');
+    s = s.rp(/^(\s*)(?:-\s*)?(?:\[[xX]\]|\u2611)(\s+)/mg, '$1\u2611$2');
         
     // Identify list blocks:
     // Blank line or line ending in colon, line that starts with #., *, +, -, ☑, or ☐
@@ -2568,7 +2624,6 @@ function markdeepToHTML(str, elementMode) {
         // so that the hljs output isn't itself escaped below.
         var filenameRegexp = /^[a-zA-Z]:\\|^\/[a-zA-Z_\.]|^[a-z]{3,5}:\/\//;
         str = str.rp(inlineCodeRegexp, function (match, before, body) {
-            console.log("'" + body + "'");
             if (filenameRegexp.test(body)) {
                 // This looks like a filename, don't highlight it
                 return before + entag('code', body);
@@ -3042,7 +3097,7 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/([^-!\:\|])--([^->\:\|])/g, '$1&mdash;$2');
 
     // NUMBER x NUMBER:
-    str = str.rp(/(\d+\s?)x(?=\s?\d+)/g, '$1&times;');
+    str = str.rp(/(\d+[ \t]?)x(?=[ \t]?\d+)/g, '$1&times;');
 
     // MINUS: -4 or 2 - 1
     str = str.rp(/([\s\(\[<\|])-(\d)/g, '$1&minus;$2');
@@ -3251,25 +3306,35 @@ function markdeepToHTML(str, elementMode) {
     });
 
     if (option('linkAPIDefinitions')) {
-        // Find link targets for APIs
+        // API DEFINITION LINKS
+        
         var apiDefined = {};
-        str = str.rp(/<dt><code(\b[^<>\n]*)>([A-Za-z_][A-Za-z_\.0-9:\->]*)([\(\[<])/g, function (match, prefix, name, next) {
+
+        // Find link targets for APIs, which look like:
+        // '<dt><code...>variablename' followed by (, [, or <
+        //
+        // If there is syntax highlighting because we're documenting
+        // keywords for the language supported by HLJS, then there may
+        // be an extra span around the variable name.
+        str = str.rp(/<dt><code(\b[^<>\n]*)>(<span class="[a-zA-Z\-_0-9]+">)?([A-Za-z_][A-Za-z_\.0-9:\->]*)(<\/span>)?([\(\[<])/g, function (match, prefix, syntaxHighlight, name, syntaxHighlightEnd, next) {
             var linkName = name + (next === '<' ? '' : next === '(' ? '-fcn' : next === '[' ? '-array' : next);
             apiDefined[linkName] = true;
             // The 'ignore' added to the code tag below is to
             // prevent the link finding code from finding this (since
             // we don't have lookbehinds in JavaScript to recognize
             // the <dt>)
-            return '<dt><a name="apiDefinition-' + linkName + '"></a><code ignore ' + prefix + '>' + name + next;
+            return '<dt><a name="apiDefinition-' + linkName + '"></a><code ignore ' + prefix + '>' + (syntaxHighlight || '') + name + (syntaxHighlightEnd || '') + next;
         });
 
         // Hide links that are also inside of a <h#>...</h#>, where we don't want them
         // modified by API links. Assume that these are on a single line. The space in
         // the close tag prevents the next regexp from matching.
         str = str.rp(/<h([1-9])>(.*<code\b[^<>\n]*>.*)<\/code>(.*<\/h\1>)/g, '<h$1>$2</code >$3');
-        
-        // Now find potential links
-        str = str.rp(/<code(?! ignore)\b[^<>\n]*>([A-Za-z_][A-Za-z_\.0-9:\->]*)(\(\)|\[\])?<\/code>/g, function (match, name, next) {
+
+        // Now find potential links, which look like:
+        // '<code...>variablename</code>' and may contain () or [] after the variablename
+        // They may also have an extra syntax-highlighting span
+        str = str.rp(/<code(?! ignore)\b[^<>\n]*>(<span class="[a-zA-Z\-_0-9]+">)?([A-Za-z_][A-Za-z_\.0-9:\->]*)(<\/span>)?(\(\)|\[\])?<\/code>/g, function (match, syntaxHighlight, name, syntaxHighlightEnd, next) {
             var linkName = name + (next ? (next[0] === '(' ? '-fcn' : next[0] === '[' ? '-array' : next[0]) : '');
             return (apiDefined[linkName] === true) ? entag('a', match, 'href="#apiDefinition-' + linkName + '"') : match;
         });
