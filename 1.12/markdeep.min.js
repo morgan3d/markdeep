@@ -1481,7 +1481,6 @@ function sectionNumberingStylesheet() {
         }
         s += ';\ncounter-increment: h' + i + ';margin-right:10px}\n\n';
     }
-    console.log(s);
 
     return entag('style', s);
 }
@@ -1496,7 +1495,7 @@ function sectionNumberingStylesheet() {
 function nodeToMarkdeepSource(node, leaveEscapes) {
     var source = node ? node.innerHTML : '';
 
-    // Markdown uses <john@bar.com> e-mail syntax, which HTML parsing
+    // Markdown uses <john@bar.com> email syntax, which HTML parsing
     // will try to close by inserting the matching close tags at the end of the
     // document. Remove anything that looks like that and comes *after*
     // the first fallback style.
@@ -2631,8 +2630,6 @@ function markdeepToHTML(str, elementMode) {
     // Protect raw <CODE> content
     str = str.rp(/(<code\b.*?<\/code>)/gi, protector);
 
-    console.log(str);
-
     // Remove XML/HTML COMMENTS
     str = str.rp(/<!-(-+)[^-][\s\S]*?-->/g, '');
 
@@ -2853,9 +2850,15 @@ function markdeepToHTML(str, elementMode) {
         return '';
     });
 
-    // E-MAIL ADDRESS: <foo@bar.baz> or foo@bar.baz
+    // EMAIL ADDRESS: <foo@bar.baz> or foo@bar.baz if it doesn't look like a URL
     str = str.rp(/(?:<|(?!<)\b)(\S+@(\S+\.)+?\S{2,}?)(?:$|>|(?=<)|(?=\s)(?!>))/g, function (match, addr) {
-        return '<a ' + protect('href="mailto:' + addr + '"') + '>' + addr + '</a>';
+        console.log(match);
+        if (/http:|ftp:|https:|svn:|:\/\/|\.html|\(|\)|\]/.test(match)) {
+            // This is a hyperlink to a url with an @ sign, not an email address
+            return match;
+        } else {
+            return '<a ' + protect('href="mailto:' + addr + '"') + '>' + addr + '</a>';
+        }
     });
 
     // Common code for formatting images
