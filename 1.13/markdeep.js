@@ -161,6 +161,8 @@ var BODY_STYLESHEET = entag('style', 'body{max-width:680px;' +
     'color:#222;' +
     'font-family:Palatino,Georgia,"Times New Roman",serif}');
 
+var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1 && navigator.userAgent.indexOf('Seamonkey') === -1;
+    
 /** You can embed your own stylesheet AFTER the <script> tags in your
     file to override these defaults. */
 var STYLESHEET = entag('style',
@@ -493,7 +495,7 @@ var STYLESHEET = entag('style',
     '.md .admonition.tip::before{' +
        'content:"\\24d8";' +
        'font-weight:bold;' +
-       'font-size:150%;' +
+       'font-size:' + (isFirefox ? '200%;' : '150%;') +
        'position:relative;' +
        'top:3px;' +
        'color:rgba(26,128,46,.8);' +
@@ -515,7 +517,7 @@ var STYLESHEET = entag('style',
      '.md .admonition.warn::before,.md .admonition.warning::before{' +
        'content:"\\26A0";' +
        'font-weight:bold;' +
-       'font-size:150%;' +
+       (isFirefox ? '' : 'font-size:150%;') +
        'position:relative;' +
        'top:2px;' +
        'color:rgba(128,73,0,.8);' +
@@ -541,7 +543,7 @@ var STYLESHEET = entag('style',
     '.md .admonition.error::before{' + 
     'content: "\\2612";' +
     'font-family:"Arial";' +
-    'font-size:200%;' +
+    'font-size:' + (isFirefox ? '150%;' :'200%;') +
     'position:relative;' +
     'color:rgba(128,12,34,.8);' +
     'top:-2px;' +
@@ -1331,6 +1333,7 @@ var DEFAULT_OPTIONS = {
     lang:               {keyword:{}}, // English
     tocStyle:           'auto',
     hideEmptyWeekends:  true,
+    autoLinkImages:     true,
     showLabels:         false,
     sortScheduleLists:  true,
     definitionStyle:    'auto',
@@ -2911,7 +2914,9 @@ function markdeepToHTML(str, elementMode) {
             });
             
             img = '<img ' + protect('class="' + classList + '" src="' + url + '"' + attribs) + ' />';
-            img = entag('a', img, protect('href="' + url + '" target="_blank"'));
+            if (option('autoLinkImages')) {
+                img = entag('a', img, protect('href="' + url + '" target="_blank"'));
+            }
         }
 
         return img;
@@ -3311,9 +3316,9 @@ function markdeepToHTML(str, elementMode) {
                 // as unicode characters that don't render well in tabs and window bars.
                 // These regexps look like they are full of spaces but are actually various
                 // unicode space characters. http://jkorpela.fi/chars/spaces.html
-                title = removeHTMLTags(title).replace(/[     ]/g, '').replace(/[         　]/g, ' ');
+                var titleTag = removeHTMLTags(title).replace(/[     ]/g, '').replace(/[         　]/g, ' ');
                 
-                return entag('title', title) + maybeShowLabel(window.location.href, 'center') +
+                return entag('title', titleTag) + maybeShowLabel(window.location.href, 'center') +
                     '<div class="title"> ' + title + 
                     ' </div>\n' + subtitles + '<div class="afterTitles"></div>\n';
             });
