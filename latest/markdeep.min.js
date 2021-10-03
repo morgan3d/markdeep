@@ -2613,9 +2613,7 @@ function markdeepToHTML(str, elementMode) {
                 var highlighted = result.value;
 
                 // Mark each line as a span to support line numbers
-                console.log(highlighted);
                 highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
-                console.log(highlighted);
 
                 if (cssSubClass) {
                     highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
@@ -2649,7 +2647,8 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/(<code\b.*?<\/code>)/gi, protector);
 
     // Remove XML/HTML COMMENTS
-    str = str.rp(/<!-(-+)[^-][\s\S]*?-->/g, '');
+    // https://html.spec.whatwg.org/multipage/syntax.html#comments
+    str = str.rp(/<!--((?!->|>)[\s\S]*?)-->/g, '');
 
     str = replaceDiagrams(str);
     
