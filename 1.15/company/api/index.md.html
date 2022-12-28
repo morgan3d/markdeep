@@ -1,0 +1,150 @@
+                    <meta charset="utf-8">
+                       **Sample API Doc**
+                         1.1 Release
+
+
+This is the markdeep generic "Company API" template.  Replace
+`company-logo-512.png` with your organization's logo and adjust the
+`company-api.css` styling to match the desired colors.
+
+See `CA::OpenHandle()` for an example of an auto-generated API link.
+The rest of the information on this page is bogus placeholder to show the formatting.
+
+
+API Modules
+====================================================================================
+
+The CA library is a layer on top of the resource manager and parsing libraries that
+provides utilities for streaming processing and client-side process construction.
+
+
+Modules
+----------------------------------------------------------------------------------------
+
+The CA library contains the APIs for applications to allocate and exchange resources.
+
+
+!!! Attention Attention
+    Always read all of the documentation.
+
+[CA APIs](#CA)
+: List of APIs to manage external processes.
+ 
+CA Buffer List APIs
+: Methods to process buffer resources separate from computation.
+ 
+CA Data Structures
+: Specifies the data structures used for complex cases.
+
+
+## Handles
+
+`CA::OpenHandle(const std::string&)`
+: Open a reference handle.
+ 
+`CA::ReadMetaData(const Handle&)`
+: Metadata about the event.
+
+`CA::CloseHandle(const Handle&)`
+: Free all handle resources, recursively.
+
+
+CA
+====================================================================================
+
+!!! Warning Warning
+    The API content represents the set of APIs you can use directly. Some APIs
+    are not documented and we advise you do not use them directly. Using undocumented
+    APIs can lead to incompatibility when upgrading to later releases.
+
+
+These examples assume that your directory structure is:
+
+**********************************************************
+*
+*   📂 ca1
+*   |
+*   +-- 📄 bar.txt
+*   |
+*   +-- 📂 foo
+*   |   |
+*   |   ⋮
+*   |   
+*   +-- 📂 xsource
+*   |   |
+*   |   +-- 📂 data
+*   |   |   |
+*   |   |   +-- 📄 manifest.json
+*   |   |   |
+*   |   ⋮   ⋮
+*   |
+*   ⋮
+**********************************************************
+[Directory structure.]
+
+
+Table
+------------------------------------------------------------------
+
+
+Screen     | Factor      | Used      | Efficiency
+----------:|------------:|----------:|---------:
+1366x768   |  3x         | 1152x672  | 74%
+1440x900   |  3x         | 1152x672  | 60%
+*1600x900* |  *4x*       | 1536x896  | *96%*
+1680x1050  |  4x         | 1536x896  | 78%
+1920x1080  |  4x         | 1536x896  | 66%
+*1920x1200*|  *5x*       | 1920x1120 | *93%*
+[A Table]
+
+
+More Info 
+------------------------------------------------------------------
+
+******************************************************************
+*                                       ^ y
+*                                       | 
+*     .---------.                  .----|----.
+*     |         |                  |    |    |
+*     |    *-------> x             |    *--------> x
+*     |    |    |                  |         |
+*     '----|----'                  '---------'
+*          |
+*          v y
+******************************************************************
+[Figure 1: Coordinate Example]
+
+
+                       -----
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GLSL
+vec3 sphNormal(in vec3 pos, in vec4 sph) {
+   return normalize(pos-sph.xyz);
+}
+
+vec3 camera(vec2 U, vec2 r, vec3 ro, vec3 la, float fl) {
+   vec2 uv = (U - r*.5)/r.y;
+   vec3 fwd = normalize(la-ro),
+        rgt = normalize(vec3(fwd.z, 0., -fwd.x));
+   return normalize(fwd + fl*uv.x*rgt + fl*uv.y*cross(fwd, rgt));
+}
+
+float vMap(vec3 p) {
+   float hit = 0.0;
+   vec2 h2 = hash22(floor(p.xz*0.25));
+   if (p.z > 0.0) {
+       if (p.y < -10.0 && h2.x > 0.5) hit=1.0;
+       if (p.y > 10.0 && h2.y > 0.5) hit=1.0;
+   }
+   return hit;   
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Code listing]
+
+<script>markdeepOptions = {tocStyle:'long', definitionStyle:'long', linkAPIDefinitions: true};</script>
+<link rel="stylesheet" href="company-api.css">
+<link rel="shortcut icon" href="../console/favicon.ico">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64x64.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
+

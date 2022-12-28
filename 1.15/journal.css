@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,700&subset=cyrillic,greek,latin-ext');
+
+body#md {
+    font-weight: 400;
+    font-size: 16px;
+    font-family: Arial, Helvetica, "sans serif";
+    text-align: left;
+    line-height: 170%;
+}
+
+
+/* reset heading/link fonts to that of body */
+.md a,
+.md div.title, contents, .md .tocHeader,
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6,
+.md .nonumberh1, .md .nonumberh2, .md .nonumberh3, .md .nonumberh4, .md .nonumberh5, .md .nonumberh6,
+.md .shortTOC, .md .mediumTOC, .md .longTOC {
+    font-family: inherit;
+    overflow-x: hidden !important;
+}
+
+img.markdeep {
+    max-width: 350px;
+}
+
+.md .tocHeader {
+    border: none;
+    margin-top: 25px;
+    font-size: 100%;
+    font-family: inherit;
+    font-weight: 300;
+}
+
+.md .longTOC .level1 {
+    font-weight: 300;
+    margin-bottom: -30px;
+}
+
+.md div.title, .md div.subtitle, .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
+    font-family: 'Roboto', Arial, Helvetica, "sans serif";
+    font-weight: 300;
+}
+
+.md div.title {
+    font-size: 43px;
+    text-align: left;
+    margin-bottom: 0px;
+}
+
+.md div.subtitle {
+    text-align: left;
+    font-size: 115%;
+}
+
+.md pre.tilde {
+    background: #F0F0F0;
+}
+
+.md div.afterTitles {
+    margin-top: 40px;
+    margin-left: -20px;
+    margin-right: -20px;
+    height: 0px;
+    border-bottom: 1px solid #000;
+}
+
+.md div.afterTitles + p {
+    margin-top: 30px;
+}
+
+.md h1 {
+    font-size: 175%;
+    margin-bottom: 25px;
+    margin-left:-20px;
+    margin-right:-20px;
+    padding-left:20px;
+    padding-top:25px;
+    border-bottom: none;
+    border-top:6px solid #5a5a5a;
+}
+
+.md h2 {
+    font-size: 150%;
+    border: none;
+}
+
+.md h3, .md h4, .md h5, .md h6 {
+    font-size: 120%;
+}
+
+.md code {
+    font-size: 90%;
+    background: #eee;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.md .longTOC {
+    font-family: 'Roboto', Arial, Helvetica, "sans serif";
+    font-weight: 300;
+}
+
+
+.md pre.listing {
+    font-size: 100%;
+}
+
+.md pre.listing code {
+    font-weight: unset;
+    background: none;
+    color: unset;
+}
+
+/* no numbering of headings */
+.md h1:before, .md h2:before, .md h3:before, .md h4:before, .md h5:before, .md h6:before { content: none; }
+.md .tocNumber { display: none; }
+
+@media screen {
+    body {
+        position: absolute;
+        left: 240px;
+        margin-right: 0px;
+        margin-left: 10px;
+        right: 0px;
+        overflow: auto;
+        max-width: none;
+    }
+    
+    .md .longTOC {
+        display: block;
+        white-space: nowrap;    
+        width: 240px;
+        border-right: 1px solid #777;
+        overflow-y:scroll;
+        font-size: 13px;
+        font-family: inherit;
+        background: #eee;
+        position: fixed;
+        left: 0px;
+        top: 0px;
+        bottom:0px;
+        margin: 0px;
+        padding: 0px;
+        padding-left: 10px;
+    }
+
+    .md .tocHeader {
+        display: none;
+    }
+
+    .md .tocTop {
+        display: block;
+    }
+}
+
