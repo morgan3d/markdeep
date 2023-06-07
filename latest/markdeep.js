@@ -3092,9 +3092,8 @@ function markdeepToHTML(str, elementMode) {
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
     var imageGridRowAttribs = protect('valign="top"');
-    // This regex is the pattern for multiple images followed by an optional single image in case the last row is ragged
-    // with only one extra
-    str = str.rp(/(?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\))+[ \t]*){2,}\n/g, function (match) {
+    // This regex is the pattern for at least one image per row for at least two rows or at least two images in one row
+    str = str.rp(/((?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\))+[ \t]*){2,}|(?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*))\n/g, function (match) {
         var table = '';
 
         // Break into rows:
