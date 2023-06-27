@@ -583,6 +583,7 @@ var MARKDEEP_LINE = '<!-- Markdeep: --><style class="fallback">body{visibility:h
 
 // Language options:
 var FRENCH = {
+    name: 'French',
     keyword: {
         table:     'tableau',
         figure:    'figure',
@@ -636,6 +637,7 @@ var FRENCH = {
 
 // Translated by "Warmist"
 var LITHUANIAN = {
+    name: 'Lithuanian',
     keyword: {
         table:     'lentelė',
         figure:    'paveikslėlis',
@@ -690,6 +692,7 @@ var LITHUANIAN = {
     
 // Translated by Zdravko Velinov
 var BULGARIAN = {
+    name: 'Bulgarian',
     keyword: {
         table:     'таблица',
         figure:    'фигура',
@@ -745,6 +748,7 @@ var BULGARIAN = {
 
 // Translated by Tiago Antão
 var PORTUGUESE = {
+    name: 'Portugese',
     keyword: {
         table:     'tabela',
         figure:    'figura',
@@ -799,6 +803,7 @@ var PORTUGUESE = {
 
 // Translated by Jan Toušek
 var CZECH = {
+    name: 'Czech',
     keyword: {
         table:     'Tabulka',
         figure:    'Obrázek',
@@ -853,6 +858,7 @@ var CZECH = {
 
 
 var ITALIAN = {
+    name: 'Italian',
     keyword: {
         table:     'tabella',
         figure:    'figura',
@@ -905,6 +911,7 @@ var ITALIAN = {
 };
 
 var RUSSIAN = {
+    name: 'Russian',
     keyword: {
         table:     'таблица',
         figure:    'рисунок',
@@ -959,6 +966,7 @@ var RUSSIAN = {
 
 // Translated by Dariusz Kuśnierek 
 var POLISH = {
+    name: 'Polish',
     keyword: {
         table:     'tabela',
         figure:    'ilustracja',
@@ -1012,6 +1020,7 @@ var POLISH = {
 
 // Translated by Sandor Berczi
 var HUNGARIAN = {
+    name: 'Hungarian',
     keyword: {
         table:     'táblázat',
         figure:    'ábra',
@@ -1066,6 +1075,7 @@ var HUNGARIAN = {
 
 // Translated by Takashi Masuyama
 var JAPANESE = {
+    name: 'Japanese',
     keyword: {
         table:     '表',
         figure:    '図',
@@ -1119,6 +1129,7 @@ var JAPANESE = {
     
 // Translated by Sandor Berczi
 var GERMAN = {
+    name: 'German',
     keyword: {
         table:     'Tabelle',
         figure:    'Abbildung',
@@ -1173,6 +1184,7 @@ var GERMAN = {
 
 // Translated by Marcelo Arroyo
 var SPANISH = {
+    name: 'Spanish',
     keyword: {
         table:     'Tabla',
         figure:    'Figura',
@@ -1226,6 +1238,7 @@ var SPANISH = {
 
 // Translated by Nils Nilsson
 var SWEDISH = {
+    name: 'Swedish',
     keyword: {
         table:     'tabell',
         figure:    'figur',
@@ -1278,8 +1291,9 @@ var SWEDISH = {
 };
 
 
-// Translated by Marc Izquierdo
+// Translated by Marc Izquierdo and Orestes Mas
 var CATALAN = {
+    name: 'Catalan',
     keyword: {
         table:     'Taula',
         figure:    'Figura',
@@ -1298,7 +1312,7 @@ var CATALAN = {
         Thursday:  'Dijous',
         Friday:    'Divendres',
         Saturday:  'Dissabte',
-        Sunday:    'Dimenge',
+        Sunday:    'Diumenge',
 
         January:   'Gener',
         February:  'Febrer',
@@ -1308,7 +1322,7 @@ var CATALAN = {
         June:      'Juny',
         July:      'Juliol',
         August:    'Agost',
-        September: 'Septembre',
+        September: 'Setembre',
         October:   'Octubre',
         November:  'Novembre',
         December:  'Desembre',
@@ -1321,7 +1335,7 @@ var CATALAN = {
         jun: 'jun',
         jul: 'jul',
         aug: 'ago',
-        sep: 'sept',
+        sep: 'set',
         oct: 'oct',
         nov: 'nov',
         dec: 'des',
@@ -1336,6 +1350,7 @@ var DEFAULT_OPTIONS = {
     detectMath:         true,
     lang:               {keyword:{}}, // English
     tocStyle:           'auto',
+    tocDepth:           3,
     hideEmptyWeekends:  true,
     autoLinkImages:     true,
     showLabels:         false,
@@ -1352,11 +1367,18 @@ var DEFAULT_OPTIONS = {
 };
 
 
-// See http://www.i18nguy.com/unicode/language-identifiers.html for keys
+// See http://www.i18nguy.com/unicode/language-identifiers.html and
+// https://www.loc.gov/standards/iso639-2/php/code_list.php for keys.
+var ENGLISH = {name: 'English', keyword:{}};
 var LANG_TABLE = {
-    en: {keyword:{}},        
+    en: ENGLISH,        
     ru: RUSSIAN,
     fr: FRENCH,
+    'fr-AD': FRENCH,
+    'fr-BE': FRENCH,
+    'fr-CA': FRENCH,
+    'en-CA': ENGLISH,
+    'en-VI': ENGLISH,
     pl: POLISH,
     bg: BULGARIAN,
     de: GERMAN,
@@ -1369,7 +1391,11 @@ var LANG_TABLE = {
     cs: CZECH,
     es: SPANISH,
     'es-ES': SPANISH,
-    'es-ca': CATALAN
+    'ca-ES': CATALAN,
+    'es-CO': SPANISH,
+    'es-US': SPANISH,
+    'en-US': ENGLISH,    
+    ca: CATALAN
     // Contribute your language here! I only accept translations
     // from native speakers.
 };
@@ -2344,6 +2370,8 @@ function insertTableOfContents(s, protect, exposer) {
     var numAboveLevel1 = 0;
 
     var table = {};
+    var tocDepth = parseInt(option('tocDepth'));
+
     s = s.rp(/<h([1-6])>(.*?)<\/h\1>/gi, function (header, level, text) {
         level = parseInt(level)
         text = text.trim();
@@ -2380,7 +2408,7 @@ function insertTableOfContents(s, protect, exposer) {
         var name = nameStack.join('/');
 
         // Only insert for the first three levels
-        if (level <= 3) {
+        if (level <= tocDepth) {
             // Indent and append (the Array() call generates spaces)
             fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
             
@@ -5014,6 +5042,7 @@ if (! window.alreadyProcessedMarkdeep) {
     window.markdeep = Object.freeze({ 
         format:               markdeepToHTML,
         formatDiagram:        diagramToSVG,
+        langTable:            LANG_TABLE,
         stylesheet:           function() {
             return STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
         }
