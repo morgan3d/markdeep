@@ -1531,16 +1531,31 @@ function nodeToMarkdeepSource(nodeOrArray, leaveEscapes) {
         if (Array.isArray(nodeOrArray)) {
             for (var i = 0; i < nodeOrArray.length; ++i) {
                 // The document.body can be null if a document
-                // contains exclusively "preformatted" scripts
+                // contains exclusively "preformatted" scripts,
+                // so check for null.
                 if (nodeOrArray[i]) {
-                    if (source !== '') { source += ' '; }
-                    source += nodeOrArray[i].innerHTML;
+                    const node = nodeOrArray[i];
+                    // Processing the non-text parts of the HEAD
+                    // confuses markdeep's title detector, so
+                    // only include preformatted scripts here
+                    if (node.tagName === 'HEAD') {
+                        const escapedChildren = node.getElementsByTagName('preformatted');
+                        for (var j = 0; j < escapedChildren.length; ++j) {
+                            if (source !== '') { source += ' '; }
+                            source += escapedChildren[j].innerHTML;
+                        }
+                    } else {
+                        if (source !== '') { source += ' '; }
+                        source += node.innerHTML;
+                    }
                 }
             }
         } else {
             source = nodeOrArray.innerHTML;
         }
     }
+    //source = nodeOrArray[1].innerHTML;
+    console.log(source);
 
     // Markdown uses <john@bar.com> email syntax, which HTML parsing
     // will try to close by inserting the matching close tags at the end of the
