@@ -1554,8 +1554,6 @@ function nodeToMarkdeepSource(nodeOrArray, leaveEscapes) {
             source = nodeOrArray.innerHTML;
         }
     }
-    //source = nodeOrArray[1].innerHTML;
-    console.log(source);
 
     // Markdown uses <john@bar.com> email syntax, which HTML parsing
     // will try to close by inserting the matching close tags at the end of the
