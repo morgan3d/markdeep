@@ -3006,7 +3006,7 @@ function markdeepToHTML(str, elementMode) {
             attrib_url = text.trim();
             return '';
         });
-        
+
         // Detect videos
         if (/\.(mp4|m4v|avi|mpg|mov|webm)$/i.test(url)) {
             // This is video. Any attributes provided will override the defaults given here
@@ -3014,12 +3014,11 @@ function markdeepToHTML(str, elementMode) {
         } else if (/\.(mp3|mp2|ogg|wav|m4a|aac|flac)$/i.test(url)) {
             // Audio
             img = '<audio ' + protect('class="markdeep" controls ' + attribs + '><source src="' + url + '"') + '></audio>';
-        } else if (hash = url.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/\S*?v=|youtu\.be\/)([\w\d-]+)\??(?:t=(\d*))?(&.*)?$/i)) {
-            if (hash.length == 4){
+        } else if (hash = url.match(/^https:\/\/(?:www\.)?(?:youtube\.com\/\S*?v=|youtu\.be\/)([\w\d-]+).*?(?:\?t=(\d*))?(&.*)?$/i)) {
+            if (hash.length === 4){
                 // YouTube video with timestamp
                 img = '<iframe ' + protect('class="markdeep" src="https://www.youtube.com/embed/' + hash[1] + "?start=" + hash[2] + '"' + attribs + ' width="480px" height="300px" frameborder="0" allowfullscreen webkitallowfullscreen mozallowfullscreen') + '></iframe>';
-            }
-            else{
+            } else {
                 // YouTube video from the begining
                 img = '<iframe ' + protect('class="markdeep" src="https://www.youtube.com/embed/' + hash[1] + '"' + attribs + ' width="480px" height="300px" frameborder="0" allowfullscreen webkitallowfullscreen mozallowfullscreen') + '></iframe>';
             } 
