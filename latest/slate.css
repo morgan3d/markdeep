@@ -102,8 +102,8 @@ body#md {
 }
 
 
-/* Darkmode, wide screen: TOC on side */
-@media screen and (min-device-width: 600px) {
+/* Wide screen: TOC on side */
+@media screen and (min-width: 750px) {
     .md .longTOC {
         display: block;
         white-space: nowrap;    
@@ -137,7 +137,6 @@ body#md {
     .md div.longTOC {
         font-size: 15px;
     }
-    
     
     .md svg.diagram {
         stroke: #ccc;

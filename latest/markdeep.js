@@ -377,13 +377,18 @@ var STYLESHEET = entag('style',
     'margin:auto' +
     '}' +
 
+    '.md table.longtable th{' +
+    'top:0;' +
+    'position:sticky' +
+    '}' +
+
     '.md table.calendar{' +
     'width:100%;' +
     'margin:auto;' +
     'font-size:11px;' +
     'font-family:Verdana,Helvetica,Arial,sans-serif' +
     '}' +
-
+                       
     '.md table.calendar th{' +
     'font-size:16px' +
     '}' +
@@ -1845,10 +1850,10 @@ function replaceTables(s, protect) {
             
             row = trimTableRowEnds(row);
             var i = 0;
-            result += entag('tr', '<' + tag + columnStyle[0] + '> ' + 
+            result += entag('tr', '<' + tag + ' ' + columnStyle[0] + '> ' + 
                             row.rp(/ *\| */g, function () {
                                 ++i;
-                                return ' </' + tag + '><' + tag + columnStyle[i] + '> ';
+                                return ' </' + tag + '><' + tag + ' ' + (columnStyle[i] || '') + '> ';
                             }) + ' </' + tag + '>') + '\n';
             
             // Skip the header-separator row
@@ -1858,7 +1863,7 @@ function replaceTables(s, protect) {
             }
         }
         
-        result = entag('table', result, protect('class="table"'));
+        result = entag('table', result, protect('class="table' + (rowArray.length >= 15 ? ' longtable' : '') + '"'));
 
         if (caption) {
             var processedCaption = createTarget(caption, protect);
@@ -1870,6 +1875,7 @@ function replaceTables(s, protect) {
             }
         }
 
+        console.log(result);
         return entag('div', result, "class='table'");
     });
 
