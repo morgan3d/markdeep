@@ -1361,7 +1361,7 @@ var DEFAULT_OPTIONS = {
     showLabels:         false,
     sortScheduleLists:  true,
     definitionStyle:    'auto',
-    linkAPIDefinitions: false,
+    linkAPIDefinitions: true,
     inlineCodeLang:     false,
     scrollThreshold:    90,
     captionAbove:       {diagram: false,
@@ -3473,7 +3473,8 @@ function markdeepToHTML(str, elementMode) {
     if (option('linkAPIDefinitions')) {
         // API DEFINITION LINKS
         
-        var apiDefined = {};
+        // Maps API names to number of versions of it 
+        var apiDefinitionCount = {};
 
         // Find link targets for APIs, which look like:
         // '<dt><code...>variablename' followed by (, [, or <
@@ -3481,9 +3482,15 @@ function markdeepToHTML(str, elementMode) {
         // If there is syntax highlighting because we're documenting
         // keywords for the language supported by HLJS, then there may
         // be an extra span around the variable name.
+
         str = str.rp(/<dt><code(\b[^<>\n]*)>(<span class="[a-zA-Z\-_0-9]+">)?([A-Za-z_][A-Za-z_\.0-9:\->]*)(<\/span>)?([\(\[<])/g, function (match, prefix, syntaxHighlight, name, syntaxHighlightEnd, next) {
             var linkName = name + (next === '<' ? '' : next === '(' ? '-fcn' : next === '[' ? '-array' : next);
-            apiDefined[linkName] = true;
+            var count = (apiDefinitionCount[linkName] || 0) + 1;
+            apiDefinitionCount[linkName] = count;
+
+            // Unique links for overloads
+            if (count > 1) { linkName += '-' + count; }
+            
             // The 'ignore' added to the code tag below is to
             // prevent the link finding code from finding this (since
             // we don't have lookbehinds in JavaScript to recognize
@@ -3501,7 +3508,7 @@ function markdeepToHTML(str, elementMode) {
         // They may also have an extra syntax-highlighting span
         str = str.rp(/<code(?! ignore)\b[^<>\n]*>(<span class="[a-zA-Z\-_0-9]+">)?([A-Za-z_][A-Za-z_\.0-9:\->]*)(<\/span>)?(\(\)|\[\])?<\/code>/g, function (match, syntaxHighlight, name, syntaxHighlightEnd, next) {
             var linkName = name + (next ? (next[0] === '(' ? '-fcn' : next[0] === '[' ? '-array' : next[0]) : '');
-            return (apiDefined[linkName] === true) ? entag('a', match, 'href="#apiDefinition-' + linkName + '"') : match;
+            return apiDefinitionCount[linkName] ? entag('a', match, 'href="#apiDefinition-' + linkName + '"') : match;
         });
     }
            
