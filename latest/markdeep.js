@@ -1875,7 +1875,6 @@ function replaceTables(s, protect) {
             }
         }
 
-        console.log(result);
         return entag('div', result, "class='table'");
     });
 
