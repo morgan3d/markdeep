@@ -6,6 +6,11 @@ body#md {
     line-height: 170%;
 }
 
+@media screen and (max-width: 100em) {
+    body#md {
+        padding: 4px;
+    }
+}
 
 /* reset heading/link fonts to that of body */
 .md a,
@@ -103,7 +108,7 @@ body#md {
 
 
 /* Wide screen: TOC on side */
-@media screen and (min-width: 750px) {
+@media screen and (min-width: 40em) {
     .md .longTOC {
         display: block;
         white-space: nowrap;    

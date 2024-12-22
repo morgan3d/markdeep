@@ -2391,7 +2391,7 @@ function insertTableOfContents(s, protect, exposer) {
     // Gather headers for table of contents (TOC). We
     // accumulate a long and short TOC and then choose which
     // to insert at the end.
-    var fullTOC = '<a href="#" class="tocTop">(Top)</a><br/>\n';
+    var fullTOC = '<a href="#" class="tocTop" target="_self">(Top)</a><br/>\n';
     var shortTOC = '';
 
     // names of parent sections
@@ -2443,10 +2443,10 @@ function insertTableOfContents(s, protect, exposer) {
         // Only insert for the first three levels
         if (level <= tocDepth) {
             // Indent and append (the Array() call generates spaces)
-            fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
+            fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '"  target="_self" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
             
             if (level === 1) {
-                shortTOC += ' &middot; <a href="#' + name + '">' + text + '</a>';
+                shortTOC += ' &middot; <a href="#' + name + '" target="_self">' + text + '</a>';
             } else {
                 ++numAboveLevel1;
             }
@@ -2939,7 +2939,7 @@ function markdeepToHTML(str, elementMode) {
             endNoteTable[symbolicName] = endNoteCount;
         }
 
-        return '<sup><a ' + protect('href="#endnote-' + symbolicName + '"') + 
+        return '<sup><a ' + protect('href="#endnote-' + symbolicName + '" target="_self"') + 
             '>' + endNoteTable[symbolicName] + '</a></sup>';
     }    
     str = str.rp(/[ \t]*\[\^([^\]\n\t ]+)\](?!:)/g, endNote);
@@ -2963,7 +2963,7 @@ function markdeepToHTML(str, elementMode) {
         for (var i = 0; i < symbolicNameList.length; ++i) {
             // Strip spaces and # signs
             var name = symbolicNameList[i].rp(/#| /g, '');
-            s += entag('a', name, protect('href="#citation-' + name.toLowerCase() + '"'));
+            s += entag('a', name, protect('href="#citation-' + name.toLowerCase() + '" target="_self"'));
             if (i < symbolicNameList.length - 1) { s += ', '; }
         }
         return s + ']';
@@ -3346,7 +3346,7 @@ function markdeepToHTML(str, elementMode) {
     if (allHeaders) {
         allHeaders.forEach(function (header) {
             header = removeHTMLTags(header.ss(4, header.length - 5)).trim();
-            var link = '<a ' + protect('href="#' + mangle(header) + '"') + '>';
+            var link = '<a ' + protect('href="#' + mangle(header) + '" target="_self"') + '>';
 
             var sectionExp = '(' + keyword('section') + '|' + keyword('subsection') + '|' + keyword('chapter') + ')';
             var headerExp = '(\\b' + escapeRegExpCharacters(header) + ')';
@@ -3373,7 +3373,7 @@ function markdeepToHTML(str, elementMode) {
 
         if (t) {
             t.used = true;
-            return '<a ' + protect('href="#' + ref + '"') + '>' + _type + '&nbsp;' + t.number + maybeShowLabel(_ref) + '</a>';
+            return '<a ' + protect('href="#' + ref + '" target="_self"') + '>' + _type + '&nbsp;' + t.number + maybeShowLabel(_ref) + '</a>';
         } else {
             console.log("Reference to undefined '" + type + " [" + _ref + "]'");
             return _type + ' ?';
@@ -3389,8 +3389,8 @@ function markdeepToHTML(str, elementMode) {
             url = url.ss(0, url.length - 1);
             extra = '.';
         }
-        // svn and perforce URLs are not hyperlinked. All others (http/https/ftp/mailto/tel, etc. are)
-        return '<a ' + ((url[0] !== 's' && url[0] !== 'p') ? protect('href="' + url + '" class="url"') : '') + '>' + url + '</a>' + extra;
+        // svn, perforce, and quadplay URLs are not hyperlinked. All others (http/https/ftp/mailto/tel, etc. are)
+        return '<a ' + (! (url.startsWith('svn') || url.startsWith('p4') || url.startsWith('quad')) ? protect('href="' + url + '" class="url"') : '') + '>' + url + '</a>' + extra;
     });
 
     if (! elementMode) {
@@ -3437,7 +3437,7 @@ function markdeepToHTML(str, elementMode) {
                     function (match, prefix, ref) {
                         var link = toc[ref.toLowerCase().trim()];
                         if (link) {
-                            return prefix + ' <a ' + protect('href="#toc' + link + '"') + '>' + link + '</a>';
+                            return prefix + ' <a ' + protect('href="#toc' + link + '" target="_self"') + '>' + link + '</a>';
                         } else {
                             return prefix + ' ?';
                         }
@@ -3508,7 +3508,7 @@ function markdeepToHTML(str, elementMode) {
         // They may also have an extra syntax-highlighting span
         str = str.rp(/<code(?! ignore)\b[^<>\n]*>(<span class="[a-zA-Z\-_0-9]+">)?([A-Za-z_][A-Za-z_\.0-9:\->]*)(<\/span>)?(\(\)|\[\])?<\/code>/g, function (match, syntaxHighlight, name, syntaxHighlightEnd, next) {
             var linkName = name + (next ? (next[0] === '(' ? '-fcn' : next[0] === '[' ? '-array' : next[0]) : '');
-            return apiDefinitionCount[linkName] ? entag('a', match, 'href="#apiDefinition-' + linkName + '"') : match;
+            return apiDefinitionCount[linkName] ? entag('a', match, 'href="#apiDefinition-' + linkName + '" target="_self"') : match;
         });
     }
            
@@ -4864,9 +4864,6 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
         //
         // A url is relative if it does not begin with '^[a-z]{3,6}://|^#'
 
-        // Protect code fences
-        // TODO
-
         function makeAbsoluteURL(url) {
             return (/^[a-z]{3,6}:\/\//.test(url)) ?
                 url :
@@ -5360,6 +5357,13 @@ if (! window.alreadyProcessedMarkdeep) {
         // to appear exceedingly narrow on phones in the Chrome mobile preview.
         // https://developer.mozilla.org/en-US/docs/Mozilla/Mobile/Viewport_meta_tag
         var META = '<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8"><meta name="viewport" content="width=600, initial-scale=1">';
+        // Add a base tag if embedded in an <iframe srcdoc=""> inline
+        // (not an <iframe src="">).  This allows # links generated by
+        // the table of contents to work correctly.
+        if (document.location.href === 'about:srcdoc') {
+            META += '<base href="about:srcdoc"><base target="_blank">';
+        }
+        
         var head = META + BODY_STYLESHEET + STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
         if (longDocument) {
             // Add more spacing before the title in a long document
