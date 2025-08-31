@@ -2650,13 +2650,13 @@ function markdeepToHTML(str, elementMode) {
         if (result.diagramString) {
             var CAPTION_REGEXP = /^[ \n]*[ \t]*\[[^\n]+\][ \t]*(?=\n)/;
             result.afterString = result.afterString.rp(CAPTION_REGEXP, function (caption) {
-                // put target at the top
-                var processedCaption = createTarget(caption, protect);
-                result.beforeString = result.beforeString + processedCaption.target
-
                 // Strip whitespace and enclosing brackets from the caption
                 caption = caption.trim();
-                caption = caption.ss(1, caption.length - 1);
+                var strippedCaption = caption.ss(1, caption.length - 1);
+                
+                // put target at the top
+                var processedCaption = createTarget(strippedCaption, protect);
+                result.beforeString = result.beforeString + processedCaption.target
                 
                 result.caption = entag('center', entag('div', processedCaption.caption, protect('class="imagecaption"')));
                 return '';
