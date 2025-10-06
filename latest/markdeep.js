@@ -1362,6 +1362,7 @@ var DEFAULT_OPTIONS = {
     sortScheduleLists:  true,
     definitionStyle:    'auto',
     linkAPIDefinitions: true,
+    contextMenu:        true,
     inlineCodeLang:     false,
     scrollThreshold:    90,
     captionAbove:       {diagram: false,
@@ -5243,95 +5244,97 @@ if (! window.alreadyProcessedMarkdeep) {
             /////////////////////////////////////////////////////////////
             // Add the section header event handlers
 
-            var onContextMenu = function (event) {
-                var menu = null;
-                try {
-                    // Test for whether the click was on a header
-                    var match = event.target.tagName.match(/^H(\d)$/);
-                    if (! match) { return; }
+            if (option('contextMenu')) {
+                var onContextMenu = function (event) {
+                    var menu = null;
+                    try {
+                        // Test for whether the click was on a header
+                        var match = event.target.tagName.match(/^H(\d)$/);
+                        if (! match) { return; }
 
-                    // The event target is a header...ensure that it is a Markdeep header
-                    // (we could be in HTML or Doxygen mode and have non-.md content in the
-                    // same document)
-                    var node = event.target;
-                    while (node) {
-                        if (node.classList.contains('md')) { break } else { node = node.parentElement; }
-                    }
-                    if (! node) {
-                        // never found .md
-                        return;
-                    }
+                        // The event target is a header...ensure that it is a Markdeep header
+                        // (we could be in HTML or Doxygen mode and have non-.md content in the
+                        // same document)
+                        var node = event.target;
+                        while (node) {
+                            if (node.classList.contains('md')) { break } else { node = node.parentElement; }
+                        }
+                        if (! node) {
+                            // never found .md
+                            return;
+                        }
                         
-                    // We are on a header
-                    var level = parseInt(match[1]) || 1;
-                    
-                    // Show the headerMenu
-                    menu = document.getElementById('mdContextMenu');
-                    if (! menu) { return; }
-                    
-                    var sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
-                    // Search backwards two siblings to grab the URL generated
-                    var anchorNode = event.target.previousElementSibling.previousElementSibling;
-                    
-                    var sectionName = event.target.innerText.trim();
-                    var sectionLabel = sectionName.toLowerCase();
-                    var anchor = anchorNode.name;
-                    var url = '' + location.origin + location.pathname + '#' + anchor;
+                        // We are on a header
+                        var level = parseInt(match[1]) || 1;
+                        
+                        // Show the headerMenu
+                        menu = document.getElementById('mdContextMenu');
+                        if (! menu) { return; }
+                        
+                        var sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
+                        // Search backwards two siblings to grab the URL generated
+                        var anchorNode = event.target.previousElementSibling.previousElementSibling;
+                        
+                        var sectionName = event.target.innerText.trim();
+                        var sectionLabel = sectionName.toLowerCase();
+                        var anchor = anchorNode.name;
+                        var url = '' + location.origin + location.pathname + '#' + anchor;
 
-                    var shortUrl = url;
-                    if (shortUrl.length > 17) {
-                        shortUrl = url.ss(0, 7) + '&hellip;' + location.pathname.ss(location.pathname.length - 8) + '#' + anchor;
+                        var shortUrl = url;
+                        if (shortUrl.length > 17) {
+                            shortUrl = url.ss(0, 7) + '&hellip;' + location.pathname.ss(location.pathname.length - 8) + '#' + anchor;
+                        }
+                        
+                        var s = entag('div', 'Visit URL &ldquo;' + shortUrl + '&rdquo;',
+                                      'onclick="(location=&quot;' + url + '&quot;)"');
+                        
+                        s += entag('div', 'Copy URL &ldquo;' + shortUrl + '&rdquo;',
+                                   'onclick="navigator.clipboard.writeText(&quot;' + url + '&quot)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                        
+                        s += entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
+                                   'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                        
+                        s += entag('div', 'Copy Markdeep &ldquo;' + sectionType + ' [' + sectionLabel + ']&rdquo;',
+                                   'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                        
+                        s += entag('div', 'Copy HTML &ldquo;&lt;a href=&hellip;&gt;&rdquo;',
+                                   'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
+                        
+                        menu.innerHTML = s;
+                        menu.style.visibility = 'visible';
+                        menu.style.left = event.pageX + 'px';
+                        menu.style.top = event.pageY + 'px';
+                        
+                        event.preventDefault();
+                        return false;
+                    } catch (e) {
+                        // Something went wrong
+                        console.log(e);
+                        if (menu) { menu.style.visibility = 'hidden'; }
                     }
-                    
-                    var s = entag('div', 'Visit URL &ldquo;' + shortUrl + '&rdquo;',
-                                'onclick="(location=&quot;' + url + '&quot;)"');
-                    
-                    s += entag('div', 'Copy URL &ldquo;' + shortUrl + '&rdquo;',
-                            'onclick="navigator.clipboard.writeText(&quot;' + url + '&quot)&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
-                    
-                    s += entag('div', 'Copy Markdeep &ldquo;' + sectionName + ' ' + sectionType.toLowerCase() + '&rdquo;',
-                            'onclick="navigator.clipboard.writeText(\'' + sectionName + ' ' + sectionType.toLowerCase() + '\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
-                    
-                    s += entag('div', 'Copy Markdeep &ldquo;' + sectionType + ' [' + sectionLabel + ']&rdquo;',
-                            'onclick="navigator.clipboard.writeText(\'' + sectionType + ' [' + sectionLabel + ']\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
-                    
-                    s += entag('div', 'Copy HTML &ldquo;&lt;a href=&hellip;&gt;&rdquo;',
-                            'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
-                    
-                    menu.innerHTML = s;
-                    menu.style.visibility = 'visible';
-                    menu.style.left = event.pageX + 'px';
-                    menu.style.top = event.pageY + 'px';
-                    
-                    event.preventDefault();
-                    return false;
-                } catch (e) {
-                    // Something went wrong
-                    console.log(e);
-                    if (menu) { menu.style.visibility = 'hidden'; }
                 }
-            }
 
-            markdeepHTML += '<div id="mdContextMenu" style="visibility:hidden"></div>';
+                markdeepHTML += '<div id="mdContextMenu" style="visibility:hidden"></div>';
             
-            document.addEventListener('contextmenu', onContextMenu, false);
-            document.addEventListener('mousedown', function (event) {
-                var menu = document.getElementById('mdContextMenu');
-                if (menu) {
-                    for (var node = event.target; node; node = node.parentElement) {
-                        if (node === menu) { return; }
-                    }
-                    // Clicked off menu, so close it
-                    menu.style.visibility = 'hidden';
-                }
-            });
-            document.addEventListener('keydown', function (event) {
-                if (event.keyCode === 27) {
+                document.addEventListener('contextmenu', onContextMenu, false);
+                document.addEventListener('mousedown', function (event) {
                     var menu = document.getElementById('mdContextMenu');
-                    if (menu) { menu.style.visibility = 'hidden'; }
-                }
-            });
+                    if (menu) {
+                        for (var node = event.target; node; node = node.parentElement) {
+                            if (node === menu) { return; }
+                        }
+                        // Clicked off menu, so close it
+                        menu.style.visibility = 'hidden';
+                    }
+                });
+                document.addEventListener('keydown', function (event) {
+                    if (event.keyCode === 27) {
+                        var menu = document.getElementById('mdContextMenu');
+                        if (menu) { menu.style.visibility = 'hidden'; }
+                    }
+                });
             
+            }
             
             /////////////////////////////////////////////////////////////
             
