@@ -3096,8 +3096,11 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // HYPERLINKS: [text](url attribs)
-    str = str.rp(/(^|[^!])\[([^\[\]]+?)\]\(("?)([^<>\s"]*?)\3(\s+[^\)]*?)?\)/g, function (match, pre, text, maybeQuote, url, attribs) {
+    // Text pattern (?:[^\[\]\\]|\\[\[\]])+ matches either unescaped chars or \[, \]
+    str = str.rp(/(^|[^!])\[((?:[^\[\]\\]|\\[\[\]])+?)\]\(("?)([^<>\s"]*?)\3(\s+[^\)]*?)?\)/g, function (match, pre, text, maybeQuote, url, attribs) {
         attribs = attribs || '';
+        // Un-escape brackets in the link text
+        text = text.rp(/\\([\[\]])/g, '$1');
         return pre + '<a ' + protect('href="' + url + '"' + attribs) + '>' + text + '</a>' + maybeShowLabel(url);
     });
 
@@ -3107,7 +3110,10 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // REFERENCE LINK: []:
-    str = str.rp(/(^|[^!])\[([^\[\]]+)\]\[([^\[\]]*)\]/g, function (match, pre, text, symbolicName) {
+    // Text pattern (?:[^\[\]\\]|\\[\[\]])+ matches either unescaped chars or \[, \]
+    str = str.rp(/(^|[^!])\[((?:[^\[\]\\]|\\[\[\]])+)\]\[([^\[\]]*)\]/g, function (match, pre, text, symbolicName) {
+        // Un-escape brackets in the link text
+        text = text.rp(/\\([\[\]])/g, '$1');
         // Empty symbolic name is replaced by the label text
         if (! symbolicName.trim()) {
             symbolicName = text;
@@ -3130,7 +3136,9 @@ function markdeepToHTML(str, elementMode) {
     // evaluate due to branching.
     //
     // The regexp is really just /.*?\n{0,5}.*/, but that executes substantially more slowly on Chrome.
-    str = str.rp(/!\[([^\n\]].*?\n?.*?\n?.*?\n?.*?\n?.*?)\]([\[\(])/g, function (match, caption, bracket) {
+    // Caption pattern (?:[^\n\]\\]|\\[\[\]]).*? starts with either unescaped char or \[, \]
+    str = str.rp(/!\[((?:[^\n\]\\]|\\[\[\]]).*?\n?.*?\n?.*?\n?.*?\n?.*?)\]([\[\(])/g, function (match, caption, bracket) {
+        // Note: caption will be un-escaped later when processed by the image regex
         return '![' + protect(caption) + ']' + bracket;
     });
     
@@ -3199,8 +3207,11 @@ function markdeepToHTML(str, elementMode) {
         loop = false;
 
         // CAPTIONED IMAGE: ![caption](url attribs)
-        str = str.rp(/(\s*)!\[(.+?)\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
+        // Caption pattern (?:[^\[\]\\]|\\[\[\]])+ matches either unescaped chars or \[, \]
+        str = str.rp(/(\s*)!\[((?:[^\[\]\\]|\\[\[\]])+?)\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
             loop = true;
+            // Un-escape brackets in the caption
+            caption = caption.rp(/\\([\[\]])/g, '$1');
             var divStyle = '';
             var iso = isolated(preSpaces, postSpaces);
 
