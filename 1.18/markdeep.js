@@ -78,6 +78,8 @@ var STROKE_WIDTH = 2;
 /** A box of these denotes a diagram */
 var DIAGRAM_MARKER = '*';
 
+var DEBUG_VIEW_SOURCE_MENU = false;
+
 // http://stackoverflow.com/questions/1877475/repeat-character-n-times
 // ECMAScript 6 has a String.repeat method, but that's not available everywhere
 var DIAGRAM_START = Array(5 + 1).join(DIAGRAM_MARKER);
@@ -1364,6 +1366,8 @@ var DEFAULT_OPTIONS = {
     linkAPIDefinitions: true,
     contextMenu:        true,
     inlineCodeLang:     false,
+    h1TitleInput:       false,
+    h1TitleOutput:      false,
     scrollThreshold:    90,
     captionAbove:       {diagram: false,
                          image:   false,
@@ -1452,6 +1456,48 @@ function option(key, key2) {
 }
 
 
+/** 
+   Translate markdown input level to internal processing level.
+   When h1TitleInput is true:
+     # becomes title (level 0), ## becomes h1 (level 1), etc.
+   When h1TitleInput is false (default):
+     **title** is title (level 0), # is h1 (level 1), etc.
+   
+   \param markdownLevel The level from markdown syntax (1-6 for #-######)
+   \return Internal level for processing (0 for title, 1-6 for h1-h6)
+*/
+function inputLevel(markdownLevel) {
+    if (option('h1TitleInput')) {
+        // Shift down: # (1) -> title (0), ## (2) -> h1 (1), etc.
+        return markdownLevel - 1;
+    } else {
+        // No change: # (1) -> h1 (1), ## (2) -> h2 (2), etc.
+        return markdownLevel;
+    }
+}
+
+
+/**
+   Translate internal processing level to HTML output level.
+   When h1TitleOutput is true:
+     title (0) becomes <h1>, h1 (1) becomes <h2>, etc.
+   When h1TitleOutput is false (default):
+     title (0) becomes <div class="title">, h1 (1) becomes <h1>, etc.
+   
+   \param internalLevel The internal level (0 for title, 1-6 for h1-h6)
+   \return Output level for HTML (1-7, where 7 means use div.title instead)
+*/
+function outputLevel(internalLevel) {
+    if (option('h1TitleOutput')) {
+        // Shift up: title (0) -> h1 (1), h1 (1) -> h2 (2), etc.
+        return internalLevel + 1;
+    } else {
+        // title (0) stays special (returns 0), h1 (1) -> h1 (1), etc.
+        return internalLevel;
+    }
+}
+
+
 function maybeShowLabel(url, tag) {
     if (option('showLabels')) {
         var text = ' {\u00A0' + url + '\u00A0}';
@@ -1502,6 +1548,22 @@ function mangle(text) {
     return encodeURI(text.rp(/\s/g, '').toLowerCase());
 }
 
+/** Code-sensitive version of mangle that separates function names from arguments.
+    For example: "foo(x, y)" becomes "foo-fcn", "bar[i]" becomes "bar-array".
+    This creates more stable anchor names. */
+function mangleCode(text) {
+    // Extract just the identifier part and what follows
+    var match = text.match(/^([A-Za-z_][A-Za-z_\.0-9:\->]*)([\(\[<])/);
+    if (match) {
+        var name = match[1];
+        var next = match[2];
+        var suffix = next === '<' ? '' : next === '(' ? '-fcn' : next === '[' ? '-array' : next;
+        return mangle(name + suffix);
+    }
+    // No special syntax, just mangle normally
+    return mangle(text);
+}
+
 /** Creates a style sheet containing elements like:
 
   hn::before { 
@@ -1511,15 +1573,71 @@ function mangle(text) {
 */
 function sectionNumberingStylesheet() {
     var s = '';
-
-    for (var i = 1; i <= 6; ++i) {
-        s += '.md h' + i + '::before {\ncontent:';
-        for (var j = 1; j <= i; ++j) {
-            s += 'counter(h' + j + ') "' + ((j < i) ? '.' : ' ') + '"';
+    
+    if (option('h1TitleOutput')) {
+        // When h1TitleOutput is true, h1 is the title (no numbering)
+        // h2 gets h1 numbering, h3 gets h2 numbering, etc.
+        for (var i = 2; i <= 6; ++i) {
+            s += '.md h' + i + '::before {\ncontent:';
+            // Use counters h1 through h(i-1) for numbering
+            for (var j = 1; j < i; ++j) {
+                s += 'counter(h' + j + ') "' + ((j < i - 1) ? '.' : ' ') + '"';
+            }
+            s += ';\ncounter-increment: h' + (i - 1) + ';margin-right:10px}\n\n';
         }
-        s += ';\ncounter-increment: h' + i + ';margin-right:10px}\n\n';
+    } else {
+        // Normal mode: h1-h6 get numbered as usual
+        for (var i = 1; i <= 6; ++i) {
+            s += '.md h' + i + '::before {\ncontent:';
+            for (var j = 1; j <= i; ++j) {
+                s += 'counter(h' + j + ') "' + ((j < i) ? '.' : ' ') + '"';
+            }
+            s += ';\ncounter-increment: h' + i + ';margin-right:10px}\n\n';
+        }
     }
 
+    return entag('style', s);
+}
+
+/**
+   When h1TitleOutput is true, generates additional stylesheet rules that
+   remap the header styles so that h1 gets the title styling, h2 gets h1 styling, etc.
+   This remaps the existing header styles by shifting tag names up by one level.
+*/
+function h1TitleOutputStylesheet() {
+    if (! option('h1TitleOutput')) {
+        return '';
+    }
+    
+    // Extract the relevant header styles from STYLESHEET and remap them:
+    // div.title → h1, h1 → h2, h2 → h3, h3 → h4, h4 → h5, h5 → h6
+    
+    var s = STYLESHEET;
+    
+    // Map div.title styles to h1
+    s = s.rp(/\.md div\.title\{([^}]+)\}/g, '.md h1{$1;border-bottom:none}');
+    
+    // Shift header styles: h1 → h2, h2 → h3, etc.
+    // Process in reverse order to avoid double-substitution
+    s = s.rp(/\.md h5([,\{])/g, '.md h6$1');
+    s = s.rp(/\.md h4([,\{])/g, '.md h5$1');
+    s = s.rp(/\.md h3([,\{])/g, '.md h4$1');
+    s = s.rp(/\.md h2([,\{])/g, '.md h3$1');
+    s = s.rp(/\.md h1([,\{])/g, '.md h2$1');
+    
+    // Also shift nonumber classes
+    s = s.rp(/\.nonumberh5\b/g, '.nonumberh6');
+    s = s.rp(/\.nonumberh4\b/g, '.nonumberh5');
+    s = s.rp(/\.nonumberh3\b/g, '.nonumberh4');
+    s = s.rp(/\.nonumberh2\b/g, '.nonumberh3');
+    s = s.rp(/\.nonumberh1\b/g, '.nonumberh2');
+    
+    // Keep only the header-related rules (lines containing h1-h6 or nonumber)
+    var lines = s.split(/(?=\.md [h\.])/);
+    s = lines.filter(function(line) {
+        return /\b(h[1-6]|nonumberh[1-6]|tocHeader)\b/.test(line);
+    }).join('');
+    
     return entag('style', s);
 }
 
@@ -1888,18 +2006,59 @@ function replaceLists(s, protect) {
     // easier processing.
     s = s.rp(/^(\s*)(?:-\s*)?(?:\[ \]|\u2610)(\s+)/mg, '$1\u2610$2');
     s = s.rp(/^(\s*)(?:-\s*)?(?:\[[xX]\]|\u2611)(\s+)/mg, '$1\u2611$2');
-        
+    
     // Identify list blocks:
     // Blank line or line ending in colon, line that starts with #., *, +, -, ☑, or ☐
     // and then any number of lines until another blank line
     var BLANK_LINES = /\n\s*\n/.source;
 
-    // Preceding line ending in a colon
-
+    // Preceding line ending in a colon or having text after the colon (more aggressive)
     // \u2610 is the ballot box (unchecked box) character
-    var PREFIX     = /[:,]\s*\n/.source;
+    var PREFIX     = /[:,][^\n]*\n/.source;
+    
+    // Pattern for a line that starts a list item (with optional indentation)
+    var LIST_ITEM_START = /[ \t]*(?:\d+\.|-|\+|\*|\u2611|\u2610)[ \t]+/.source;
+    
+    // Pre-process: Mark locations where we have two consecutive lines starting with list markers
+    // This allows lists to start without a preceding colon or blank line
+    // We insert a special marker that will be treated like a blank line
+    var LIST_MARKER = '\n\u2029LISTSTART\u2029\n';
+    var lines = s.split('\n');
+    var processedLines = [];
+    var listItemRegex = new RegExp('^' + LIST_ITEM_START);
+    var blankLineRegex = /^\s*$/;
+    var colonEndRegex = /[:,]\s*$/;
+    
+    for (var i = 0; i < lines.length; ++i) {
+        var line = lines[i];
+        var nextLine = i + 1 < lines.length ? lines[i + 1] : '';
+        var prevLine = i > 0 ? lines[i - 1] : '';
+        
+        // Check if current line starts with a list marker
+        var currentIsListItem = listItemRegex.test(line);
+        // Check if next line starts with a list marker (accounting for indentation)
+        var nextIsListItem = listItemRegex.test(nextLine);
+        // Check if previous line was a list item
+        var prevIsListItem = i > 0 && listItemRegex.test(prevLine);
+        
+        // If we're transitioning FROM a non-list line TO two consecutive list items,
+        // insert our special marker before the first list item
+        if (! prevIsListItem && currentIsListItem && nextIsListItem && i > 0) {
+            var prevIsBlank = blankLineRegex.test(prevLine);
+            var prevEndsWithColon = colonEndRegex.test(prevLine);
+            
+            if (! prevIsBlank && ! prevEndsWithColon) {
+                processedLines.push(LIST_MARKER);
+            }
+        }
+        
+        processedLines.push(line);
+    }
+    
+    s = processedLines.join('\n');
+    
     var LIST_BLOCK_REGEXP = 
-        new RegExp('(' + PREFIX + '|' + BLANK_LINES + '|<p>\s*\n|<br/>\s*\n?)' +
+        new RegExp('(' + PREFIX + '|' + BLANK_LINES + '|<p>\s*\n|<br/>\s*\n?|\\n\u2029LISTSTART\u2029\\n)' +
                     /((?:[ \t]*(?:\d+\.|-|\+|\*|\u2611|\u2610)(?:[ \t]+.+\n(?:[ \t]*\n)?)+)+)/.source, 'gm');
 
     var keepGoing = true;
@@ -1922,7 +2081,6 @@ function replaceLists(s, protect) {
             /* function logStack(stack) {
                var s = '[';
                stack.forEach(function(v) { s += v.indentLevel + ', '; });
-               console.log(s.ss(0, s.length - 2) + ']');
                } */
             block.split('\n').forEach(function (line) {
                 var trimmed     = line.rp(/^\s*/, '');
@@ -1997,6 +2155,9 @@ function replaceLists(s, protect) {
         });
     } // while keep going
 
+    // Clean up any remaining list markers
+    s = s.rp(/\n\u2029LISTSTART\u2029\n/g, '\n\n');
+    
     return s;
 }
 
@@ -2405,58 +2566,134 @@ function insertTableOfContents(s, protect, exposer) {
 
     var table = {};
     var tocDepth = parseInt(option('tocDepth'));
+    
+    // Track definition terms per section for duplicate handling
+    var defTermCount = {};
 
-    s = s.rp(/<h([1-6])>(.*?)<\/h\1>/gi, function (header, level, text) {
-        level = parseInt(level)
-        text = text.trim();
+    // Process headers and definition lists in a single pass to maintain correct nameStack context
+    // We need to find both headers and DTs, process them in document order
+    var lastIndex = 0;
+    var resultParts = [];
+    
+    // Find all headers and DTs with their positions
+    var headerRegex = /<h([1-6])>(.*?)<\/h\1>/gi;
+    var dtRegex = /<dt>(.*?)<\/dt>/gi;
+    var items = [];
+    
+    var match;
+    while ((match = headerRegex.exec(s)) !== null) {
+        items.push({type: 'header', index: match.index, match: match});
+    }
+    while ((match = dtRegex.exec(s)) !== null) {
+        items.push({type: 'dt', index: match.index, match: match});
+    }
+    
+    // Sort by position in document
+    items.sort(function(a, b) { return a.index - b.index; });
+    
+    // Process items in order
+    items.forEach(function(item) {
+        // Add content before this item
+        resultParts.push(s.substring(lastIndex, item.index));
         
-        // If becoming more nested:
-        for (var i = currentLevel; i < level; ++i) {
-            nameStack[i] = '';
-            headerCounter[i] = 0;
-        }
-        
-        // If becoming less nested:
-        headerCounter.splice(level, currentLevel - level);
-        nameStack.splice(level, currentLevel - level);
-        currentLevel = level;
-
-        ++headerCounter[currentLevel - 1];
-        
-        // Generate a unique name for this element
-        var number = headerCounter.join('.');
-
-        // legacy, for when toc links were based on
-        // numbers instead of mangled names
-        var oldname = 'toc' + number;
-
-        var cleanText = removeHTMLTags(exposer(text)).trim().toLowerCase();
-        
-        table[cleanText] = number;
-
-        // Remove links from the title itself
-        text = text.rp(/<a\s.*>(.*?)<\/a>/g, '$1');
-
-        nameStack[currentLevel - 1] = mangle(cleanText);
-
-        var name = nameStack.join('/');
-
-        // Only insert for the first three levels
-        if (level <= tocDepth) {
-            // Indent and append (the Array() call generates spaces)
-            fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '"  target="_self" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
+        if (item.type === 'header') {
+            var header = item.match[0];
+            var level = parseInt(item.match[1]);
+            var text = item.match[2].trim();
             
-            if (level === 1) {
-                shortTOC += ' &middot; <a href="#' + name + '" target="_self">' + text + '</a>';
-            } else {
-                ++numAboveLevel1;
+            // When h1TitleOutput is true, HTML levels are shifted up by 1
+            // We need to translate back to logical levels for TOC numbering
+            // h1 → title (skip from TOC), h2 → level 1, h3 → level 2, etc.
+            if (option('h1TitleOutput')) {
+                if (level === 1) {
+                    // This is the title, skip it in the TOC
+                    resultParts.push(header);
+                    lastIndex = item.index + header.length;
+                    return;
+                }
+                // Shift down: h2 becomes level 1, h3 becomes level 2, etc.
+                level = level - 1;
             }
-        }
+            
+            // If becoming more nested:
+            for (var i = currentLevel; i < level; ++i) {
+                nameStack[i] = '';
+                headerCounter[i] = 0;
+            }
+            
+            // If becoming less nested:
+            headerCounter.splice(level, currentLevel - level);
+            nameStack.splice(level, currentLevel - level);
+            currentLevel = level;
 
-        return entag('a', '&nbsp;', protect('class="target" name="' + name + '"')) +
-            entag('a', '&nbsp;', protect('class="target" name="' + oldname + '"')) +
-            header;
+            ++headerCounter[currentLevel - 1];
+            
+            // Generate a unique name for this element
+            var number = headerCounter.join('.');
+
+            // legacy, for when toc links were based on
+            // numbers instead of mangled names
+            var oldname = 'toc' + number;
+
+            // Strip line markers from text before creating anchor names
+            var cleanText = removeHTMLTags(exposer(text)).replace(/⟨L:\d+⟩/g, '').trim().toLowerCase();
+            
+            table[cleanText] = number;
+
+            // Remove links from the title itself
+            text = text.rp(/<a\s.*>(.*?)<\/a>/g, '$1');
+
+            nameStack[currentLevel - 1] = mangle(cleanText);
+
+            var name = nameStack.join('/');
+
+            // Only insert for the first three levels
+            if (level <= tocDepth) {
+                // Indent and append (the Array() call generates spaces)
+                fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '"  target="_self" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
+                
+                if (level === 1) {
+                    shortTOC += ' &middot; <a href="#' + name + '" target="_self">' + text + '</a>';
+                } else {
+                    ++numAboveLevel1;
+                }
+            }
+
+            resultParts.push(entag('a', '&nbsp;', protect('class="target" name="' + name + '"')));
+            resultParts.push(entag('a', '&nbsp;', protect('class="target" name="' + oldname + '"')));
+            resultParts.push(header);
+            lastIndex = item.index + header.length;
+            
+        } else if (item.type === 'dt') {
+            var fullMatch = item.match[0];
+            var termHTML = item.match[1];
+            
+            // Extract clean text from the term
+            var cleanTerm = removeHTMLTags(exposer(termHTML)).replace(/⟨L:\d+⟩/g, '').trim();
+            
+            // Use code-sensitive mangling
+            var mangledTerm = mangleCode(cleanTerm);
+            
+            // Build anchor name with current section hierarchy
+            var anchorName = nameStack.length > 0 ? nameStack.join('/') + '/def-' + mangledTerm : 'def-' + mangledTerm;
+            
+            // Handle duplicate terms in the same section
+            var count = (defTermCount[anchorName] || 0) + 1;
+            defTermCount[anchorName] = count;
+            if (count > 1) { anchorName += '-' + count; }
+            
+            // Insert anchor at the start of the dt content
+            resultParts.push('<dt>');
+            resultParts.push(entag('a', '&nbsp;', protect('class="target" name="' + anchorName + '"')));
+            resultParts.push(termHTML);
+            resultParts.push('</dt>');
+            lastIndex = item.index + fullMatch.length;
+        }
     });
+    
+    // Add remaining content
+    resultParts.push(s.substring(lastIndex));
+    s = resultParts.join('');
 
     if (shortTOC.length > 0) {
         // Strip the leading " &middot; "
@@ -2472,12 +2709,19 @@ function insertTableOfContents(s, protect, exposer) {
     var firstHeaderLocation = s.regexIndexOf(/((<a\s+\S+>&nbsp;<\/a>)\s*)*?<h\d>/i);
     if (firstHeaderLocation === -1) { firstHeaderLocation = 0; }
 
-    var AFTER_TITLES = '<div class="afterTitles"><\/div>';
-    var insertLocation = s.indexOf(AFTER_TITLES);
-    if (insertLocation === -1) {
-        insertLocation = 0;
+    // The afterTitles div has a protected class attribute, so we can't search for the literal string.
+    // Instead, look for the pattern: title tag followed by an empty div
+    // When h1TitleOutput is true: <h1>...</h1>\n<div ...></div>
+    // When h1TitleOutput is false: <div ...>...</div>\n<div ...></div>
+    var afterTitlesPattern = option('h1TitleOutput')
+        ? /<h1>.*?<\/h1>\s*<div [^>]*><\/div>/
+        : /<div [^>]*>.*?<\/div>\s*<div [^>]*><\/div>/;
+    var afterTitlesMatch = s.match(afterTitlesPattern);
+    var insertLocation;
+    if (afterTitlesMatch) {
+        insertLocation = afterTitlesMatch.index + afterTitlesMatch[0].length;
     } else {
-        insertLocation += AFTER_TITLES.length;
+        insertLocation = 0;
     }
 
     // Which TOC style should we use?
@@ -2522,7 +2766,6 @@ function insertTableOfContents(s, protect, exposer) {
         break;
 
     default:
-        console.log('markdeepOptions.tocStyle = "' + tocStyle + '" specified in your document is not a legal value');
     }
 
     s = s.ss(0, insertLocation) + TOC + s.ss(insertLocation);
@@ -2549,6 +2792,195 @@ function isolated(preSpaces, postSpaces) {
 
 
 /**
+    Wraps header sections in <section> tags with classes h1-section, h2-section, etc.
+    Each section begins at the first <a class="target"> tag before a header and ends
+    at the next same-or-lower level header or the end of content.
+    Sections are properly nested (h3 inside h2 inside h1).
+ */
+function wrapHeaderSections(str) {
+    var startTime = Date.now();
+    
+    // Safety timeout - if this takes more than 5 seconds, abort
+    var TIMEOUT_MS = 5000;
+    
+    // Find all headers - match just the <h1-6> tags first, then look backwards for anchors
+    // This avoids catastrophic backtracking from nested quantifiers
+    var headerPattern = /<h([1-6])[^>]*>/g;
+    var headers = [];
+    var match;
+    var matchCount = 0;
+    
+    var PROTECT_CHAR = '\ue010';
+    // Collect all header positions and levels
+    while ((match = headerPattern.exec(str)) !== null) {
+        matchCount++;
+        if (matchCount === 1) {
+        }
+        if (matchCount === 2) {
+        }
+        if (matchCount % 10 === 0) {
+        }
+        var headerPos = match.index;
+        var headerLevel = parseInt(match[1]);
+        
+        // Look backwards from the header to find preceding anchor tags
+        // Anchors should be immediately before the header (with possible whitespace)
+        var searchStart = Math.max(0, headerPos - 500); // Look back up to 500 chars
+        var precedingText = str.substring(searchStart, headerPos);
+        
+        // Find anchor tags using a simple string search instead of regex to avoid backtracking
+        // We're looking for patterns like: <a �0123�>&nbsp;</a>
+        if (matchCount === 1) {
+        }
+        var anchorMatches = [];
+        var searchPos = 0;
+        while (searchPos < precedingText.length) {
+            var anchorStart = precedingText.indexOf('<a ', searchPos);
+            if (anchorStart === -1) break;
+            
+            // Look for the protected attribute pattern
+            var attrStart = precedingText.indexOf(PROTECT_CHAR, anchorStart);
+            if (attrStart === -1 || attrStart > anchorStart + 10) {
+                searchPos = anchorStart + 1;
+                continue;
+            }
+            
+            // Find the closing >
+            var tagEnd = precedingText.indexOf('>', attrStart);
+            if (tagEnd === -1) break;
+            
+            // Find the closing </a>
+            var anchorEnd = precedingText.indexOf('</a>', tagEnd);
+            if (anchorEnd === -1) break;
+            
+            anchorMatches.push({
+                index: anchorStart,
+                0: precedingText.substring(anchorStart, anchorEnd + 4)
+            });
+            
+            searchPos = anchorEnd + 4;
+        }
+        
+        if (matchCount === 1) {
+        }
+        
+        // If we found anchors, use the position of the first one in the last consecutive group
+        var anchorStartPos = headerPos;
+        if (anchorMatches.length > 0) {
+            // Find the start of the last consecutive group of anchors
+            var lastMatch = anchorMatches[anchorMatches.length - 1];
+            var lastMatchEnd = lastMatch.index + lastMatch[0].length;
+            
+            // Check if this anchor is immediately before the header (with only whitespace between)
+            var betweenText = precedingText.substring(lastMatchEnd);
+            if (/^\s*$/.test(betweenText)) {
+                // Find the start of consecutive anchors working backwards
+                var firstInGroup = anchorMatches.length - 1;
+                for (var i = anchorMatches.length - 2; i >= 0; i--) {
+                    var currentEnd = anchorMatches[i].index + anchorMatches[i][0].length;
+                    var nextStart = anchorMatches[i + 1].index;
+                    var between = precedingText.substring(currentEnd, nextStart);
+                    if (/^\s*$/.test(between)) {
+                        firstInGroup = i;
+                    } else {
+                        break;
+                    }
+                }
+                anchorStartPos = searchStart + anchorMatches[firstInGroup].index;
+            }
+        }
+        
+        headers.push({
+            position: anchorStartPos,
+            level: headerLevel,
+            anchorLength: headerPos - anchorStartPos
+        });
+        
+        // Safety checks
+        if (Date.now() - startTime > TIMEOUT_MS) {
+            console.error('[wrapHeaderSections] Timeout after', Date.now() - startTime, 'ms, aborting');
+            return str;
+        }
+        if (matchCount > 10000) {
+            console.error('[wrapHeaderSections] Too many matches, aborting');
+            return str;
+        }
+    }
+    
+    
+    if (headers.length === 0) {
+        return str; // No headers, nothing to wrap
+    }
+    
+    // Build insertion points for section tags
+    // We need to track when to open and close sections based on header hierarchy
+    var insertions = [];
+    
+    for (var i = 0; i < headers.length; i++) {
+        var currentLevel = headers[i].level;
+        var currentPos = headers[i].position;
+        
+        // Open a section at this header
+        insertions.push({
+            position: currentPos,
+            type: 'open',
+            level: currentLevel
+        });
+        
+        // Determine where to close this section
+        // It closes when we encounter a same-or-lower level header, or at the end
+        var closePos = str.length;
+        for (var j = i + 1; j < headers.length; j++) {
+            if (headers[j].level <= currentLevel) {
+                closePos = headers[j].position;
+                break;
+            }
+        }
+        
+        // Close this section (and any deeper sections) before the next same-or-lower header
+        insertions.push({
+            position: closePos,
+            type: 'close',
+            level: currentLevel
+        });
+    }
+    
+    
+    // Sort insertions by position (descending) and type
+    // Since we insert in reverse order, the sort order determines the final output order in reverse
+    insertions.sort(function(a, b) {
+        if (a.position !== b.position) {
+            return b.position - a.position; // Reverse order for string insertion
+        }
+        // At same position, we're inserting in reverse, so:
+        // - To get: <section></section> in output
+        // - We need to insert: </section> then <section>
+        // - So in sort order: <section> should come BEFORE </section>
+        if (a.type === 'open' && b.type === 'close') return -1;
+        if (a.type === 'close' && b.type === 'open') return 1;
+        // If both same type at same position, order by level
+        if (a.type === 'close') {
+            return a.level - b.level; // Lower level (deeper) closes first
+        } else {
+            return b.level - a.level; // Higher level (shallower) opens first
+        }
+    });
+    
+    
+    // Insert tags in reverse position order
+    for (var i = 0; i < insertions.length; i++) {
+        var insertion = insertions[i];
+        var tag = insertion.type === 'open' 
+            ? '<section class="h' + insertion.level + '-section">'
+            : '</section>';
+        
+        str = str.substring(0, insertion.position) + tag + str.substring(insertion.position);
+    }
+    
+    return str;
+}
+
+/**
     Performs Markdeep processing on str, which must be a string or a
     DOM element.  Returns a string that is the HTML to display for the
     body. The result does not include the header: Markdeep stylesheet
@@ -2561,6 +2993,7 @@ function isolated(preSpaces, postSpaces) {
 
  */
 function markdeepToHTML(str, elementMode) {
+    
     // Map names to the number used for end notes, in the order
     // encountered in the text.
     var endNoteTable = {}, endNoteCount = 0;
@@ -2625,8 +3058,33 @@ function markdeepToHTML(str, elementMode) {
     // separately
     function makeHeaderFunc(level) {
         return function (match, header) {
-            return '\n\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(header.rp(PROTECT_REGEXP, expose))) + '"') + 
-                '>&nbsp;</a>' + entag('h' + level, header) + '\n<p>\n\n';
+            var outLevel = outputLevel(level);
+            var tag;
+            
+            if (level === 0) {
+                // Title case (internal level 0): needs special handling
+                // We'll mark it for later processing to add <title> tag and subtitle support
+                // Use a special marker that the title processor will recognize
+                if (outLevel === 0) {
+                    // Output as div.title - need to protect the class attribute
+                    tag = entag('div', header, protect('class="title"'));
+                } else {
+                    // Output as h1 (when h1TitleOutput is true)
+                    tag = entag('h' + outLevel, header);
+                }
+                // For titles, we still want the anchor but will handle <title> tag later
+                // Strip line markers before creating anchor names
+                var cleanHeader = header.rp(PROTECT_REGEXP, expose).replace(/⟨L:\d+⟩/g, '');
+                return '\n\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(cleanHeader)) + '"') + 
+                    '>&nbsp;</a>' + tag + '\n' + entag('div', '', protect('class="afterTitles"')) + '\n<p>\n\n';
+            } else {
+                // Regular header: use h1-h6
+                tag = entag('h' + outLevel, header);
+                // Strip line markers before creating anchor names
+                var cleanHeader = header.rp(PROTECT_REGEXP, expose).replace(/⟨L:\d+⟩/g, '');
+                return '\n\n</p>\n<a ' + protect('class="target" name="' + mangle(removeHTMLTags(cleanHeader)) + '"') + 
+                    '>&nbsp;</a>' + tag + '\n<p>\n\n';
+            }
         }
     }
 
@@ -2641,6 +3099,273 @@ function markdeepToHTML(str, elementMode) {
     // Prefix a newline so that blocks beginning at the top of the
     // document are processed correctly
     str = '\n\n' + str;
+
+    // ============================================================================
+    // PHASE 1: SOURCE LINE TRACKING - Inject line number markers
+    // ============================================================================
+    //
+    // ALGORITHM OVERVIEW:
+    // 
+    // This phase injects protected markers ⟨L:N⟩ into the source text before
+    // Markdeep processing. These markers survive markdown→HTML conversion and
+    // are later extracted to set data-src-line attributes on DOM elements.
+    //
+    // PROCESSING FLOW:
+    // 1. Split document into lines
+    // 2. Iterate line-by-line with a state machine to track special blocks
+    // 3. When entering a special block (fence, diagram, HTML tag), skip forward
+    //    looking ONLY for that block's closing pattern
+    // 4. For normal lines (headers, paragraphs), inject protected marker ⟨L:N⟩
+    // 5. Rejoin lines into string for Markdeep processing
+    //
+    // MARKER PROTECTION:
+    // - protect('⟨L:123⟩') → stores in protectedStringArray, returns �00da�
+    // - Markdeep ignores �00da� during processing
+    // - Later, expose() converts �00da� → ⟨L:123⟩ in final HTML
+    // - DOM walker finds ⟨L:123⟩ in text nodes, sets data-src-line="123"
+    //
+    // STATE MACHINE:
+    // - mode = 'normal': Check for opening patterns, inject markers
+    // - mode = 'script'/'style'/'pre': Skip until closing HTML tag
+    // - mode = 'fence': Skip until closing fence with matching indent
+    // - mode = 'diagram': Skip until closing ***** boundary
+    //
+    // SPECIAL CASES:
+    // - Self-closing HTML tags on one line are marked normally
+    // - Nested blocks are handled correctly (e.g., fence inside <script>)
+    // - Indented fences must match opening indent to close
+    //
+    // ============================================================================
+    
+    var isIncludedDocument = window.location.search.indexOf('id=') >= 0;
+    if (!elementMode && !isIncludedDocument) {
+        var lines = str.split('\n');
+        var markerCount = 0;
+        var mode = 'normal';  // 'normal', 'script', 'style', 'pre', 'fence', 'diagram'
+        var blockStartLine = -1;  // For debugging
+        var fenceIndent = '';     // Store opening fence indent to match closing
+        var fenceChar = '';       // Store fence character (~ or `)
+        
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var shouldMark = false;
+            
+            // ----------------------------------------------------------------
+            // STATE: Inside a special block - look for closing pattern only
+            // ----------------------------------------------------------------
+            
+            if (mode === 'script') {
+                if (line.match(/^[ \t]*<\/script>/i)) {
+                    mode = 'normal';
+                }
+                continue;  // Skip this line
+            }
+            
+            if (mode === 'style') {
+                if (line.match(/^[ \t]*<\/style>/i)) {
+                    mode = 'normal';
+                }
+                continue;
+            }
+            
+            if (mode === 'pre') {
+                if (line.match(/^[ \t]*<\/pre>/i)) {
+                    mode = 'normal';
+                }
+                continue;
+            }
+            
+            if (mode === 'fence') {
+                // Closing fence must match opening indent and character
+                var escapedIndent = fenceIndent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                var closingPattern = new RegExp('^' + escapedIndent + '\\' + fenceChar + '{3,}[ \\t]*$');
+                if (line.match(closingPattern)) {
+                    mode = 'normal';
+                }
+                continue;
+            }
+            
+            if (mode === 'diagram') {
+                // Closing diagram boundary: line with *****
+                if (line.indexOf('*****') >= 0) {
+                    mode = 'normal';
+                }
+                continue;
+            }
+            
+            // ----------------------------------------------------------------
+            // STATE: Normal mode - check for opening patterns
+            // ----------------------------------------------------------------
+            
+            // HTML <script> tags (but check for self-closing on same line)
+            var scriptMatch = line.match(/^[ \t]*<script[\s>]/i);
+            if (scriptMatch) {
+                // Check if it closes on the same line
+                if (!line.match(/<\/script>/i)) {
+                    mode = 'script';
+                    blockStartLine = i;
+                    continue;
+                }
+            }
+            
+            // HTML <style> tags
+            var styleMatch = line.match(/^[ \t]*<style[\s>]/i);
+            if (styleMatch) {
+                if (!line.match(/<\/style>/i)) {
+                    mode = 'style';
+                    blockStartLine = i;
+                    continue;
+                }
+            }
+            
+            // HTML <pre> tags
+            var preMatch = line.match(/^[ \t]*<pre[\s>]/i);
+            if (preMatch) {
+                if (!line.match(/<\/pre>/i)) {
+                    mode = 'pre';
+                    blockStartLine = i;
+                    continue;
+                }
+            }
+            
+            // Code fences (~~~ or ```)
+            var fenceMatch = line.match(/^([ \t]*)(~{3,}|`{3,})/);
+            if (fenceMatch) {
+                mode = 'fence';
+                fenceIndent = fenceMatch[1];
+                fenceChar = fenceMatch[2][0];  // First char (~ or `)
+                blockStartLine = i;
+                continue;
+            }
+            
+            // Diagram blocks: line with ***** followed by lines with * in diagram column
+            if (line.indexOf('*****') >= 0) {
+                // For inline diagrams, the ***** might be at the end of a text line
+                // Check if next line has * at the same column position (or starts with *)
+                if (i + 1 < lines.length) {
+                    var nextLine = lines[i + 1];
+                    var starPos = line.indexOf('*****');
+                    
+                    // Check if next line starts with * (standalone diagram)
+                    // OR has * at the diagram column position (inline diagram)
+                    if (nextLine.match(/^[ \t]*\*/) || 
+                        (nextLine.length > starPos && nextLine[starPos] === '*')) {
+                        mode = 'diagram';
+                        blockStartLine = i;
+                        continue;
+                    }
+                }
+            }
+            
+            // ----------------------------------------------------------------
+            // Decide whether to mark this normal line
+            // ----------------------------------------------------------------
+            
+            // Check if this is a Setext header (next line is all = or -)
+            var isSetextHeader = false;
+            if (i + 1 < lines.length && line.trim().length > 0) {
+                var nextLine = lines[i + 1];
+                if (nextLine.match(/^[ \t]*=+[ \t]*$/) || nextLine.match(/^[ \t]*-+[ \t]*$/)) {
+                    // But make sure it's not a table separator (has | or :)
+                    if (!nextLine.match(/[|:]/)) {
+                        isSetextHeader = true;
+                    }
+                }
+            }
+            
+            // Skip Setext header lines and their underlines
+            if (isSetextHeader) {
+                continue;  // Skip this line and let the underline be skipped by horizontal rule check
+            }
+            
+            // Mark ATX headers (#, ##, etc.)
+            if (line.match(/^#{1,6}\s/)) {
+                shouldMark = true;
+            }
+            // Skip lines that are special markdown structures
+            else if (line.match(/^[ \t]*[~`]{3,}/) ||              // Fences (shouldn't hit this, but defensive)
+                     line.match(/^[ \t]*=+[ \t]*$/) ||             // Setext underlines (=)
+                     line.match(/^[ \t]*[-*_]{3,}[ \t]*$/) ||      // Horizontal rules or Setext underlines (-)
+                     line.indexOf('*****') >= 0 ||                 // Diagram boundaries (inline or standalone)
+                     line.match(/^[ \t]*\|/) ||                    // Table rows (start with |)
+                     (line.indexOf('|') >= 0 && line.indexOf('|', line.indexOf('|') + 1) >= 0) ||  // Table rows (contain at least two |)
+                     line.match(/^[ \t]*:?-+:?[ \t]*\|/) ||        // Table separator (dashes with |)
+                     line.match(/^[ \t]*>/) ||                     // Blockquotes  
+                     line.match(/^[ \t]*\d+\.[ \t]/) ||            // Numbered lists
+                     line.match(/^[ \t]*[-+*][ \t]/) ||            // Bullet lists
+                     line.match(/^[ \t]*\[[^\]]+\]:[ \t]+\S/)) {   // Reference definitions
+                // Skip these
+            }
+            // Mark all other non-empty lines (including bold, italic, etc.)
+            else if (line.trim().length > 0) {
+                // Safety check: only mark lines that contain alphanumeric characters
+                // This prevents breaking structural lines and is robust to future markdown extensions
+                if (line.match(/[A-Za-z0-9]/)) {
+                    shouldMark = true;
+                }
+            }
+            
+            // ----------------------------------------------------------------
+            // Inject marker into this line
+            // ----------------------------------------------------------------
+            
+            if (shouldMark) {
+                // Inject protected marker after the first token and its trailing whitespace
+                // This preserves critical patterns like '# Header' where space after # is required
+                var firstNonWhitespace = line.search(/\S/);
+                if (firstNonWhitespace >= 0) {
+                    // Calculate 1-based line number (subtract 1 because we added '\n\n' prefix)
+                    var lineNum = i - 1;
+                    if (lineNum < 1) { lineNum = 1; }
+                    
+                    var insertPos = -1;
+                    
+                    // If line starts with '<', it might be an HTML tag - inject after the closing '>'
+                    if (line.trim()[0] === '<') {
+                        var closingBracket = line.indexOf('>');
+                        if (closingBracket >= 0) {
+                            // Inject right after the '>'
+                            insertPos = closingBracket + 1;
+                        }
+                        // If no closing '>', skip this line (malformed or incomplete tag)
+                    } else {
+                        // Normal case: find end of first whitespace sequence after first token
+                        var afterFirstToken = line.substring(firstNonWhitespace).search(/\s/);
+                        if (afterFirstToken >= 0) {
+                            afterFirstToken += firstNonWhitespace;
+                            // Now find end of the whitespace sequence
+                            var afterWhitespace = line.substring(afterFirstToken).search(/\S/);
+                            if (afterWhitespace >= 0) {
+                                insertPos = afterWhitespace + afterFirstToken;
+                            } else {
+                                // Rest of line is whitespace, append at end
+                                insertPos = line.length;
+                            }
+                        } else {
+                            // No whitespace after first token, append at end
+                            insertPos = line.length;
+                        }
+                    }
+                    
+                    if (insertPos >= 0) {
+                        lines[i] = line.substring(0, insertPos) + protect('⟨L:' + lineNum + '⟩') + line.substring(insertPos);
+                        markerCount++;
+                    }
+                }
+            }
+        }
+        
+        // ----------------------------------------------------------------
+        // Rejoin lines and log summary
+        // ----------------------------------------------------------------
+        
+        str = lines.join('\n');
+        
+        // Warn if we ended in a special block (unclosed)
+        if (mode !== 'normal') {
+            console.warn('[MDVIEW] WARNING: Document ended in mode "' + mode + '" (started at line ' + blockStartLine + ')');
+        }
+    }
 
     // Replace pre-formatted script tags that are used to protect
     // less-than signs, e.g., in std::vector<Value>
@@ -2864,10 +3589,10 @@ function markdeepToHTML(str, elementMode) {
     // around the header itself.
 
     // Setext-style H1: Text with ======== right under it
-    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*={3,}[ \t]*\n/g, makeHeaderFunc(1));
+    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*={3,}[ \t]*\n/g, makeHeaderFunc(inputLevel(1)));
     
     // Setext-style H2: Text with -------- right under it
-    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*-{3,}[ \t]*\n/g, makeHeaderFunc(2));
+    str = str.rp(/(?:^|\s*\n)(.+?)\n[ \t]*-{3,}[ \t]*\n/g, makeHeaderFunc(inputLevel(2)));
 
     // ATX-style headers:
     //
@@ -2879,12 +3604,20 @@ function markdeepToHTML(str, elementMode) {
     // order to allow headers with # in the title.
 
     for (var i = 6; i > 0; --i) {
+        var inLevel = inputLevel(i);
         str = str.rp(new RegExp(/^\s*/.source + '#{' + i + ',' + i +'}(?:[ \t])([^\n]+?)#*[ \t]*\n', 'gm'), 
-                 makeHeaderFunc(i));
+                 makeHeaderFunc(inLevel));
 
-        // No-number headers
-        str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n]+?)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
-                     '\n</p>\n' + entag('div', '$1', protect('class="nonumberh' + i + '"')) + '\n<p>\n\n');
+        // No-number headers: also need to translate output level
+        var outLevel = outputLevel(inLevel);
+        if (outLevel === 0) {
+            // Special case: nonumber title
+            str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n]+?)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
+                         '\n</p>\n' + entag('div', '$1', protect('class="title"')) + '\n<p>\n\n');
+        } else {
+            str = str.rp(new RegExp(/^\s*/.source + '\\(#{' + i + ',' + i +'}\\)(?:[ \t])([^\n]+?)\\(?#*\\)?\\n[ \t]*\n', 'gm'), 
+                         '\n</p>\n' + entag('div', '$1', protect('class="nonumberh' + outLevel + '"')) + '\n<p>\n\n');
+        }
     }
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
@@ -3097,7 +3830,8 @@ function markdeepToHTML(str, elementMode) {
 
     // HYPERLINKS: [text](url attribs)
     // Text pattern (?:[^\[\]\\]|\\[\[\]])+ matches either unescaped chars or \[, \]
-    str = str.rp(/(^|[^!])\[((?:[^\[\]\\]|\\[\[\]])+?)\]\(("?)([^<>\s"]*?)\3(\s+[^\)]*?)?\)/g, function (match, pre, text, maybeQuote, url, attribs) {
+    // Limit attribute matching to prevent catastrophic backtracking on malformed input
+    str = str.rp(/(^|[^!])\[((?:[^\[\]\\]|\\[\[\]])+?)\]\(("?)([^<>\s"\)]+)\3(\s+[^\)]{0,200})?\)/g, function (match, pre, text, maybeQuote, url, attribs) {
         attribs = attribs || '';
         // Un-escape brackets in the link text
         text = text.rp(/\\([\[\]])/g, '$1');
@@ -3105,7 +3839,7 @@ function markdeepToHTML(str, elementMode) {
     });
 
     // EMPTY HYPERLINKS: [](url)
-    str = str.rp(/(^|[^!])\[[ \t]*?\]\(("?)([^<>\s"]+?)\2\)/g, function (match, pre, maybeQuote, url) {
+    str = str.rp(/(^|[^!])\[[ \t]*?\]\(("?)([^<>\s"\)]+)\2\)/g, function (match, pre, maybeQuote, url) {
         return pre + '<a ' + protect('href="' + url + '"') + '>' + url + '</a>';
     });
 
@@ -3122,7 +3856,6 @@ function markdeepToHTML(str, elementMode) {
         symbolicName = symbolicName.toLowerCase().trim();
         var t = referenceLinkTable[symbolicName];
         if (! t) {
-            console.log("Reference link '" + symbolicName + "' never defined");
             return '?';
         } else {
             t.used = true;
@@ -3144,11 +3877,11 @@ function markdeepToHTML(str, elementMode) {
     
     // REFERENCE IMAGE: ![...][ref attribs]
     // Rewrite as a regular image for further processing below.
-    str = str.rp(/(!\[.*?\])\[([^<>\[\]\s]+?)([ \t][^\n\[\]]*?)?\]/g, function (match, caption, symbolicName, attribs) {
+    // Limit attribute matching to prevent catastrophic backtracking on malformed input
+    str = str.rp(/(!\[.*?\])\[([^<>\[\]\s]+?)([ \t][^\n\[\]]{0,200})?\]/g, function (match, caption, symbolicName, attribs) {
         symbolicName = symbolicName.toLowerCase().trim();
         var t = referenceLinkTable[symbolicName];
         if (! t) {
-            console.log("Reference image '" + symbolicName + "' never defined");
             return '?';
         } else {
             t.used = true;
@@ -3161,19 +3894,70 @@ function markdeepToHTML(str, elementMode) {
     // IMAGE GRID: Rewrite rows and grids of images into a grid
     var imageGridAttribs = protect('width="100%"');
     var imageGridRowAttribs = protect('valign="top"');
-    // This regex is the pattern for at least one image per row for at least two rows or at least two images in one row
-    str = str.rp(/((?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\))+[ \t]*){2,}|(?:\n(?:[ \t]*!\[.*?\]\(("?)[^<>\s]+?(?:[^\n\)]*?)?\)){2,}[ \t]*))\n/g, function (match) {
+    
+    // CRITICAL FIX: The original regex has catastrophic backtracking due to nested quantifiers
+    // Original: ((?:\n(?:...)+){2,}|...) - nested + inside {2,} causes exponential backtracking
+    // Solution: Match a simpler pattern - lines that contain ONLY images
+    // Then group consecutive lines in code to avoid nested quantifiers entirely
+    // Match: newline + one or more images + optional whitespace + newline
+    var imageLineRegex = /\n((?:[ \t]*!\[[^\]]{0,100}\]\([^<>\s\)]+(?:[^\n\)]{0,200})?\))+[ \t]*)\n/g;
+    
+    // First pass: find all image lines and their positions
+    var imageLines = [];
+    var match;
+    while ((match = imageLineRegex.exec(str)) !== null) {
+        imageLines.push({
+            index: match.index,
+            length: match[0].length,
+            content: match[0]
+        });
+    }
+    
+    // Second pass: group consecutive image lines into grids
+    var replacements = [];
+    for (var i = 0; i < imageLines.length; i++) {
+        var gridStart = i;
+        var gridEnd = i;
+        var expectedNextIndex = imageLines[i].index + imageLines[i].length;
+        
+        // Find consecutive image lines
+        while (gridEnd + 1 < imageLines.length && imageLines[gridEnd + 1].index === expectedNextIndex) {
+            gridEnd++;
+            expectedNextIndex = imageLines[gridEnd].index + imageLines[gridEnd].length;
+        }
+        
+        // If we have at least 2 consecutive lines, or 2+ images on one line, create a grid
+        var gridLength = gridEnd - gridStart + 1;
+        if (gridLength >= 2) {
+            var gridMatch = str.substring(imageLines[gridStart].index, expectedNextIndex);
+            replacements.push({
+                start: imageLines[gridStart].index,
+                end: expectedNextIndex,
+                match: gridMatch
+            });
+            i = gridEnd; // Skip processed lines
+        }
+    }
+    
+    // Apply replacements in reverse order to maintain indices
+    for (var i = replacements.length - 1; i >= 0; i--) {
+        var r = replacements[i];
+        var match = r.match;
         var table = '';
 
         // Break into rows:
-        match = match.split('\n');
+        var rows = match.split('\n');
 
         // Parse each row:
-        match.forEach(function(row) {
+        var rowNum = 0;
+        rows.forEach(function(row) {
+            rowNum++;
             row = row.trim();
             if (row) {
                 // Parse each image
-                table += entag('tr', row.rp(/[ \t]*!\[.*?\]\([^\)\s]+([^\)]*?)?\)/g, function(image, attribs) {
+                // Limit attribute matching to prevent catastrophic backtracking on malformed input
+                // Limit caption length with {0,100} to prevent catastrophic backtracking
+                table += entag('tr', row.rp(/[ \t]*!\[[^\]]{0,100}\]\([^\)\s]+([^\)]{0,200})?\)/g, function(image, attribs) {
                     //if (! /width|height/i.test(attribs) {
                         // Add a bogus "width" attribute to force the images to be hyperlinked to their
                         // full-resolution versions
@@ -3183,11 +3967,13 @@ function markdeepToHTML(str, elementMode) {
             }
         });
 
-        return '\n' + entag('table', table, imageGridAttribs) + '\n';
-    });
+        var replacement = '\n' + entag('table', table, imageGridAttribs) + '\n';
+        str = str.substring(0, r.start) + replacement + str.substring(r.end);
+    }
 
     // SIMPLE IMAGE: ![](url attribs)
-    str = str.rp(/(\s*)!\[\]\(("?)([^"<>\s]+?)\2(\s[^\)]*?)?\)(\s*)/g, function (match, preSpaces, maybeQuote, url, attribs, postSpaces) {
+    // Limit attribute matching to prevent catastrophic backtracking on malformed input
+    str = str.rp(/(\s*)!\[\]\(("?)([^"<>\s\)]+)\2(\s[^\)]{0,200})?\)(\s*)/g, function (match, preSpaces, maybeQuote, url, attribs, postSpaces) {
         var img = formatImage(match, url, attribs);
         
         if (isolated(preSpaces, postSpaces)) {
@@ -3208,7 +3994,8 @@ function markdeepToHTML(str, elementMode) {
 
         // CAPTIONED IMAGE: ![caption](url attribs)
         // Caption pattern (?:[^\[\]\\]|\\[\[\]])+ matches either unescaped chars or \[, \]
-        str = str.rp(/(\s*)!\[((?:[^\[\]\\]|\\[\[\]])+?)\]\(("?)([^"<>\s]+?)\3(\s[^\)]*?)?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
+        // Limit attribute matching to prevent catastrophic backtracking on malformed input
+        str = str.rp(/(\s*)!\[((?:[^\[\]\\]|\\[\[\]])+?)\]\(("?)([^"<>\s\)]+)\3(\s[^\)]{0,200})?\)(\s*)/, function (match, preSpaces, caption, maybeQuote, url, attribs, postSpaces) {
             loop = true;
             // Un-escape brackets in the caption
             caption = caption.rp(/\\([\[\]])/g, '$1');
@@ -3387,7 +4174,6 @@ function markdeepToHTML(str, elementMode) {
             t.used = true;
             return '<a ' + protect('href="#' + ref + '" target="_self"') + '>' + _type + '&nbsp;' + t.number + maybeShowLabel(_ref) + '</a>';
         } else {
-            console.log("Reference to undefined '" + type + " [" + _ref + "]'");
             return _type + ' ?';
         }
     });
@@ -3405,9 +4191,22 @@ function markdeepToHTML(str, elementMode) {
         return '<a ' + (! (url.startsWith('svn') || url.startsWith('p4') || url.startsWith('quad')) ? protect('href="' + url + '" class="url"') : '') + '>' + url + '</a>' + extra;
     });
 
-    if (! elementMode) {
-        var TITLE_PATTERN = /^\s*(?:<\/p><p>)?\s*<strong.*?>([^ \t\*].*?[^ \t\*])<\/strong>(?:<\/p>)?[ \t]*\n/.source;
-        
+if (! elementMode) {
+    // Handle title detection for both **bold** syntax and # syntax (when h1TitleInput is true)
+    
+    // Check if there's already a title from # syntax (when h1TitleInput is true)
+    var hasTitleFromHeader = false;
+    if (option('h1TitleInput')) {
+        // Note: attributes are protected, so we need to look for the protected pattern
+        // The protect() function converts quotes to &ldquo; and &rdquo;
+        var titleTag = option('h1TitleOutput') ? 'h1' : 'div class=&ldquo;title&rdquo;';
+        hasTitleFromHeader = new RegExp('<' + titleTag + '>').test(str);
+    }
+    
+    // Only process **bold** titles if there isn't already a title from # syntax
+    if (! hasTitleFromHeader) {
+        // Note: Protected line markers may appear after </strong>, so allow any non-newline chars before \n
+        var TITLE_PATTERN = /^\s*(?:<\/p><p>)?\s*<strong.*?>([^ \t\*].*?[^ \t\*])<\/strong>[^\n]*\n/.source;
         var ALL_SUBTITLES_PATTERN = /([ {4,}\t][ \t]*\S.*\n)*/.source;
 
         // Detect a bold first line and make it into a title; detect indented lines
@@ -3425,22 +4224,49 @@ function markdeepToHTML(str, elementMode) {
                 
                 // Remove all tags from the title when inside the <TITLE> tag, as well
                 // as unicode characters that don't render well in tabs and window bars.
-                // These regexps look like they are full of spaces but are actually various
-                // unicode space characters. http://jkorpela.fi/chars/spaces.html
-                var titleTag = removeHTMLTags(title).replace(/[     ]/g, '').replace(/[         　]/g, ' ');
+                // Also remove protected markers (line numbers) that may have been injected
+                var titleTag = removeHTMLTags(title).rp(PROTECT_REGEXP, '').replace(/[         　]/g, ' ');
                 
                 return entag('title', titleTag) + maybeShowLabel(window.location.href, 'center') +
                     '<div class="title"> ' + title + 
                     ' </div>\n' + subtitles + '<div class="afterTitles"></div>\n';
             });
-    } // if ! noTitles
+    }
+    
+    // When h1TitleInput is true, # becomes title. Add <title> tag if not already present
+    // and the document has a div.title or h1 at the start (from # syntax)
+    if (option('h1TitleInput')) {
+        // The title will be preceded by </p>, anchor tag, then the title tag itself
+        // The class attribute is protected, so we need to match the protected form
+        // Pattern matches: <a ...>&nbsp;</a><div PROTECTED_ATTR>content</div>
+        // or: <a ...>&nbsp;</a><h1>content</h1> (when h1TitleOutput is true)
+        var titleTag = option('h1TitleOutput') ? 'h1' : 'div';
+        var closingTag = titleTag;
+        
+        // For div.title, the class attribute is protected, so match any attributes
+        // For h1, there are no attributes
+        var titlePattern = option('h1TitleOutput') 
+            ? new RegExp('(<a [^>]*>&nbsp;<\\/a>)<' + titleTag + '>(.*?)<\\/' + closingTag + '>')
+            : new RegExp('(<a [^>]*>&nbsp;<\\/a>)<' + titleTag + ' [^>]*>(.*?)<\\/' + closingTag + '>');
+        
+        // Check if we have a title but no <title> tag yet
+        if (titlePattern.test(str) && str.indexOf('<title>') === -1) {
+            str = str.rp(titlePattern, function(match, anchor, titleContent) {
+                // Remove protected markers (line numbers) before processing title text
+                var titleTagText = removeHTMLTags(titleContent).rp(PROTECT_REGEXP, '').replace(/[         　]/g, ' ');
+                // Preserve the original match but add <title> tag before it
+                return entag('title', titleTagText) + maybeShowLabel(window.location.href, 'center') + match;
+            });
+        }
+    }
+} // if ! noTitles
 
-    // Remove any bogus leading close-paragraph tag inserted by our extra newlines
-    str = str.rp(/^\s*<\/p>/, '');
+// Remove any bogus leading close-paragraph tag inserted by our extra newlines
+str = str.rp(/^\s*<\/p>/, '');
 
 
-    // If not in element mode and not an INSERT child, maybe add a TOC
-    if (! elementMode) {
+// If not in element mode and not an INSERT child, maybe add a TOC
+if (! elementMode) {
         var temp = insertTableOfContents(str, protect, function (text) {return text.rp(PROTECT_REGEXP, expose)});
         str = temp[0];
         var toc = temp[1];
@@ -3456,6 +4282,11 @@ function markdeepToHTML(str, elementMode) {
                     });
     }
 
+    // Wrap header sections in <section> tags before exposing protected strings
+    if (! elementMode) {
+        str = wrapHeaderSections(str);
+    }
+
     // Expose all protected values. We may need to do this
     // recursively, because pre and code blocks can be nested.
     var maxIterations = 50;
@@ -3467,18 +4298,15 @@ function markdeepToHTML(str, elementMode) {
         --maxIterations;
     }
     
-    if (maxIterations <= 0) { console.log('WARNING: Ran out of iterations while expanding protected substrings'); }
 
     // Warn about unused references
     Object.keys(referenceLinkTable).forEach(function (key) {
         if (! referenceLinkTable[key].used) {
-            console.log("Reference link '[" + key + "]' is defined but never used");
         }
     });
 
     Object.keys(refTable).forEach(function (key) {
         if (! refTable[key].used) {
-            console.log("'" + refTable[key].source + "' is never referenced");
         }
     });
 
@@ -5114,6 +5942,273 @@ if (! window.alreadyProcessedMarkdeep) {
             (html.search(/\\\(.*\\\)/) !== -1));
     }
 
+    // PHASE 1: Helper functions for attributing source lines to DOM elements
+    
+    /** Check if a tag name represents a block-level element */
+    function isBlockElement(tagName) {
+        if (!tagName) { return false; }
+        var blockTags = {
+            'P': true, 'DIV': true, 'H1': true, 'H2': true, 'H3': true, 
+            'H4': true, 'H5': true, 'H6': true, 'PRE': true, 'BLOCKQUOTE': true,
+            'UL': true, 'OL': true, 'LI': true, 'TABLE': true, 'TR': true,
+            'TD': true, 'TH': true, 'SECTION': true, 'ARTICLE': true,
+            'HEADER': true, 'FOOTER': true, 'CENTER': true
+        };
+        return blockTags[tagName.toUpperCase()] || false;
+    }
+    
+    /** Walk DOM and convert protected line markers to data-src-line attributes */
+    function attributeSourceLines(rootElement) {
+        if (!rootElement) { return; }
+        
+        var attributedCount = 0;
+        var markerPattern = /⟨L:(\d+)⟩/g;
+        
+        // Walk all text nodes
+        var walker = document.createTreeWalker(
+            rootElement,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        var textNodesToClean = [];
+        var node;
+        
+        while (node = walker.nextNode()) {
+            var text = node.nodeValue;
+            if (!text) { continue; }
+            
+            var match = markerPattern.exec(text);
+            if (match) {
+                var lineNum = match[1];
+                
+                // Find nearest block-level parent element
+                var blockElement = node.parentElement;
+                while (blockElement && !isBlockElement(blockElement.tagName)) {
+                    blockElement = blockElement.parentElement;
+                }
+                
+                if (blockElement && !blockElement.hasAttribute('data-src-line')) {
+                    blockElement.setAttribute('data-src-line', lineNum);
+                    attributedCount++;
+                }
+                
+                // Mark this text node for cleaning
+                textNodesToClean.push(node);
+                
+                // Reset regex for next iteration
+                markerPattern.lastIndex = 0;
+            }
+        }
+        
+        // Clean markers from text nodes
+        for (var i = 0; i < textNodesToClean.length; i++) {
+            var textNode = textNodesToClean[i];
+            textNode.nodeValue = textNode.nodeValue.replace(/⟨L:\d+⟩/g, '');
+        }
+    }
+    
+    // ============================================================================
+    // PHASE 2: SOURCE VIEW - Context menu and source viewing
+    // ============================================================================
+    //
+    // Provides a context menu to view the original Markdeep source with line
+    // numbers. Clicking on a rendered element shows the corresponding source line.
+    //
+    // FEATURES:
+    // - Custom context menu on body (when no selection)
+    // - "View Document Markdeep Source" menu item
+    // - Source view with isolated styling (no page CSS inheritance)
+    // - Scroll to clicked line with pointer alignment
+    // - Return to rendered document button
+    //
+    // ============================================================================
+    
+    function initializeSourceView(originalSource) {
+        var isSourceViewActive = false;
+        var sourceViewContainer = null;
+        var clickedLineNumber = null;
+        var clickedY = null;
+        
+        // Create source view UI (hidden initially)
+        function createSourceViewUI() {
+            // Create container with isolated styling
+            var container = document.createElement('div');
+            container.id = 'markdeep-source-view';
+            container.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999999; background:#fff; overflow:auto;';
+            
+            // Create toolbar
+            var toolbar = document.createElement('div');
+            toolbar.style.cssText = 'position:sticky; top:0; left:0; right:0; background:#f5f5f5; border-bottom:1px solid #ccc; padding:10px; z-index:1000000;';
+            
+            var returnButton = document.createElement('button');
+            returnButton.textContent = 'Return to Rendered Document';
+            returnButton.style.cssText = 'padding:8px 16px; background:#007bff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-family:sans-serif; font-size:14px;';
+            returnButton.onmouseover = function() { this.style.background = '#0056b3'; };
+            returnButton.onmouseout = function() { this.style.background = '#007bff'; };
+            returnButton.onclick = function() { hideSourceView(); };
+            
+            toolbar.appendChild(returnButton);
+            container.appendChild(toolbar);
+            
+            // Create source display area
+            var sourceDisplay = document.createElement('pre');
+            sourceDisplay.id = 'markdeep-source-display';
+            sourceDisplay.style.cssText = 'margin:0; padding:20px; font-family:monospace; font-size:13px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; color:#000; background:#fff;';
+            
+            // Add line numbers and source
+            var lines = originalSource.split('\n');
+            var html = '';
+            for (var i = 0; i < lines.length; i++) {
+                var lineNum = i + 1;
+                var lineContent = lines[i].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                html += '<span style="display:inline-block; width:100%; background:' + (lineNum % 2 === 0 ? '#f9f9f9' : '#fff') + ';">' +
+                       '<span style="display:inline-block; width:60px; color:#999; text-align:right; padding-right:10px; user-select:none;" data-line="' + lineNum + '">' + lineNum + '</span>' +
+                       '<span style="display:inline-block;">' + lineContent + '</span>' +
+                       '</span>\n';
+            }
+            sourceDisplay.innerHTML = html;
+            
+            container.appendChild(sourceDisplay);
+            document.body.appendChild(container);
+            
+            return container;
+        }
+        
+        // Show source view and scroll to line
+        function showSourceView(lineNumber, clickY) {
+            if (!sourceViewContainer) {
+                sourceViewContainer = createSourceViewUI();
+            }
+            
+            sourceViewContainer.style.display = 'block';
+            isSourceViewActive = true;
+            
+            // Scroll to the line
+            if (lineNumber) {
+                var lineSpan = sourceViewContainer.querySelector('[data-line="' + lineNumber + '"]');
+                if (lineSpan) {
+                    // Calculate scroll position to align line with click position
+                    var lineRect = lineSpan.getBoundingClientRect();
+                    var containerRect = sourceViewContainer.getBoundingClientRect();
+                    var toolbarHeight = sourceViewContainer.querySelector('div').offsetHeight;
+                    
+                    // Scroll so the line appears at the same Y position as the click
+                    var targetY = clickY || (window.innerHeight / 2);
+                    var scrollTop = lineSpan.offsetTop - targetY + toolbarHeight;
+                    sourceViewContainer.scrollTop = Math.max(0, scrollTop);
+                }
+            }
+        }
+        
+        // Expose the showSourceView function globally for section header context menu
+        window.markdeepShowSourceView = function() {
+            showSourceView(null, null);
+        };
+        
+        // Hide source view
+        function hideSourceView() {
+            if (sourceViewContainer) {
+                sourceViewContainer.style.display = 'none';
+            }
+            isSourceViewActive = false;
+        }
+        
+        // Create custom context menu matching existing Markdeep style
+        var contextMenu = document.createElement('div');
+        contextMenu.id = 'markdeep-source-context-menu';
+        contextMenu.style.cssText = 'display:none; position:absolute; background:#383838; cursor:default; border:1px solid #999; color:#fff; padding:4px 0px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",sans-serif; font-size:85%; font-weight:600; border-radius:4px; box-shadow:0px 3px 10px rgba(0,0,0,35%); z-index:999998;';
+        
+        var menuItem = document.createElement('div');
+        menuItem.style.cssText = 'padding:0px 20px; cursor:pointer;';
+        menuItem.onmouseover = function() { this.style.background = '#1659d1'; };
+        menuItem.onmouseout = function() { this.style.background = 'transparent'; };
+        menuItem.onclick = function() {
+            contextMenu.style.display = 'none';
+            showSourceView(clickedLineNumber, clickedY);
+        };
+        
+        // Update menu item text based on whether we have a line number
+        function updateMenuItemText() {
+            if (clickedLineNumber) {
+                menuItem.textContent = 'View Document Markdeep Source (Line ' + clickedLineNumber + ')';
+            } else {
+                menuItem.textContent = 'View Document Markdeep Source';
+            }
+        }
+        
+        contextMenu.appendChild(menuItem);
+        document.body.appendChild(contextMenu);
+        
+        // Handle context menu on body
+        document.addEventListener('contextmenu', function(e) {
+            // Skip if source view is active
+            if (isSourceViewActive) { return; }
+            
+            // Allow browser context menu if there's a selection
+            var selection = window.getSelection();
+            if (selection && selection.toString().length > 0) {
+                contextMenu.style.display = 'none';
+                return;
+            }
+            
+            // Skip if right-clicking on a header element - let the header context menu handle it
+            var target = e.target;
+            while (target && target !== document.body) {
+                if (target.tagName && target.tagName.match(/^H\d$/)) {
+                    // This is a header, let the header context menu handle it
+                    return;
+                }
+                target = target.parentElement;
+            }
+            
+            // Find the nearest element with data-src-line
+            target = e.target;
+            var lineNumber = null;
+            while (target && target !== document.body) {
+                if (target.hasAttribute && target.hasAttribute('data-src-line')) {
+                    lineNumber = parseInt(target.getAttribute('data-src-line'));
+                    break;
+                }
+                target = target.parentElement;
+            }
+            
+            // Show custom context menu
+            e.preventDefault();
+            clickedLineNumber = lineNumber;
+            clickedY = e.clientY;
+            updateMenuItemText();
+            
+            // Position menu so cursor is at the top-left of the first item
+            // Account for menu padding (4px top) to align cursor with text
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = (e.pageY - 4) + 'px';
+            contextMenu.style.display = 'block';
+            
+            // Adjust if menu would go off-screen
+            setTimeout(function() {
+                var rect = contextMenu.getBoundingClientRect();
+                if (rect.right > window.innerWidth) {
+                    contextMenu.style.left = (window.innerWidth - rect.width - 10) + 'px';
+                }
+                if (rect.bottom > window.innerHeight) {
+                    contextMenu.style.top = (window.innerHeight - rect.height - 10) + 'px';
+                }
+            }, 0);
+        });
+        
+        // Hide context menu on click elsewhere
+        document.addEventListener('click', function() {
+            contextMenu.style.display = 'none';
+        });
+        
+        // Hide context menu on scroll
+        document.addEventListener('scroll', function() {
+            contextMenu.style.display = 'none';
+        });
+    }
+
     var formatDocument = function (mode) {
         // Detect the noformat argument to the URL
         var noformat = (window.location.href.search(/\?.*noformat.*/i) !== -1);
@@ -5259,11 +6354,12 @@ if (! window.alreadyProcessedMarkdeep) {
                 var onContextMenu = function (event) {
                     var menu = null;
                     try {
-                        // Test for whether the click was on a header
+                        // Test for whether the click was on a header or definition term
                         var match = event.target.tagName.match(/^H(\d)$/);
-                        if (! match) { return; }
+                        var isDT = event.target.tagName === 'DT';
+                        if (!match && !isDT) { return; }
 
-                        // The event target is a header...ensure that it is a Markdeep header
+                        // The event target is a header or DT...ensure that it is a Markdeep element
                         // (we could be in HTML or Doxygen mode and have non-.md content in the
                         // same document)
                         var node = event.target;
@@ -5275,20 +6371,45 @@ if (! window.alreadyProcessedMarkdeep) {
                             return;
                         }
                         
-                        // We are on a header
-                        var level = parseInt(match[1]) || 1;
-                        
-                        // Show the headerMenu
+                        // Show the menu
                         menu = document.getElementById('mdContextMenu');
                         if (! menu) { return; }
                         
-                        var sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
-                        // Search backwards two siblings to grab the URL generated
-                        var anchorNode = event.target.previousElementSibling.previousElementSibling;
+                        var sectionType, anchorNode, sectionName, sectionLabel, anchor;
                         
-                        var sectionName = event.target.innerText.trim();
-                        var sectionLabel = sectionName.toLowerCase();
-                        var anchor = anchorNode.name;
+                        if (isDT) {
+                            // Definition term
+                            sectionType = 'Definition';
+                            // The anchor is the first child of the DT
+                            anchorNode = event.target.firstElementChild;
+                            if (!anchorNode || anchorNode.tagName !== 'A') { return; }
+                            
+                            sectionName = event.target.innerText.trim();
+                            sectionLabel = sectionName.toLowerCase();
+                            anchor = anchorNode.name;
+                        } else {
+                            // Header
+                            var level = parseInt(match[1]) || 1;
+                            
+                            // When h1TitleOutput is true, translate HTML level back to logical level
+                            // and skip the title (h1)
+                            if (option('h1TitleOutput')) {
+                                if (level === 1) {
+                                    // This is the title, don't show context menu
+                                    return;
+                                }
+                                // Shift down: h2 becomes level 1, h3 becomes level 2, etc.
+                                level = level - 1;
+                            }
+                            
+                            sectionType = ['Section', 'Subsection'][Math.min(level - 1, 1)];
+                            // Search backwards two siblings to grab the URL generated
+                            anchorNode = event.target.previousElementSibling.previousElementSibling;
+                            
+                            sectionName = event.target.innerText.trim();
+                            sectionLabel = sectionName.toLowerCase();
+                            anchor = anchorNode.name;
+                        }
                         var url = '' + location.origin + location.pathname + '#' + anchor;
 
                         var shortUrl = url;
@@ -5311,6 +6432,11 @@ if (! window.alreadyProcessedMarkdeep) {
                         s += entag('div', 'Copy HTML &ldquo;&lt;a href=&hellip;&gt;&rdquo;',
                                    'onclick="navigator.clipboard.writeText(\'&lt;a href=&quot;' + url + '&quot;&gt;' + sectionName + '&lt;/a&gt;\')&&(document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\')"');
                         
+                        if (DEBUG_VIEW_SOURCE_MENU) {
+                            s += entag('div', 'View Document Markdeep Source',
+                                       'onclick="document.getElementById(\'mdContextMenu\').style.visibility=\'hidden\'; window.markdeepShowSourceView && window.markdeepShowSourceView()"');
+                        }
+                        
                         menu.innerHTML = s;
                         menu.style.visibility = 'visible';
                         menu.style.left = event.pageX + 'px';
@@ -5320,7 +6446,6 @@ if (! window.alreadyProcessedMarkdeep) {
                         return false;
                     } catch (e) {
                         // Something went wrong
-                        console.log(e);
                         if (menu) { menu.style.visibility = 'hidden'; }
                     }
                 }
@@ -5371,7 +6496,7 @@ if (! window.alreadyProcessedMarkdeep) {
                 META += '<base href="about:srcdoc"><base target="_blank">';
             }
             
-            var head = META + BODY_STYLESHEET + STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
+            var head = META + BODY_STYLESHEET + STYLESHEET + sectionNumberingStylesheet() + h1TitleOutputStylesheet() + HIGHLIGHT_STYLESHEET;
             if (longDocument) {
                 // Add more spacing before the title in a long document
                 head += entag('style', 'div.title { padding-top: 40px; } div.afterTitles { height: 15px; }');
@@ -5388,7 +6513,16 @@ if (! window.alreadyProcessedMarkdeep) {
             } else {
                 document.head.innerHTML = head + document.head.innerHTML;
                 document.body.innerHTML = markdeepHTML;
-                if (needMathJax) { loadMathJax(); }            
+                if (needMathJax) { loadMathJax(); }
+                
+                // PHASE 1: Convert protected line markers to data-src-line attributes
+                attributeSourceLines(document.body);
+                
+                // PHASE 2: Add source view toggle (skip for included documents)
+                var isIncluded = window.location.search.indexOf('id=') >= 0;
+                if (!isIncluded && DEBUG_VIEW_SOURCE_MENU) {
+                    initializeSourceView(source);
+                }
             }
 
             // Change the ID of the body, so that CSS can distinguish Markdeep
@@ -5425,7 +6559,7 @@ if (! window.alreadyProcessedMarkdeep) {
         formatDocument:       formatDocument,
         langTable:            LANG_TABLE,
         stylesheet:           function() {
-            return STYLESHEET + sectionNumberingStylesheet() + HIGHLIGHT_STYLESHEET;
+            return STYLESHEET + sectionNumberingStylesheet() + h1TitleOutputStylesheet() + HIGHLIGHT_STYLESHEET;
         }
     });
 
