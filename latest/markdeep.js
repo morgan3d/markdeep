@@ -3301,7 +3301,9 @@ function markdeepToHTML(str, elementMode) {
                      line.match(/^[ \t]*\d+\.[ \t]/) ||            // Numbered lists
                      line.match(/^[ \t]*[-+*][ \t]/) ||            // Bullet lists
                      line.match(/^[ \t]*\[[^\]]+\]:[ \t]+\S/) ||   // Reference definitions
-                     line.match(/^[ \t]*!!!/)) {                      // Admonitions
+                     line.match(/^[ \t]*!!!/) ||                   // Admonitions
+                     line.match(/^[ \t]*!\[/) ||                   // Images
+                     line.match(/\b(figure|fig\.|table|tbl\.|listing|lst\.|diagram|section|subsection|chapter|sec\.)\s+\[/i)) {  // Keyword [ref] patterns
                 // Skip these
             }
             // Mark all other non-empty lines (including bold, italic, etc.)
