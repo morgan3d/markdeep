@@ -2,7 +2,7 @@
 /** 
 
   Markdeep.js
-  Version 1.18
+  Version 1.19
 
   Copyright 2015-2025, Morgan McGuire, https://casual-effects.com
   All rights reserved.
@@ -183,6 +183,12 @@ var STYLESHEET = entag('style',
     '#mdContextMenu{position:absolute;background:#383838;cursor:default;border:1px solid #999;color:#fff;padding:4px 0px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,"Helvetica Neue",sans-serif;font-size:85%;font-weight:600;border-radius:4px;box-shadow:0px 3px 10px rgba(0,0,0,35%)}' +
     '#mdContextMenu div{padding:0px 20px}' +
     '#mdContextMenu div:hover{background:#1659d1}' +
+
+    '#mdLinkPreview{position:fixed;display:none;background:#fff;border:1px solid #a2a9b1;box-shadow:0 1px 4px rgba(0,0,0,0.12);z-index:999999;width:450px;height:169px;overflow:visible;opacity:0;transition:opacity 0.15s ease-in}' +
+    '#mdLinkPreview.md-preview-visible{opacity:1}' +
+    '#mdLinkPreview iframe{width:600px;height:450px;border:none;display:block;transform:scale(0.75);transform-origin:0 0;pointer-events:none}' +
+    '#mdLinkPreview{cursor:pointer}' +
+    '#mdLinkPreview.md-link-preview-loading{padding:20px;text-align:center;color:#54595d;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px}' +
                        
     '.md code,.md pre{' +
     'font-family:' + codeFontStack + ';' +
@@ -431,7 +437,7 @@ var STYLESHEET = entag('style',
     'page-break-inside:avoid' +
     '}' +
 
-    '.md a.target{width:0px;height:0px;visibility:hidden;font-size:0px;display:inline-block}' +
+    '.md a.target{width:0px;height:0px;visibility:hidden;font-size:0px;display:inline-block;position:relative;top:-20px}' +
     '.md a:link, .md a:visited{color:#38A;text-decoration:none}' +
     '.md a:link:hover{text-decoration:underline}' +
 
@@ -1365,6 +1371,7 @@ var DEFAULT_OPTIONS = {
     definitionStyle:    'auto',
     linkAPIDefinitions: true,
     contextMenu:        true,
+    showLinkPreviews:   false,
     inlineCodeLang:     false,
     h1TitleInput:       false,
     h1TitleOutput:      false,
@@ -1545,7 +1552,7 @@ function removeHTMLTags(str) {
 
 /** Turn the argument into a legal URL anchor */
 function mangle(text) {
-    return encodeURI(text.rp(/\s/g, '').toLowerCase());
+    return encodeURI(text.rp(/[\s\(\)\[\]<>\{\}]/g, '').toLowerCase());
 }
 
 /** Code-sensitive version of mangle that separates function names from arguments.
@@ -3293,7 +3300,8 @@ function markdeepToHTML(str, elementMode) {
                      line.match(/^[ \t]*>/) ||                     // Blockquotes  
                      line.match(/^[ \t]*\d+\.[ \t]/) ||            // Numbered lists
                      line.match(/^[ \t]*[-+*][ \t]/) ||            // Bullet lists
-                     line.match(/^[ \t]*\[[^\]]+\]:[ \t]+\S/)) {   // Reference definitions
+                     line.match(/^[ \t]*\[[^\]]+\]:[ \t]+\S/) ||   // Reference definitions
+                     line.match(/^[ \t]*!!!/)) {                      // Admonitions
                 // Skip these
             }
             // Mark all other non-empty lines (including bold, italic, etc.)
@@ -3400,6 +3408,138 @@ function markdeepToHTML(str, elementMode) {
             return str;
         }
     }
+
+    // Helper function to detect if content looks like an ASCII diagram
+    function looksLikeDiagram(content) {
+        var lines = content.split('\n');
+        if (lines.length < 3) return false;
+        
+        var totalChars = 0;
+        var diagramChars = 0;
+        var patternMatches = 0;
+        var verticalBars = 0;
+        var verticalBarLines = 0;
+        
+        for (var i = 0; i < lines.length; ++i) {
+            var line = lines[i];
+            totalChars += line.length;
+            
+            // Count diagram characters: | + - \ / . ' ^ v * < >
+            for (var j = 0; j < line.length; ++j) {
+                var c = line[j];
+                if (c === '|' || c === '+' || c === '-' || c === '\\' || c === '/' ||
+                    c === '.' || c === "'" || c === '^' || c === 'v' || c === '*' ||
+                    c === '<' || c === '>') {
+                    diagramChars++;
+                }
+                if (c === '|') {
+                    verticalBars++;
+                }
+            }
+            
+            // Check for common diagram patterns
+            if (line.match(/--\+|\+--|--\.|\.--|'--|--'|<--|-->|\|.*\||^\s*[|+.'v^*]\s*$/)) {
+                patternMatches++;
+            }
+            
+            // Count lines with vertical bars
+            if (line.indexOf('|') >= 0) {
+                verticalBarLines++;
+            }
+        }
+        
+        // Heuristics for diagram detection:
+        // 1. At least 20% of characters are diagram characters
+        // 2. At least 30% of lines have pattern matches
+        // 3. At least 3 vertical bars total
+        var diagramCharRatio = totalChars > 0 ? diagramChars / totalChars : 0;
+        var patternRatio = lines.length > 0 ? patternMatches / lines.length : 0;
+        
+        return (diagramCharRatio >= 0.20 && patternRatio >= 0.30 && verticalBars >= 3) ||
+               (diagramCharRatio >= 0.30 && verticalBars >= 3) ||
+               (verticalBarLines >= 3 && patternMatches >= 2);
+    }
+    
+    // Extract ```diagram fences and convert them to *****-bordered format for diagram processing
+    // This must happen before stylizeFence so they're not processed as code blocks
+    str = str.rp(/\n([ \t]*)```[ \t]*diagram[ \t]*\n([\s\S]+?)\n\1```[ \t]*\n/g, function(match, indent, content) {
+        // Remove the fence's indentation from each line of content
+        content = content.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
+        
+        // Find the maximum line length to create appropriate borders
+        var lines = content.split('\n');
+        var maxLen = 0;
+        for (var i = 0; i < lines.length; ++i) {
+            if (lines[i].length > maxLen) {
+                maxLen = lines[i].length;
+            }
+        }
+        
+        // Create top and bottom borders with enough * characters
+        // Each content line will be: '*' + ' ' + content + padding + ' ' + '*'
+        // Border must be at least DIAGRAM_START.length (5) characters
+        var borderLen = Math.max(maxLen + 4, 5);
+        var border = '';
+        for (var j = 0; j < borderLen; ++j) {
+            border += '*';
+        }
+        
+        // Wrap content with * borders on all sides with space padding
+        var wrappedLines = [border];
+        for (var i = 0; i < lines.length; ++i) {
+            var padding = '';
+            // Padding: borderLen - 4 (two * and two spaces) - line length
+            for (var j = 0; j < borderLen - 4 - lines[i].length; ++j) {
+                padding += ' ';
+            }
+            wrappedLines.push('* ' + lines[i] + padding + ' *');
+        }
+        wrappedLines.push(border);
+        
+        return '\n' + wrappedLines.join('\n') + '\n';
+    });
+    
+    // Auto-detect diagrams in code fences without language specified
+    // Match fences with no language or only whitespace after the backticks
+    str = str.rp(/\n([ \t]*)```[ \t]*\n([\s\S]+?)\n\1```[ \t]*\n/g, function(match, indent, content) {
+        // Check if this looks like a diagram
+        if (looksLikeDiagram(content)) {
+            // Remove the fence's indentation from each line of content
+            content = content.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
+            
+            // Find the maximum line length to create appropriate borders
+            var lines = content.split('\n');
+            var maxLen = 0;
+            for (var i = 0; i < lines.length; ++i) {
+                if (lines[i].length > maxLen) {
+                    maxLen = lines[i].length;
+                }
+            }
+            
+            // Create top and bottom borders with enough * characters
+            var borderLen = Math.max(maxLen + 4, 5);
+            var border = '';
+            for (var j = 0; j < borderLen; ++j) {
+                border += '*';
+            }
+            
+            // Wrap content with * borders on all sides with space padding
+            var wrappedLines = [border];
+            for (var i = 0; i < lines.length; ++i) {
+                var padding = '';
+                for (var j = 0; j < borderLen - 4 - lines[i].length; ++j) {
+                    padding += ' ';
+                }
+                wrappedLines.push('* ' + lines[i] + padding + ' *');
+            }
+            wrappedLines.push(border);
+            
+            return '\n' + wrappedLines.join('\n') + '\n';
+        } else {
+            // Not a diagram, return as-is to be processed as code
+            return match;
+        }
+    });
 
     // CODE FENCES, with styles. Do this before other processing so that their code is
     // protected from further Markdown processing
@@ -6530,6 +6670,379 @@ if (! window.alreadyProcessedMarkdeep) {
             // a document in HTML mode.
             document.body.id = 'md';
             document.body.style.visibility = 'visible';
+
+            /////////////////////////////////////////////////////////////
+            // Link preview on hover - must run after body is populated
+            
+            if (option('showLinkPreviews')) {
+                var previewContainer = document.createElement('div');
+                previewContainer.id = 'mdLinkPreview';
+                document.body.appendChild(previewContainer);
+                
+                var previewIframe = null;
+                var previewTimeout = null;
+                var scrollTimeout = null;
+                var currentLink = null;
+                var currentLinkUrl = null;
+                var mouseOverLink = false;
+                var mouseOverPreview = false;
+                
+                var showPreview = function(link, event) {
+                    if (currentLink === link) { return; }
+                    currentLink = link;
+                    currentLinkUrl = link.href;
+                    
+                    var url = link.href;
+                    
+                    // Clear existing content
+                    previewContainer.innerHTML = '';
+                    previewContainer.className = 'md-link-preview-loading';
+                    
+                    // Add URL display
+                    var urlDisplay = document.createElement('div');
+                    urlDisplay.className = 'md-preview-url';
+                    urlDisplay.textContent = url;
+                    urlDisplay.style.cssText = 'font-size:10px;color:#666;padding:3px 6px;background:#f5f5f5;border-bottom:1px solid #ddd;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;text-align:left;height:20px;box-sizing:border-box;line-height:14px;';
+                    previewContainer.appendChild(urlDisplay);
+                    
+                    var iframeContainer = document.createElement('div');
+                    iframeContainer.className = 'md-preview-iframe-container';
+                    iframeContainer.style.cssText = 'height:149px;overflow:hidden;';
+                    previewContainer.appendChild(iframeContainer);
+                    
+                    // Position near the link - use fixed positioning relative to viewport
+                    // Like Wikipedia, offset horizontally to avoid obscuring the link
+                    var rect = link.getBoundingClientRect();
+                    var previewWidth = 450;
+                    var previewHeight = 169;
+                    var horizontalOffset = 50;
+                    
+                    // Determine vertical position (above or below) and URL placement
+                    var top, positionClass, urlAtTop;
+                    var spaceBelow = window.innerHeight - rect.bottom;
+                    var spaceAbove = rect.top;
+                    
+                    if (spaceBelow >= previewHeight || spaceBelow >= spaceAbove) {
+                        // Position below - URL at top (closest to link)
+                        top = rect.bottom + 8;
+                        positionClass = 'md-preview-below';
+                        urlAtTop = true;
+                    } else {
+                        // Position above - URL at bottom (closest to link)
+                        top = rect.top - previewHeight - 8;
+                        positionClass = 'md-preview-above';
+                        urlAtTop = false;
+                    }
+                    
+                    // Clamp vertical position to viewport - ensure URL doesn't get clipped
+                    if (top < 10) {
+                        top = 10;
+                    } else if (top + previewHeight > window.innerHeight - 10) {
+                        // When preview would go off bottom, ensure we have enough space for URL
+                        var availableSpace = window.innerHeight - 10; // Leave 10px margin at bottom
+                        if (!urlAtTop) {
+                            // URL at bottom - need to ensure bottom 20px (URL height) is visible
+                            availableSpace = window.innerHeight - 30; // Leave 30px margin (20px URL + 10px buffer)
+                        }
+                        top = Math.min(top, availableSpace - previewHeight);
+                    }
+                    
+                    // Horizontal position - offset to the right of the link
+                    var left = rect.left + horizontalOffset;
+                    
+                    // If would go off right edge, try positioning to the left instead
+                    if (left + previewWidth > window.innerWidth - 10) {
+                        left = rect.right - previewWidth - horizontalOffset;
+                    }
+                    
+                    // If still off screen, align to viewport edges
+                    if (left < 10) {
+                        left = 10;
+                    } else if (left + previewWidth > window.innerWidth - 10) {
+                        left = window.innerWidth - previewWidth - 10;
+                    }
+                    
+                    // Configure URL position based on placement - manually reorder DOM elements
+                    previewContainer.style.display = 'block'; // Use normal block display
+                    
+                    if (urlAtTop) {
+                        // Preview below link - URL at top (closest to link)
+                        urlDisplay.style.borderBottom = '1px solid #ddd';
+                        urlDisplay.style.borderTop = 'none';
+                        urlDisplay.style.height = '20px';
+                        urlDisplay.style.boxSizing = 'border-box';
+                        iframeContainer.style.cssText = 'height:149px;position:relative;overflow:hidden;';
+                        
+                        // Make sure URL is first, iframe is second
+                        if (previewContainer.firstChild !== urlDisplay) {
+                            previewContainer.innerHTML = '';
+                            previewContainer.appendChild(urlDisplay);
+                            previewContainer.appendChild(iframeContainer);
+                        }
+                    } else {
+                        // Preview above link - URL at bottom (closest to link)
+                        urlDisplay.style.borderTop = '1px solid #ddd';
+                        urlDisplay.style.borderBottom = 'none';
+                        urlDisplay.style.height = '20px';
+                        urlDisplay.style.boxSizing = 'border-box';
+                        iframeContainer.style.cssText = 'height:149px;position:relative;overflow:hidden;';
+                        
+                        // Make sure iframe is first, URL is second
+                        if (previewContainer.firstChild !== iframeContainer) {
+                            previewContainer.innerHTML = '';
+                            previewContainer.appendChild(iframeContainer);
+                            previewContainer.appendChild(urlDisplay);
+                        }
+                    }
+                    
+                    previewContainer.className = 'md-link-preview-loading ' + positionClass;
+                    previewContainer.style.left = left + 'px';
+                    previewContainer.style.top = top + 'px';
+                    previewContainer.style.display = 'block';
+                    
+                    // Trigger fade-in animation after longer delay for page stabilization
+                    setTimeout(function() {
+                        if (currentLink !== link) { return; }
+                        previewContainer.classList.add('md-preview-visible');
+                    }, 300); // Increased from 10ms to 300ms for stabilization
+                    
+                    // Create iframe after a brief delay to show loading state
+                    setTimeout(function() {
+                        if (currentLink !== link) { return; }
+                        
+                        // Keep position class, remove loading class
+                        previewContainer.className = previewContainer.className.replace('md-link-preview-loading', '').trim();
+                        iframeContainer.innerHTML = '';
+                        
+                        previewIframe = document.createElement('iframe');
+                        previewIframe.src = url;
+                        iframeContainer.appendChild(previewIframe);
+                        
+                        // For Markdeep docs, give extra time to load and adjust scroll
+                        if (url.indexOf('.md.html') > -1 || url.indexOf('#') > -1) {
+                            if (scrollTimeout) { clearTimeout(scrollTimeout); }
+                            scrollTimeout = setTimeout(function() {
+                                if (currentLink === link && previewIframe && previewIframe.contentWindow) {
+                                    try {
+                                        var hash = url.split('#')[1];
+                                        if (hash && previewIframe.contentDocument) {
+                                            var target = previewIframe.contentDocument.getElementsByName(hash)[0];
+                                            if (target) {
+                                                target.scrollIntoView();
+                                            }
+                                        }
+                                    } catch(e) {
+                                        // Cross-origin iframe, cannot access
+                                    }
+                                }
+                                scrollTimeout = null;
+                            }, 800); // Increased from 600ms to 800ms for better stabilization
+                        }
+                    }, 200); // Increased from 100ms to 200ms
+                };
+                
+                var hidePreview = function() {
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                        previewTimeout = null;
+                    }
+                    if (scrollTimeout) {
+                        clearTimeout(scrollTimeout);
+                        scrollTimeout = null;
+                    }
+                    
+                    // Clean up DOM elements
+                    previewContainer.classList.remove('md-preview-visible');
+                    previewContainer.innerHTML = ''; // Clear all content including URL display and iframe
+                    previewContainer.style.display = 'none';
+                    
+                    // Reset state variables
+                    currentLink = null;
+                    currentLinkUrl = null;
+                    mouseOverLink = false;
+                    mouseOverPreview = false;
+                    lastMouseX = null;
+                    lastMouseY = null;
+                    
+                    // Clean up iframe
+                    if (previewIframe) {
+                        previewIframe.src = 'about:blank';
+                        previewIframe = null;
+                    }
+                };
+                
+                // Click on preview navigates to the link
+                previewContainer.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (currentLinkUrl) {
+                        window.location.href = currentLinkUrl;
+                    }
+                });
+                
+                // Add hover handlers to all links in .md content
+                document.addEventListener('mouseover', function(event) {
+                    var target = event.target;
+                    
+                    // Find if we're hovering over a link
+                    while (target && target.tagName !== 'A') {
+                        target = target.parentElement;
+                    }
+                    
+                    if (!target || target.tagName !== 'A') {
+                        return;
+                    }
+                    
+                    // Check if link is in .md content and not in TOC
+                    var node = target;
+                    var inMD = false;
+                    while (node) {
+                        if (node.classList) {
+                            if (node.classList.contains('md')) {
+                                inMD = true;
+                            }
+                            if (node.classList.contains('shortTOC') || 
+                                node.classList.contains('mediumTOC') || 
+                                node.classList.contains('longTOC')) {
+                                return;
+                            }
+                        }
+                        node = node.parentElement;
+                    }
+                    
+                    if (!inMD) { return; }
+                    
+                    var href = target.getAttribute('href');
+                    if (!href || href === '#' || href.match(/^(mailto|javascript|tel|data):/i)) {
+                        return;
+                    }
+                    
+                    mouseOverLink = true;
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                    }
+                    previewTimeout = setTimeout(function() {
+                        showPreview(target, event);
+                    }, 500);
+                });
+                
+                // Hide preview when mouse leaves link or preview (but respect proximity logic)
+                document.addEventListener('mouseout', function(event) {
+                    var target = event.target;
+                    var relatedTarget = event.relatedTarget;
+                    
+                    // Don't hide if relatedTarget is null (mouse left window) or if moving between link and preview
+                    if (!relatedTarget || !currentLink || !previewContainer) return;
+                    
+                    // Check if moving between link and preview - if so, don't hide
+                    var movingBetweenLinkAndPreview = false;
+                    if ((target === currentLink || (currentLink && currentLink.contains(target))) && 
+                        (relatedTarget === previewContainer || previewContainer.contains(relatedTarget))) {
+                        movingBetweenLinkAndPreview = true;
+                    }
+                    if ((target === previewContainer || previewContainer.contains(target)) && 
+                        (relatedTarget === currentLink || (currentLink && currentLink.contains(relatedTarget)))) {
+                        movingBetweenLinkAndPreview = true;
+                    }
+                    
+                    if (movingBetweenLinkAndPreview) return;
+                    
+                    // Leaving a link
+                    if (target.tagName === 'A' && target === currentLink) {
+                        mouseOverLink = false;
+                        if (!mouseOverPreview) {
+                            // Don't hide immediately - let mousemove proximity logic handle it
+                            // hidePreview();
+                        }
+                    }
+                    
+                    // Leaving preview
+                    if (target === previewContainer || previewContainer.contains(target)) {
+                        mouseOverPreview = false;
+                        if (!mouseOverLink) {
+                            // Don't hide immediately - let mousemove proximity logic handle it
+                            // hidePreview();
+                        }
+                    }
+                });
+                
+                // Hide on scroll
+                document.addEventListener('scroll', hidePreview, {passive: true});
+                
+                // Hide on ESC key
+                document.addEventListener('keydown', function(event) {
+                    if (event.keyCode === 27 && currentLink) {
+                        hidePreview();
+                    }
+                });
+                
+                // Hide on click away from link or preview
+                document.addEventListener('click', function(event) {
+                    if (currentLink && 
+                        event.target !== currentLink && 
+                        !currentLink.contains(event.target) &&
+                        event.target !== previewContainer &&
+                        !previewContainer.contains(event.target)) {
+                        hidePreview();
+                    }
+                });
+                
+                // Track mouse position for distance-based hiding
+                var lastMouseX = null, lastMouseY = null;
+                var mouseMoveThreshold = 150; // pixels for large movement detection
+                var proximityThreshold = 20; // pixels for keeping preview open
+                
+                document.addEventListener('mousemove', function(event) {
+                    if (!currentLink || !previewContainer) return;
+                    
+                    // Check if mouse is within 20px of link or preview
+                    var linkRect = currentLink.getBoundingClientRect();
+                    var previewRect = previewContainer.getBoundingClientRect();
+                    
+                    var nearLink = event.clientX >= linkRect.left - proximityThreshold && 
+                                   event.clientX <= linkRect.right + proximityThreshold && 
+                                   event.clientY >= linkRect.top - proximityThreshold && 
+                                   event.clientY <= linkRect.bottom + proximityThreshold;
+                                   
+                    var nearPreview = event.clientX >= previewRect.left - proximityThreshold && 
+                                      event.clientX <= previewRect.right + proximityThreshold && 
+                                      event.clientY >= previewRect.top - proximityThreshold && 
+                                      event.clientY <= previewRect.bottom + proximityThreshold;
+                    
+                    // If mouse is near either link or preview, keep it open
+                    if (nearLink || nearPreview) {
+                        lastMouseX = event.clientX;
+                        lastMouseY = event.clientY;
+                        return;
+                    }
+                    
+                    // Otherwise, check for large movement distance
+                    if (lastMouseX !== null && lastMouseY !== null) {
+                        var distance = Math.sqrt(
+                            Math.pow(event.clientX - lastMouseX, 2) + 
+                            Math.pow(event.clientY - lastMouseY, 2)
+                        );
+                        
+                        if (distance > mouseMoveThreshold) {
+                            hidePreview();
+                            lastMouseX = lastMouseY = null;
+                            return;
+                        }
+                    }
+                    
+                    lastMouseX = event.clientX;
+                    lastMouseY = event.clientY;
+                });
+                
+                // Keep preview open when mouse enters
+                previewContainer.addEventListener('mouseenter', function() {
+                    mouseOverPreview = true;
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                        previewTimeout = null;
+                    }
+                });
+            }
 
             var hashIndex = window.location.href.indexOf('#');
             if (hashIndex > -1) {
