@@ -3424,18 +3424,19 @@ function markdeepToHTML(str, elementMode) {
         
         for (var i = 0; i < lines.length; ++i) {
             var line = lines[i];
-            totalChars += line.length;
             
             // Count diagram characters: | + - \ / . ' ^ v * < >
             for (var j = 0; j < line.length; ++j) {
                 var c = line[j];
-                if (c === '|' || c === '+' || c === '-' || c === '\\' || c === '/' ||
-                    c === '.' || c === "'" || c === '^' || c === 'v' || c === '*' ||
-                    c === '<' || c === '>') {
-                    diagramChars++;
+                // Count non-whitespace characters toward total
+                if (c !== ' ' && c !== '\t') {
+                    ++totalChars;
+                }
+                if ("|+-\\/.'*^v<>".indexOf(c) >= 0) {
+                    ++diagramChars;
                 }
                 if (c === '|') {
-                    verticalBars++;
+                    ++verticalBars;
                 }
             }
             
@@ -3446,25 +3447,110 @@ function markdeepToHTML(str, elementMode) {
             
             // Count lines with vertical bars
             if (line.indexOf('|') >= 0) {
-                verticalBarLines++;
+                ++verticalBarLines;
             }
         }
         
         // Heuristics for diagram detection:
-        // 1. At least 20% of characters are diagram characters
-        // 2. At least 30% of lines have pattern matches
-        // 3. At least 3 vertical bars total
+        // 1. At least 20% diagram chars AND 30% pattern matches
+        // 2. At least 25% diagram chars (e.g., tree diagrams with slashes)
+        // 3. At least 3 lines with vertical bars AND 2+ pattern matches
         var diagramCharRatio = totalChars > 0 ? diagramChars / totalChars : 0;
         var patternRatio = lines.length > 0 ? patternMatches / lines.length : 0;
         
-        return (diagramCharRatio >= 0.20 && patternRatio >= 0.30 && verticalBars >= 3) ||
-               (diagramCharRatio >= 0.30 && verticalBars >= 3) ||
+        return (diagramCharRatio >= 0.20 && patternRatio >= 0.30) ||
+               (diagramCharRatio >= 0.25) ||
                (verticalBarLines >= 3 && patternMatches >= 2);
     }
     
-    // Extract ```diagram fences and convert them to *****-bordered format for diagram processing
-    // This must happen before stylizeFence so they're not processed as code blocks
-    str = str.rp(/\n([ \t]*)```[ \t]*diagram[ \t]*\n([\s\S]+?)\n\1```[ \t]*\n/g, function(match, indent, content) {
+    // CODE FENCES, with styles. Do this before diagram processing so that fences with explicit
+    // languages (or captions) are protected and won't be matched by diagram patterns
+    // Capture exact fence chars and use backreference so nested fences with fewer chars aren't matched
+    var stylizeFence = function (cssClass, symbol) {
+        var pattern = new RegExp('\n([ \\t]*)(' + symbol + '{3,})([ \\t]+\\S+)([ \\t]+.+)?\n([\\s\\S]+?)\n\\1\\2[ \t]*\n([ \\t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
+        
+        str = str.rp(pattern, function(match, indent, fence, lang, cssSubClass, sourceCode, caption) {
+            lang = lang ? lang.trim() : undefined;
+            
+            // Skip 'diagram' keyword - let diagram processing handle it
+            if (lang === 'diagram') {
+                return match;
+            }
+            
+            var processedCaption;
+
+            if (caption) {
+                caption = caption.trim();
+
+                processedCaption = createTarget(caption, protect);
+                caption = processedCaption.caption;
+                caption = entag('center', '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption + '</div>') + '\n';
+            }
+            // Remove the block's own indentation from each line of sourceCode
+            sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
+
+            var captionAbove = option('captionAbove', 'listing')
+            var nextSourceCode, nextLang, nextCssSubClass;
+            var body = [];
+
+            // Process multiple-listing blocks
+            do {
+                nextSourceCode = nextLang = nextCssSubClass = undefined;
+                sourceCode = sourceCode.rp(new RegExp('\\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S+)([ \\t]+.+)?\n([\\s\\S]*)'),
+                                           function (match, indent, lang, cssSubClass, everythingElse) {
+                                               nextLang = lang;
+                                               nextCssSubClass = cssSubClass;
+                                               nextSourceCode = everythingElse;
+                                               return '';
+                                           });
+
+                // Highlight and append this block
+                var result;
+                if (lang === 'none') {
+                    result = hljs.highlightAuto(sourceCode, []);
+                } else if (lang === undefined) {
+                    result = hljs.highlightAuto(sourceCode);
+                } else {
+                    try {
+                        result = hljs.highlight(sourceCode, {language: lang, ignoreIllegals: true});
+                    } catch (e) {
+                        // Some unknown language specified. Force to no formatting.
+                        result = hljs.highlightAuto(sourceCode, []);
+                    }
+                }
+                
+                var highlighted = result.value;
+
+                // Mark each line as a span to support line numbers
+                highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
+
+                if (cssSubClass) {
+                    highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
+                }
+
+                body.push(highlighted);
+
+                // Advance the next nested block
+                sourceCode = nextSourceCode;
+                lang = nextLang ? nextLang.trim() : undefined;
+                cssSubClass = nextCssSubClass;
+            } while (sourceCode);
+
+            // Insert paragraph close/open tags, since browsers force them anyway around pre tags
+            // We need the indent in case this is a code block inside a list that is indented.
+            return '\n' + indent + '</p>' + (processedCaption? processedCaption.target : '') + (caption && captionAbove ? caption : '') +
+                protect(entag('pre', entag('code', body.join('')), 'class="listing ' + cssClass + '"')) +
+                (caption && ! captionAbove ? caption : '') + '<p>\n';
+        });
+    };
+
+    stylizeFence('tilde', '~');
+    stylizeFence('backtick', '`');
+    
+    // Extract ```diagram or ~~~diagram fences and convert them to *****-bordered format for diagram processing
+    // This happens after stylizeFence so fences with explicit languages are already protected
+    // Capture exact fence chars and use backreference so nested fences with fewer chars aren't matched
+    str = str.rp(/\n([ \t]*)(`{3,}|~{3,})[ \t]*diagram[ \t]*\n([\s\S]+?)\n\1\2[ \t]*\n/g, function(match, indent, fence, content) {
         // Remove the fence's indentation from each line of content
         content = content.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
         
@@ -3502,8 +3588,9 @@ function markdeepToHTML(str, elementMode) {
     });
     
     // Auto-detect diagrams in code fences without language specified
-    // Match fences with no language or only whitespace after the backticks
-    str = str.rp(/\n([ \t]*)```[ \t]*\n([\s\S]+?)\n\1```[ \t]*\n/g, function(match, indent, content) {
+    // Match fences with no language or only whitespace after the fence characters
+    // Capture exact fence chars and use backreference so nested fences with fewer chars aren't matched
+    str = str.rp(/\n([ \t]*)(`{3,}|~{3,})[ \t]*\n([\s\S]+?)\n\1\2[ \t]*\n/g, function(match, indent, fence, content) {
         // Check if this looks like a diagram
         if (looksLikeDiagram(content)) {
             // Remove the fence's indentation from each line of content
@@ -3543,12 +3630,12 @@ function markdeepToHTML(str, elementMode) {
         }
     });
 
-    // CODE FENCES, with styles. Do this before other processing so that their code is
-    // protected from further Markdown processing
-    var stylizeFence = function (cssClass, symbol) {
-        var pattern = new RegExp('\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S*)([ \\t]+.+)?\n([\\s\\S]+?)\n\\1' + symbol + '{3,}[ \t]*\n([ \\t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
+    // Process fences without languages that weren't diagrams
+    // This catches plain code blocks with no language specified
+    var stylizeFenceNoLang = function (cssClass, symbol) {
+        var pattern = new RegExp('\n([ \\t]*)(' + symbol + '{3,})[ \\t]*\n([\\s\\S]+?)\n\\1\\2[ \t]*\n([ \\t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
         
-        str = str.rp(pattern, function(match, indent, lang, cssSubClass, sourceCode, caption) {
+        str = str.rp(pattern, function(match, indent, fence, sourceCode, caption) {
             var processedCaption;
 
             if (caption) {
@@ -3562,64 +3649,24 @@ function markdeepToHTML(str, elementMode) {
             sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
 
             var captionAbove = option('captionAbove', 'listing')
-            var nextSourceCode, nextLang, nextCssSubClass;
-            var body = [];
 
-            // Process multiple-listing blocks
-            do {
-                nextSourceCode = nextLang = nextCssSubClass = undefined;
-                sourceCode = sourceCode.rp(new RegExp('\\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S+)([ \\t]+.+)?\n([\\s\\S]*)'),
-                                           function (match, indent, lang, cssSubClass, everythingElse) {
-                                               nextLang = lang;
-                                               nextCssSubClass = cssSubClass;
-                                               nextSourceCode = everythingElse;
-                                               return '';
-                                           });
+            // Auto-detect language
+            var result = hljs.highlightAuto(sourceCode);
+            var highlighted = result.value;
 
-                // Highlight and append this block
-                lang = lang ? lang.trim() : undefined;
-                var result;
-                if (lang === 'none') {
-                    result = hljs.highlightAuto(sourceCode, []);
-                } else if (lang === undefined) {
-                    result = hljs.highlightAuto(sourceCode);
-                } else {
-                    try {
-                        result = hljs.highlight(sourceCode, {language: lang, ignoreIllegals: true});
-                    } catch (e) {
-                        // Some unknown language specified. Force to no formatting.
-                        result = hljs.highlightAuto(sourceCode, []);
-                    }
-                }
-                
-                var highlighted = result.value;
-
-                // Mark each line as a span to support line numbers
-                highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
-
-                if (cssSubClass) {
-                    highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
-                }
-
-                body.push(highlighted);
-
-                // Advance the next nested block
-                sourceCode = nextSourceCode;
-                lang = nextLang;
-                cssSubClass = nextCssSubClass;
-            } while (sourceCode);
+            // Mark each line as a span to support line numbers
+            highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
 
             // Insert paragraph close/open tags, since browsers force them anyway around pre tags
-            // We need the indent in case this is a code block inside a list that is indented.
             return '\n' + indent + '</p>' + (processedCaption? processedCaption.target : '') + (caption && captionAbove ? caption : '') +
-                protect(entag('pre', entag('code', body.join('')), 'class="listing ' + cssClass + '"')) +
+                protect(entag('pre', entag('code', highlighted), 'class="listing ' + cssClass + '"')) +
                 (caption && ! captionAbove ? caption : '') + '<p>\n';
         });
     };
 
-    stylizeFence('tilde', '~');
-    stylizeFence('backtick', '`');
-    
+    stylizeFenceNoLang('tilde', '~');
+    stylizeFenceNoLang('backtick', '`');
+
     // Highlight explicit inline code
     str = str.rp(/<code\s+lang\s*=\s*["']?([^"'\)\[\]\n]+)["'?]\s*>(.*)<\/code>/gi, function (match, lang, body) {
         return entag('code', hljs.highlight(body, {language: lang, ignoreIllegals: true}).value, 'lang=' + lang);
@@ -4178,8 +4225,8 @@ function markdeepToHTML(str, elementMode) {
 
             // This code used to put floating images in <span> instead of <div>,
             // but it wasn't clear why and this broke centered captions
-            return preSpaces + 
-            entag('div', processedCaption.target + (imageCaptionAbove ? caption : '') + img + (! imageCaptionAbove ? caption : ''), protect('class="image" style="' + divStyle + '"')) + 
+            return processedCaption.target + preSpaces +
+            entag('div', (imageCaptionAbove ? caption : '') + img + (! imageCaptionAbove ? caption : ''), protect('class="image" style="' + divStyle + '"')) + 
             postSpaces;
         });
     } // while replacements made
