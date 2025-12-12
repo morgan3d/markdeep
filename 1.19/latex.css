@@ -1,0 +1,111 @@
+/* Style sheet for Markdeep that corresponds closely to the default Latex article format 
+   Put the following in your Markdeep document to use this:
+ 
+   <link rel="stylesheet" href="https://casual-effects.com/markdeep/latest/latex.css">
+*/
+
+body#md {
+  max-width: 440px;
+  font-size: 12.5px;
+  color: #000;
+}
+
+.md div.title {
+  font-family: Palatino,Georgia,"Times New Roman",serif;
+  font-weight: normal;
+  font-size: 24px;
+  padding-top: 170px;
+  padding-bottom: 12px;
+}
+
+@media print {
+  body {
+    max-width: 64%;
+  }
+
+  .md div.title {
+      padding-top: 150px;
+  }
+}
+
+.md div.subtitle {
+  font-size: 15px;
+  padding-bottom: 12px;
+}
+
+.md h1, .md div.nonumberh1 {
+  font-family: Palatino,Georgia,"Times New Roman",serif;
+  border: none;
+  font-size: 18px;
+  color: #000;
+}
+
+.md h2, .md div.nonumberh2 {
+  font-family: Palatino,Georgia,"Times New Roman",serif;
+  border: none;
+  font-size: 15px;
+  color: #000;
+}
+
+.md sup {
+  vertical-align: baseline;
+  position: relative;
+  top: -0.4em;
+}
+
+.md sub { 
+  top: 0.4em; 
+}
+
+.md h3, .md h4, .md h5, .md h6, .md div.nonumberh3, .md div.nonumberh4, .md div.nonumberh5, .md div.nonumberh6 {
+  font-family: Palatino,Georgia,"Times New Roman",serif;
+  border: none;
+  font-size: 14px;
+  color: #000;
+}
+
+.md div.imagecaption {
+  font-style: normal;
+}
+
+.md hr {
+  height: 0px;
+  border: none;
+  border-top: 0.1pt solid #777;
+}
+
+.md div.endnote {
+   font-size: 11px;
+}
+
+.md div.bib b {
+  font-weight: normal;
+}
+
+.md code {
+    font-size: 82%;
+}
+
+.md svg.diagram {
+    zoom: 80%;
+}
+
+
+.md ul li.asterisk:before, .md ul li.minus:before {
+    content: "●";
+    display: block;
+    float: left;
+    width: 1.2em;
+    margin-left: -18px;
+}
+
+.md ul li.asterisk, .md ul li.minus {
+    list-style-type: none;
+    margin-bottom: 10px;
+    padding-left: 4pt;
+}
+
+.md ol li {
+    margin-bottom: 10px;
+    padding-left: 4pt;
+}
