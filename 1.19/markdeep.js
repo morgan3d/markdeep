@@ -4,7 +4,7 @@
   Markdeep.js
   Version 1.19
 
-  Copyright 2015-2025, Morgan McGuire, https://casual-effects.com
+  Copyright 2015-2026, Morgan McGuire, https://casual-effects.com
   All rights reserved.
 
   -------------------------------------------------------------
@@ -34,7 +34,7 @@
   will break the regular expressions in highlight.js.
 */
 /**See https://casual-effects.com/markdeep for @license and documentation.
-markdeep.min.js 1.19 (C) 2025 Morgan McGuire 
+markdeep.min.js 1.19 (C) 2015-2026 Morgan McGuire 
 highlight.min.js 11.11.1 (C) 2025 Ivan Sagalaev https://highlightjs.org */
 (function() {
 'use strict';
@@ -195,6 +195,7 @@ var STYLESHEET = entag('style',
     'font-size:' + codeFontSize + ';' +
     'text-align:left;' +
     'line-height:140%' + 
+    'white-space:pre' +
     '}' +
 
     '.md .mediumToc code,.md longToc code,.md .shortToc code,.md h1 code,.md h2 code,.md h3 code,.md h4 code,.md h5 code,.md h6 code{font-size:unset}' +
@@ -588,6 +589,28 @@ var STYLESHEET = entag('style',
                        
    '.md li.unchecked:before{'+
    'content:"\\2610"' +
+   '}' +
+
+   '.md .stage-direction{' +
+   'font-style:italic;' +
+   'opacity:0.7;' +
+   'display:block;' +
+   'margin:0.5em 0 0.5em 64px' +
+   '}' +
+
+   '.md span.stage-direction{' +
+   'display:inline;' +
+   'margin:0' +
+   '}' +
+
+   '.md .stage-direction:before{' +
+   'content:"(";' +
+   'font-style:normal' +
+   '}' +
+
+   '.md .stage-direction:after{' +
+   'content:")";' +
+   'font-style:normal' +
    '}'
 
 );
@@ -1380,7 +1403,10 @@ var DEFAULT_OPTIONS = {
                          image:   false,
                          table:   false,
                          listing: false},
-    smartQuotes:        true
+    smartQuotes:        true,
+    enableStageDirections: true,
+    enableHiddenLineBreak: true,
+    enableBackslashLineBreak: true
 };
 
 
@@ -1918,7 +1944,7 @@ function createTarget(caption, protect){
 
 /** Maruku ("github")-style table processing */
 function replaceTables(s, protect) {
-    var TABLE_ROW       = /(?:\n[ \t]*(?:(?:\|?[ \t\S]+?(?:\|[ \t\S]+?)+\|?)|\|[ \t\S]+\|)(?=\n))/.source;
+    var TABLE_ROW       = /(?:\n[ \t]*(?:(?:\|?[^\n|]+?(?:\|[^\n|]+?)+\|?)|\|[^\n|]+\|)(?=\n))/.source;
     var TABLE_SEPARATOR = /\n[ \t]*(?:(?:\|? *\:?-+\:?(?: *\| *\:?-+\:?)+ *\|?|)|\|[\:-]+\|)(?=\n)/.source;
     var TABLE_CAPTION   = /\n[ \t]*\[[^\n\|]+\][ \t]*(?=\n)/.source;
     var TABLE_REGEXP    = new RegExp(TABLE_ROW + TABLE_SEPARATOR + TABLE_ROW + '+(' + TABLE_CAPTION + ')?', 'g');
@@ -2013,6 +2039,9 @@ function replaceLists(s, protect) {
     // easier processing.
     s = s.rp(/^(\s*)(?:-\s*)?(?:\[ \]|\u2610)(\s+)/mg, '$1\u2610$2');
     s = s.rp(/^(\s*)(?:-\s*)?(?:\[[xX]\]|\u2611)(\s+)/mg, '$1\u2611$2');
+    // Ordered checklists: '1. [ ] text' -> '1. ☐ text', '1. [x] text' -> '1. ☑ text'
+    s = s.rp(/^(\s*\d+\.\s+)(?:\[ \]|\u2610)(\s+)/mg, '$1\u2610$2');
+    s = s.rp(/^(\s*\d+\.\s+)(?:\[[xX]\]|\u2611)(\s+)/mg, '$1\u2611$2');
     
     // Identify list blocks:
     // Blank line or line ending in colon, line that starts with #., *, +, -, ☑, or ☐
@@ -2077,7 +2106,7 @@ function replaceLists(s, protect) {
     s = processedLines.join('\n');
     
     var LIST_BLOCK_REGEXP = 
-        new RegExp('(' + PREFIX + '|' + BLANK_LINES + '|<p>\s*\n|<br/>\s*\n?|\\n\u2029LISTSTART\u2029\\n)' +
+        new RegExp('(' + PREFIX + '|' + BLANK_LINES + '|<p>\s*\n|<br>\s*\n?|\\n\u2029LISTSTART\u2029\\n)' +
                     /((?:[ \t]*(?:\d+\.|-|\+|\*|\u2611|\u2610)(?:[ \t]+.+\n(?:(?![ \t]*(?:\d+\.|-|\+|\*|\u2611|\u2610))[ \t]*\n)?)+)+)/.source, 'gm');
 
     var keepGoing = true;
@@ -2146,8 +2175,21 @@ function replaceLists(s, protect) {
                             result += '\n<' + current.tag + start + '>';
                         }
                     } else if (current.indentLevel !== -1) {
-                        // End previous list item, if there was one
-                        result += '\n</li>';
+                        // Same indent level - check if list type is changing
+                        var newTag = isOrdered ? 'ol' : 'ul';
+                        if (current.tag !== newTag) {
+                            // List type changed at same indent - reduce to solved case: pop old, push new
+                            stack.pop();
+                            result += '\n</li></' + current.tag + '>';
+                            current = {indentLevel: indentLevel,
+                                       tag:         newTag,
+                                       indentChars: line.ss(0, indentLevel - 2)};
+                            stack.push(current);
+                            result += '\n<' + current.tag + start + '>';
+                        } else {
+                            // Same list type - just end previous item
+                            result += '\n</li>';
+                        }
                     } // Indent level changed
                     
                     if (current) {
@@ -2177,6 +2219,9 @@ function replaceLists(s, protect) {
     // Clean up any remaining list markers
     s = s.rp(/\n\u2029LISTSTART\u2029\n/g, '\n\n');
     
+    // Clean up any blank space before end of list items, turning it into a non-empty single paragraph break (matching commonmark)
+    s = s.rp(/\n\s*\n<\/li>/g, '<p> </p></li>')
+
     return s;
 }
 
@@ -2304,7 +2349,7 @@ function replaceScheduleLists(str, protect) {
                               var dateVal = new Date(Date.UTC(parseInt(year), monthNumber, parseInt(day), standardHour));
                               // Reconstruct the day of the week
                               var dayOfWeek = dateVal.getUTCDay();
-                              date = DAY_NAME[dayOfWeek] + '<br/>' + date;
+                              date = DAY_NAME[dayOfWeek] + '<br>' + date;
                               
                               anyWeekendEvents = anyWeekendEvents || (dayOfWeek === 0) || (dayOfWeek === 6);
                               
@@ -2414,7 +2459,7 @@ function replaceScheduleLists(str, protect) {
                                          var contents = '';
                                          
                                          for (var entry = entryArray[index]; entry && sameDay(entry.date, date); ++index, entry = entryArray[index]) {
-                                             if (contents) { contents += '<br/>'; }
+                                             if (contents) { contents += '<br>'; }
                                              if (entry.parenthesized) {
                                                  // Parenthesized with no body, no need for a link
                                                  contents += entag('span', entry.title, PARENTHESIZED_ATTRIBS);
@@ -2449,7 +2494,7 @@ function replaceScheduleLists(str, protect) {
                                    calendar += '</tr>';
                                }
 
-                               calendar += '</table><br/>\n';
+                               calendar += '</table><br>\n';
 
                                // Go to the first of the (new) month
                                date = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, standardHour));
@@ -2572,7 +2617,7 @@ function insertTableOfContents(s, protect, exposer) {
     // Gather headers for table of contents (TOC). We
     // accumulate a long and short TOC and then choose which
     // to insert at the end.
-    var fullTOC = '<a href="#" class="tocTop" target="_self">(Top)</a><br/>\n';
+    var fullTOC = '<a href="#" class="tocTop" target="_self">(Top)</a><br>\n';
     var shortTOC = '';
 
     // names of parent sections
@@ -2669,7 +2714,7 @@ function insertTableOfContents(s, protect, exposer) {
             // Only insert for the first three levels
             if (level <= tocDepth) {
                 // Indent and append (the Array() call generates spaces)
-                fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '"  target="_self" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br/>\n';
+                fullTOC += Array(level).join('&nbsp;&nbsp;') + '<a href="#' + name + '"  target="_self" class="level' + level + '"><span class="tocNumber">' + number + '&nbsp; </span>' + text + '</a><br>\n';
                 
                 if (level === 1) {
                     shortTOC += ' &middot; <a href="#' + name + '" target="_self">' + text + '</a>';
@@ -3313,7 +3358,10 @@ function markdeepToHTML(str, elementMode) {
                      line.match(/^[ \t]*\d+\.[ \t]/) ||            // Numbered lists
                      line.match(/^[ \t]*[-+*][ \t]/) ||            // Bullet lists
                      line.match(/^[ \t]*\[[^\]]+\]:[ \t]+\S/) ||   // Reference definitions
+                     line.match(/^[ \t]*\[[^\]]+\][ \t]*$/) ||     // Caption lines ([text] alone on a line)
                      line.match(/^[ \t]*!!!/) ||                   // Admonitions
+                     line.match(/^[ \t]*!\[/) ||                   // Image lines (captioned, grid, or standalone)
+                     line.match(/\]\([^"<>\s)]+[^)]*\)\s*$/) ||    // Image continuation lines (closing ](url...) of multi-line images)
                      line.match(/^[ \t]*(?:!\[[^\]]*\]\([^)]*\)[ \t]*)+[ \t]*$/) ||  // Image grid lines (one or more images, nothing else)
                      line.match(/\b(figure|fig\.|table|tbl\.|listing|lst\.|diagram|section|subsection|chapter|sec\.)\s+\[/i)) {  // Keyword [ref] patterns
                 // Skip these
@@ -3360,6 +3408,16 @@ function markdeepToHTML(str, elementMode) {
 
     // Replace pre-formatted script tags that are used to protect
     // less-than signs, e.g., in std::vector<Value>
+
+    // Strip intentional break characters from script/close-script tags inside
+    // code fences and inline code. Authoring tools insert a space, ZWSP (U+200B),
+    // or backslash after '<' to prevent the browser from closing a preformatted
+    // wrapper early. This helper removes the break character so that the
+    // downstream escapeHTMLEntities call converts '<' -> '&lt;' correctly.
+    function unescapeScriptTags(s) {
+        return s.rp(/<([ \u200b\\])(\/?)script/gi, '<$2script');
+    }
+
     str = str.rp(/<script\s+type\s*=\s*['"]preformatted['"]\s*>([\s\S]*?)<\/script>/gi, '$1');
 
     function replaceDiagrams(str) {
@@ -3449,209 +3507,153 @@ function markdeepToHTML(str, elementMode) {
                (verticalBarLines >= 3 && patternMatches >= 2);
     }
     
-    // CODE FENCES, with styles. Do this before diagram processing so that fences with explicit
-    // languages (or captions) are protected and won't be matched by diagram patterns
-    // Capture exact fence chars and use backreference so nested fences with fewer chars aren't matched
-    var stylizeFence = function (cssClass, symbol) {
-        var pattern = new RegExp('\n([ \\t]*)(' + symbol + '{3,})([ \\t]*[^~`\\s]\\S*)([ \\t]+.+)?\n([\\s\\S]+?)\n\\1\\2[ \t]*\n([ \\t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
-        
-        str = str.rp(pattern, function(match, indent, fence, lang, cssSubClass, sourceCode, caption) {
-            lang = lang ? lang.trim() : undefined;
-            
-            // Skip 'diagram' keyword - let diagram processing handle it
-            if (lang === 'diagram') {
-                return match;
-            }
-            
-            var processedCaption;
-
-            if (caption) {
-                caption = caption.trim();
-
-                processedCaption = createTarget(caption, protect);
-                caption = processedCaption.caption;
-                caption = entag('center', '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption + '</div>') + '\n';
-            }
-            // Remove the block's own indentation from each line of sourceCode
-            sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
-
-            var captionAbove = option('captionAbove', 'listing')
-            var nextSourceCode, nextLang, nextCssSubClass;
-            var body = [];
-
-            // Process multiple-listing blocks
-            do {
-                nextSourceCode = nextLang = nextCssSubClass = undefined;
-                sourceCode = sourceCode.rp(new RegExp('\\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S+)([ \\t]+.+)?\n([\\s\\S]*)'),
-                                           function (match, indent, lang, cssSubClass, everythingElse) {
-                                               nextLang = lang;
-                                               nextCssSubClass = cssSubClass;
-                                               nextSourceCode = everythingElse;
-                                               return '';
-                                           });
-
-                // Highlight and append this block
-                var result;
-                if (lang === 'none') {
-                    result = hljs.highlightAuto(sourceCode, []);
-                } else if (lang === undefined) {
-                    result = hljs.highlightAuto(sourceCode);
-                } else {
-                    try {
-                        result = hljs.highlight(sourceCode, {language: lang, ignoreIllegals: true});
-                    } catch (e) {
-                        // Some unknown language specified. Force to no formatting.
-                        result = hljs.highlightAuto(sourceCode, []);
-                    }
-                }
-                
-                var highlighted = result.value;
-
-                // Mark each line as a span to support line numbers
-                highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
-
-                if (cssSubClass) {
-                    highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
-                }
-
-                body.push(highlighted);
-
-                // Advance the next nested block
-                sourceCode = nextSourceCode;
-                lang = nextLang ? nextLang.trim() : undefined;
-                cssSubClass = nextCssSubClass;
-            } while (sourceCode);
-
-            // Insert paragraph close/open tags, since browsers force them anyway around pre tags
-            // We need the indent in case this is a code block inside a list that is indented.
-            return '\n' + indent + '</p>' + (processedCaption? processedCaption.target : '') + (caption && captionAbove ? caption : '') +
-                protect(entag('pre', entag('code', body.join('')), 'class="listing ' + cssClass + '"')) +
-                (caption && ! captionAbove ? caption : '') + '<p>\n';
+    // cleanupCodeFences: Label all unlabeled code fences, then convert diagram fences to *****-bordered format.
+    // After this pass, only labeled non-diagram code fences remain.
+    var cleanupCodeFences = function (s) {
+        // Hide labeled code fences so their closing markers don't interfere with bare fence detection
+        var hiddenFenceArray = [];
+        var labeledFencePattern = /\n([ \t]*)(`{3,}|~{3,})([ \t]*[^~`\s]\S*(?:[ \t]+.+)?)\n([\s\S]+?)\n\1\2[ \t]*\n/g;
+        s = s.rp(labeledFencePattern, function(match) {
+            var index = hiddenFenceArray.length;
+            hiddenFenceArray.push(match);
+            return '\n\ue000FENCE' + index + '\ue001\n';
         });
-    };
 
-    stylizeFence('tilde', '~');
-    stylizeFence('backtick', '`');
-    
-    // Extract ```diagram or ~~~diagram fences and convert them to *****-bordered format for diagram processing
-    // This happens after stylizeFence so fences with explicit languages are already protected
-    // Capture exact fence chars and use backreference so nested fences with fewer chars aren't matched
-    str = str.rp(/\n([ \t]*)(`{3,}|~{3,})[ \t]*diagram[ \t]*\n([\s\S]+?)\n\1\2[ \t]*\n/g, function(match, indent, fence, content) {
-        // Remove the fence's indentation from each line of content
-        content = content.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
-        
-        // Find the maximum line length to create appropriate borders
-        var lines = content.split('\n');
-        var maxLen = 0;
-        for (var i = 0; i < lines.length; ++i) {
-            if (lines[i].length > maxLen) {
-                maxLen = lines[i].length;
+        // Label unlabeled code fences: detect diagrams or auto-detect language
+        s = s.rp(/\n([ \t]*)(`{3,}|~{3,})[ \t]*\n([\s\S]+?)\n\1\2[ \t]*\n/g, function(match, indent, fence, content) {
+            if (looksLikeDiagram(content)) {
+                return '\n' + indent + fence + 'diagram\n' + content + '\n' + indent + fence + '\n';
             }
-        }
-        
-        // Create top and bottom borders with enough * characters
-        // Each content line will be: '*' + ' ' + content + padding + ' ' + '*'
-        // Border must be at least DIAGRAM_START.length (5) characters
-        var borderLen = Math.max(maxLen + 4, 5);
-        var border = '';
-        for (var j = 0; j < borderLen; ++j) {
-            border += '*';
-        }
-        
-        // Wrap content with * borders on all sides with space padding
-        var wrappedLines = [border];
-        for (var i = 0; i < lines.length; ++i) {
-            var padding = '';
-            // Padding: borderLen - 4 (two * and two spaces) - line length
-            for (var j = 0; j < borderLen - 4 - lines[i].length; ++j) {
-                padding += ' ';
-            }
-            wrappedLines.push('* ' + lines[i] + padding + ' *');
-        }
-        wrappedLines.push(border);
-        
-        return '\n' + wrappedLines.join('\n') + '\n';
-    });
-    
-    // Auto-detect diagrams in code fences without language specified
-    // Match fences with no language or only whitespace after the fence characters
-    // Capture exact fence chars and use backreference so nested fences with fewer chars aren't matched
-    str = str.rp(/\n([ \t]*)(`{3,}|~{3,})[ \t]*\n([\s\S]+?)\n\1\2[ \t]*\n/g, function(match, indent, fence, content) {
-        // Check if this looks like a diagram
-        if (looksLikeDiagram(content)) {
-            // Remove the fence's indentation from each line of content
+            var detected = hljs.highlightAuto(content);
+            var lang = (detected.language && detected.relevance > 0) ? detected.language : 'none';
+            return '\n' + indent + fence + ' ' + lang + '\n' + content + '\n' + indent + fence + '\n';
+        });
+
+        // Restore hidden labeled fences
+        s = s.rp(/\n\ue000FENCE(\d+)\ue001\n/g, function(match, index) {
+            return hiddenFenceArray[parseInt(index)];
+        });
+
+        // Convert all diagram code fences to *****-bordered format for diagram processing
+        s = s.rp(/\n([ \t]*)(`{3,}|~{3,})[ \t]*diagram[ \t]*\n([\s\S]+?)\n\1\2[ \t]*\n/g, function(match, indent, fence, content) {
             content = content.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
-            
-            // Find the maximum line length to create appropriate borders
             var lines = content.split('\n');
             var maxLen = 0;
             for (var i = 0; i < lines.length; ++i) {
-                if (lines[i].length > maxLen) {
-                    maxLen = lines[i].length;
-                }
+                if (lines[i].length > maxLen) { maxLen = lines[i].length; }
             }
-            
-            // Create top and bottom borders with enough * characters
             var borderLen = Math.max(maxLen + 4, 5);
             var border = '';
-            for (var j = 0; j < borderLen; ++j) {
-                border += '*';
-            }
-            
-            // Wrap content with * borders on all sides with space padding
+            for (var j = 0; j < borderLen; ++j) { border += '*'; }
             var wrappedLines = [border];
             for (var i = 0; i < lines.length; ++i) {
                 var padding = '';
-                for (var j = 0; j < borderLen - 4 - lines[i].length; ++j) {
-                    padding += ' ';
-                }
+                for (var j = 0; j < borderLen - 4 - lines[i].length; ++j) { padding += ' '; }
                 wrappedLines.push('* ' + lines[i] + padding + ' *');
             }
             wrappedLines.push(border);
-            
             return '\n' + wrappedLines.join('\n') + '\n';
-        } else {
-            // Not a diagram, return as-is to be processed as code
-            return match;
-        }
-    });
-
-    // Process fences without languages that weren't diagrams
-    // This catches plain code blocks with no language specified
-    var stylizeFenceNoLang = function (cssClass, symbol) {
-        var pattern = new RegExp('\n([ \\t]*)(' + symbol + '{3,})[ \\t]*\n([\\s\\S]+?)\n\\1\\2[ \t]*\n([ \\t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
-        
-        str = str.rp(pattern, function(match, indent, fence, sourceCode, caption) {
-            var processedCaption;
-
-            if (caption) {
-                caption = caption.trim();
-
-                processedCaption = createTarget(caption, protect);
-                caption = processedCaption.caption;
-                caption = entag('center', '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption + '</div>') + '\n';
-            }
-            // Remove the block's own indentation from each line of sourceCode
-            sourceCode = sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1');
-
-            var captionAbove = option('captionAbove', 'listing')
-
-            // Auto-detect language
-            var result = hljs.highlightAuto(sourceCode);
-            var highlighted = result.value;
-
-            // Mark each line as a span to support line numbers
-            highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
-
-            // Insert paragraph close/open tags, since browsers force them anyway around pre tags
-            return '\n' + indent + '</p>' + (processedCaption? processedCaption.target : '') + (caption && captionAbove ? caption : '') +
-                protect(entag('pre', entag('code', highlighted), 'class="listing ' + cssClass + '"')) +
-                (caption && ! captionAbove ? caption : '') + '<p>\n';
         });
+
+        return s;
     };
 
-    stylizeFenceNoLang('tilde', '~');
-    stylizeFenceNoLang('backtick', '`');
+    // processLabeledCodeFences: Process all labeled code fences (pure function).
+    // After cleanupCodeFences, all remaining code fences have explicit labels.
+    var processLabeledCodeFences = function (s) {
+        var processOneFenceType = function (s, cssClass, symbol) {
+            var pattern = new RegExp('\n([ \\t]*)(' + symbol + '{3,})([ \\t]*[^~`\\s]\\S*)([ \\t]+.+)?\n([\\s\\S]+?)\n\\1\\2[ \t]*\n([ \\t]*\\[.+(?:\n.+){0,3}\\])?', 'g');
+            s = s.rp(pattern, function(match, indent, fence, lang, cssSubClass, sourceCode, caption) {
+                lang = lang ? lang.trim() : undefined;
+                var processedCaption;
+                if (caption) {
+                    caption = caption.trim();
+                    processedCaption = createTarget(caption, protect);
+                    caption = processedCaption.caption;
+                    caption = entag('center', '<div ' + protect('class="listingcaption ' + cssClass + '"') + '>' + caption + '</div>') + '\n';
+                }
+                sourceCode = unescapeScriptTags(sourceCode.rp(new RegExp('(^|\n)' + indent, 'g'), '$1'));
+                var captionAbove = option('captionAbove', 'listing');
+                var nextSourceCode, nextLang, nextCssSubClass;
+                var body = [];
+                do {
+                    nextSourceCode = nextLang = nextCssSubClass = undefined;
+                    sourceCode = sourceCode.rp(new RegExp('\\n([ \\t]*)' + symbol + '{3,}([ \\t]*\\S+)([ \\t]+.+)?\n([\\s\\S]*)'),
+                                               function (match, indent, lang, cssSubClass, everythingElse) {
+                                                   nextLang = lang;
+                                                   nextCssSubClass = cssSubClass;
+                                                   nextSourceCode = everythingElse;
+                                                   return '';
+                                               });
+                    var result;
+                    if (lang === 'none') {
+                        result = hljs.highlightAuto(sourceCode, []);
+                    } else if (lang === undefined) {
+                        result = hljs.highlightAuto(sourceCode);
+                    } else {
+                        try {
+                            result = hljs.highlight(sourceCode, {language: lang, ignoreIllegals: true});
+                        } catch (e) {
+                            result = hljs.highlightAuto(sourceCode, []);
+                        }
+                    }
+                    var highlighted = result.value;
+                    highlighted = highlighted.rp(/^(.*)$/gm, entag('span', '', 'class="line"') + '$1');
+                    if (cssSubClass) {
+                        highlighted = entag('div', highlighted, 'class="' + cssSubClass + '"');
+                    }
+                    body.push(highlighted);
+                    sourceCode = nextSourceCode;
+                    lang = nextLang ? nextLang.trim() : undefined;
+                    cssSubClass = nextCssSubClass;
+                } while (sourceCode);
+                return '\n' + indent + '</p>' + (processedCaption? processedCaption.target : '') + (caption && captionAbove ? caption : '') +
+                    protect(entag('pre', entag('code', body.join('')), 'class="listing ' + cssClass + '"')) +
+                    (caption && ! captionAbove ? caption : '') + '<p>\n';
+            });
+            return s;
+        };
+        s = processOneFenceType(s, 'tilde', '~');
+        s = processOneFenceType(s, 'backtick', '`');
+        return s;
+    };
+
+    str = cleanupCodeFences(str);
+    str = processLabeledCodeFences(str);
+
+    var FANCY_QUOTE = protect('class="fancyquote"');
+
+    // BLOCKQUOTE: > in front of a series of lines
+    // Process iteratively to support nested blockquotes
+    var foundBlockquote = false;
+    do {
+        foundBlockquote = false;
+        str = str.rp(/(?:\n>.*){2,}/g, function (match) {
+            // Strip the leading '>', then process code fences in the blockquote body
+            foundBlockquote = true;
+            var body = match.rp(/\n>/g, '\n');
+            // Code fence regexes require \n after the closing fence marker.
+            // When a fence is the last element in a blockquote, no trailing \n
+            // exists after stripping '>'. Add a sentinel \n for processing,
+            // then remove it so it doesn't appear in the output.
+            body = processLabeledCodeFences(cleanupCodeFences(body + '\n'));
+            if (body.endsWith('\n')) { body = body.ss(0, body.length - 1); }
+
+            // FANCY QUOTE: " .... " with optional author.
+            // Runs after fence processing so quoted strings inside code
+            // fences (now protected markers) are not matched.
+            body = body.rp(/\n[ \t]*"(.*(?:\n.*)*)"[ \t]*(?:\n[ \t]*)?\n([ \t]{2,}\S.*)?\n/g,
+                         function (fmatch, quote, author) {
+                             return entag('blockquote',
+                                          entag('span', quote, FANCY_QUOTE) +
+                                          (author ? entag('span', author,
+                                                          protect('class="author"')) : ''),
+                                          FANCY_QUOTE);
+                         });
+
+            return entag('blockquote', body);
+        });
+    } while (foundBlockquote);
 
     // Highlight explicit inline code
     str = str.rp(/<code\s+lang\s*=\s*["']?([^"'\)\[\]\n]+)["'?]\s*>(.*)<\/code>/gi, function (match, lang, body) {
@@ -3714,12 +3716,12 @@ function markdeepToHTML(str, elementMode) {
     // CODE: Escape angle brackets inside code blocks (including the ones we just introduced),
     // and then protect the blocks themselves
     str = str.rp(/(<code(?: .*?)?>)([\s\S]*?)<\/code>/gi, function (match, open, inlineCode) {
-        return protect(open + escapeHTMLEntities(inlineCode) + '</code>');
+        return protect(open + escapeHTMLEntities(unescapeScriptTags(inlineCode)) + '</code>');
     });
     
     // PRE: Protect pre blocks
     str = str.rp(/(<pre\b[\s\S]*?<\/pre>)/gi, protector);
-    
+
     // Protect raw HTML attributes from processing
     str = str.rp(/(<\w[^ \n<>]*?[ \t]+)(.*?)(?=\/?>)/g, protectorWithPrefix);
 
@@ -3800,10 +3802,10 @@ function markdeepToHTML(str, elementMode) {
     }
 
     // HORIZONTAL RULE: * * *, - - -, _ _ _
-    str = str.rp(/\n[ \t]*((\*|-|_)[ \t]*){3,}[ \t]*\n/g, '\n<hr/>\n');
+    str = str.rp(/\n[ \t]*((\*|-|_)[ \t]*){3,}[ \t]*\n/g, '\n<hr>\n');
 
     // PAGE BREAK or HORIZONTAL RULE: +++++
-    str = str.rp(/\n[ \t]*\+{5,}[ \t]*\n/g, '\n<hr ' + protect('class="pagebreak"') + '/>\n');
+    str = str.rp(/\n[ \t]*\+{5,}[ \t]*\n/g, '\n<hr ' + protect('class="pagebreak"') + '>\n');
 
     // ADMONITION: !!! (class) (title)\n body
     str = str.rp(/^!!![ \t]*([^\s"'><&\:]*)\:?(.*)\n([ \t]{3,}.*\s*\n)*/gm, function (match, cssClass, title) {
@@ -3811,36 +3813,6 @@ function markdeepToHTML(str, elementMode) {
         match = match.trim();
         return '\n\n' + entag('div', ((title ? entag('div', title, protect('class="admonition-title"')) + '\n' : '') + match.ss(match.indexOf('\n'))).trim(), protect('class="admonition ' + cssClass.toLowerCase().trim() + '"')) + '\n\n';
     });
-
-    // FANCY QUOTE in a blockquote:
-    // > " .... "
-    // >    -- Foo
-
-    var FANCY_QUOTE = protect('class="fancyquote"');
-    str = str.rp(/\n>[ \t]*"(.*(?:\n>.*)*)"[ \t]*(?:\n>[ \t]*)?(\n>[ \t]{2,}\S.*)?\n/g,
-                 function (match, quote, author) {
-                     return entag('blockquote', 
-                                  entag('span',
-                                        quote.rp(/\n>/g, '\n'), 
-                                        FANCY_QUOTE) + 
-                                  (author ? entag('span',
-                                                  author.rp(/\n>/g, '\n'),
-                                                  protect('class="author"')) : ''),
-                                  FANCY_QUOTE);
-                });
-
-    // BLOCKQUOTE: > in front of a series of lines
-    // Process iteratively to support nested blockquotes
-    var foundBlockquote = false;
-    do {
-        foundBlockquote = false;
-        str = str.rp(/(?:\n>.*){2,}/g, function (match) {
-            // Strip the leading '>'
-            foundBlockquote = true;
-            return entag('blockquote', match.rp(/\n>/g, '\n'));
-        });
-    } while (foundBlockquote);
-
 
     // FOOTNOTES/ENDNOTES: [^symbolic name]. Disallow spaces in footnote names to
     // make parsing unambiguous. Consume leading space before the footnote.
@@ -3959,7 +3931,7 @@ function markdeepToHTML(str, elementMode) {
                 return '';
             });
             
-            img = '<img ' + protect('class="' + classList + '" src="' + url + '"' + attribs) + ' />';
+            img = '<img ' + protect('class="' + classList + '" src="' + url + '"' + attribs) + '>';
             if (option('autoLinkImages')) {
                 img = entag('a', img, protect('href="' + url + '" target="_blank"'));
             }
@@ -4236,6 +4208,19 @@ function markdeepToHTML(str, elementMode) {
     // STRIKETHROUGH: ~~text~~
     str = str.rp(/\~\~([^~].*?)\~\~/g, entag('del', '$1'));
 
+    // STAGE DIRECTIONS: ((text))
+    if (option('enableStageDirections')) {
+        // Block-level: line has only the stage direction (plus optional protected line marker at end)
+        // Line number markers are appended at end of line by Phase 1, e.g.: ((text))\ue010XXXX\ue010
+        var defined_protect_marker = PROTECT_CHARACTER + '[0-9a-w]{' + PROTECT_DIGITS + '}' + PROTECT_CHARACTER;
+        var blockRe = RegExp('^[ \\t]*\\(\\(([^)]*(?:\\([^)]*\\))*[^)]*)\\)\\)(' + defined_protect_marker + ')?[ \\t]*$', 'mg');
+        str = str.rp(blockRe,
+            entag('div', '$1', protect('class="stage-direction"')) + '$2');
+        // Inline: stage direction with other content on the line
+        str = str.rp(/\(\(([^)]*(?:\([^)]*\))*[^)]*)\)\)/g,
+            entag('span', '$1', protect('class="stage-direction"')));
+    }
+
     // SMART DOUBLE QUOTES: "a -> localized &ldquo;   z"  -> localized &rdquo;
     // Allow situations such as "foo"==>"bar" and foo:"bar", but not 3' 9"
     if (option('smartQuotes')) {
@@ -4263,7 +4248,24 @@ function markdeepToHTML(str, elementMode) {
     str = str.rp(/([^-!\:\|])--([^->\:\|])/g, '$1&mdash;$2');
 
     // NUMBER x NUMBER:
-    str = str.rp(/(\d+[ \t]?)x(?=[ \t]?\d+)/g, '$1&times;');
+    // Matches dimensions like "720x360", "2 x 4", or "3px x 17px" but NOT "NukYS1x75u8D" or "0xDEADBEEF"
+    // Captures preceding context: must be non-alphanumeric or start of string (excludes letters and 0 for hex)
+    // Also excludes: magnitude > 9999 without whitespace (likely IDs), keyword prefixes (hash, id, etc.)
+    str = str.rp(/((?:^|[^a-zA-Z0-9])(?:(?:number|key|sku|id|hash|commit|git)[:\*]*[ \t]*)?)([1-9]\d*[a-z]*)([ \t]?)x([ \t]?)(\d+)/gi, function(match, prefix, num1, ws1, ws2, num2) {
+        // Skip if preceded by keyword pattern
+        if (/(?:number|key|sku|id|hash|commit|git)[:\*]*\s*$/i.test(prefix)) {
+            return match;
+        }
+        // Skip if either number > 9999 AND no whitespace around x
+        var hasWhitespace = ws1 || ws2;
+        var n1 = parseInt(num1, 10);
+        var n2 = parseInt(num2, 10);
+        if (!hasWhitespace && (n1 > 9999 || n2 > 9999)) {
+            return match;
+        }
+        // Apply beautification
+        return prefix + num1 + ws1 + '&times;' + ws2 + num2;
+    });
 
     // MINUS: -4 or 2 - 1
     str = str.rp(/([\s\(\[<\|])-(\d)/g, '$1&minus;$2');
@@ -4292,13 +4294,31 @@ function markdeepToHTML(str, elementMode) {
     // DEGREE: ##-degree
     str = str.rp(/(\d+?)[ \t-]?\n?degree(?:s?)/g, '$1&deg;');
 
+    // COMMONMARK LINE BREAKS: trailing \ or trailing two+ spaces → <br>
+    // Code fences, inline code, pre, style, and SVG are already protected
+    // markers at this point, so these patterns only match normal text.
+    // Phase 1 line number markers may appear between trailing content and \n.
+    var defined_optional_marker = '(' + PROTECT_CHARACTER + '[0-9a-w]{' + PROTECT_DIGITS + '}' + PROTECT_CHARACTER + ')?';
+
+    if (option('enableBackslashLineBreak')) {
+        str = str.rp(new RegExp('(^|[^\\\\])\\\\' + defined_optional_marker + '\\n', 'gm'),
+                     '$1$2\n<br>');
+    }
+
+    if (option('enableHiddenLineBreak')) {
+        // Don't insert <br> if next line starts with a list marker (would break list structure)
+        // List markers: -, +, *, digit., ☐, ☑
+        str = str.rp(new RegExp('(\\S)  +' + defined_optional_marker + '\\n(?![ \\t]*\\n)(?![ \\t]*(?:-|\\+|\\*|\\d+\\.|\\u2610|\\u2611)[ \\t])', 'g'),
+                     '$1$2\n<br>');
+    }
+
     // PARAGRAPH: Newline, any amount of space, newline...as long as there isn't already
     // a paragraph break there.
     str = str.rp(/(?:<p>)?\n\s*\n+(?!<\/p>)/gi,
                  function(match) { return (/^<p>/i.test(match)) ? match : '\n\n</p><p>\n\n';});
 
     // Remove empty paragraphs (mostly avoided by the above, but some can still occur)
-    str = str.rp(/<p>[\s\n]*<\/p>/gi, '');
+    str = str.rp(/<p>(?:\s\n)*<\/p>/gi, '');
 
 
     // FOOTNOTES/ENDNOTES
@@ -7103,11 +7123,332 @@ if (! window.alreadyProcessedMarkdeep) {
         });
     };
 
+    /**
+     * Takes an array of nested header titles and returns the anchor name for the nested header.
+     * The anchor uses the full hierarchy path separated by '/' to disambiguate headers with the same name.
+     * 
+     * @param {Array<string>} headerArray - Array of header titles in hierarchical order
+     * @returns {string} The anchor name using the full path, e.g., 'introduction/formsofbeing/addendum'
+     */
+    function headerAnchor(headerArray) {
+        if (!Array.isArray(headerArray) || headerArray.length === 0) {
+            return '';
+        }
+        
+        var processedHeaders = [];
+        for (var i = 0; i < headerArray.length; ++i) {
+            var header = headerArray[i];
+            var cleanHeader = removeHTMLTags(header).replace(/⟨L:\d+⟩/g, '').trim().toLowerCase();
+            processedHeaders.push(mangle(cleanHeader));
+        }
+        
+        return processedHeaders.join('/');
+    }
+
+    /**
+     * Takes an array of nested header titles and a definition term, and returns the anchor name
+     * for the definition. Uses code-sensitive mangling for API definitions.
+     * 
+     * @param {Array<string>} headerArray - Array of header titles in hierarchical order (may be empty)
+     * @param {string} term - The definition term
+     * @returns {string} The anchor name, e.g., 'introduction/section/def-functionname-fcn'
+     */
+    function definitionAnchor(headerArray, term) {
+        if (typeof term !== 'string' || term.length === 0) {
+            return '';
+        }
+        
+        var cleanTerm = removeHTMLTags(term).replace(/⟨L:\d+⟩/g, '').trim();
+        var mangledTerm = mangleCode(cleanTerm);
+        
+        if (!Array.isArray(headerArray) || headerArray.length === 0) {
+            return 'def-' + mangledTerm;
+        }
+        
+        var processedHeaders = [];
+        for (var i = 0; i < headerArray.length; ++i) {
+            var header = headerArray[i];
+            var cleanHeader = removeHTMLTags(header).replace(/⟨L:\d+⟩/g, '').trim().toLowerCase();
+            processedHeaders.push(mangle(cleanHeader));
+        }
+        
+        return processedHeaders.join('/') + '/def-' + mangledTerm;
+    }
+
+    /**
+     * Generate a Markdown table from rows of data.
+     * 
+     * @param {Array<Array>} rows - List of rows. First row is header.
+     * @param {string} caption - Markdeep caption syntax (default: "")
+     * @param {boolean} outerBorder - Add leading/trailing | on each row (default: false)
+     * @param {boolean} padding - Pad cells to form ASCII grid (default: true)
+     * @param {string} truncateSuffix - Suffix for truncated cells (default: "…")
+     * @returns {string} Formatted Markdown table string
+     */
+    function generateMarkdownTable(rows, caption, outerBorder, padding, truncateSuffix) {
+        caption = caption || "";
+        outerBorder = outerBorder || false;
+        padding = (padding === undefined) ? true : padding;
+        truncateSuffix = truncateSuffix || "…";
+        
+        if (!rows || rows.length === 0) {
+            throw new Error("rows cannot be empty");
+        }
+        
+        // Parse header row to extract column specs
+        var headerRow = rows[0];
+        var colSpecs = [];
+        for (var i = 0; i < headerRow.length; i++) {
+            var cell = headerRow[i];
+            if (cell === null || cell === undefined) {
+                throw new Error("null/undefined values not allowed (clean data before calling)");
+            }
+            if (typeof cell === 'object' && !Array.isArray(cell)) {
+                colSpecs.push({
+                    value: String(cell.value || ""),
+                    maxWidth: cell.max_width || cell.maxWidth || null,
+                    minWidth: cell.min_width || cell.minWidth || 0,
+                    halign: cell.halign || null
+                });
+            } else {
+                colSpecs.push({
+                    value: String(cell),
+                    maxWidth: null,
+                    minWidth: 0,
+                    halign: null
+                });
+            }
+        }
+        
+        var numCols = colSpecs.length;
+        
+        // Convert all rows to string values, validate, and apply truncation
+        var processedRows = [];
+        for (var rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+            var row = rows[rowIdx];
+            if (row.length > numCols) {
+                throw new Error("Row " + rowIdx + " has " + row.length + " cols, but header has " + numCols);
+            }
+            
+            var processedRow = [];
+            var rowHasBr = false;
+            for (var colIdx = 0; colIdx < row.length; colIdx++) {
+                var cellVal = row[colIdx];
+                if (cellVal === null || cellVal === undefined) {
+                    throw new Error("null/undefined values not allowed (clean data before calling)");
+                }
+                
+                var cellStr;
+                if (rowIdx === 0) {
+                    cellStr = colSpecs[colIdx].value;
+                } else if (typeof cellVal === 'object' && !Array.isArray(cellVal)) {
+                    cellStr = String(cellVal.value || "");
+                } else {
+                    cellStr = String(cellVal);
+                }
+                
+                // Convert newlines to <br>
+                if (cellStr.indexOf('\n') !== -1) {
+                    cellStr = cellStr.replace(/\n/g, '<br>');
+                }
+                
+                if (cellStr.indexOf('<br>') !== -1) {
+                    rowHasBr = true;
+                }
+                
+                // Apply max_width truncation
+                if (colIdx < colSpecs.length) {
+                    var maxW = colSpecs[colIdx].maxWidth;
+                    if (maxW !== null && cellStr.length > maxW) {
+                        var truncLen = maxW - truncateSuffix.length;
+                        if (truncLen > 0) {
+                            cellStr = cellStr.substring(0, truncLen) + truncateSuffix;
+                        } else {
+                            cellStr = truncateSuffix.substring(0, maxW);
+                        }
+                    }
+                }
+                
+                processedRow.push(cellStr);
+            }
+            
+            // Pad row to numCols if fewer
+            while (processedRow.length < numCols) {
+                processedRow.push("");
+            }
+            
+            processedRows.push({cells: processedRow, hasBr: rowHasBr});
+        }
+        
+        // Calculate column widths for padding
+        var colWidths = [];
+        for (var c = 0; c < colSpecs.length; c++) {
+            colWidths.push(colSpecs[c].minWidth);
+        }
+        if (padding) {
+            for (var r = 0; r < processedRows.length; r++) {
+                if (!processedRows[r].hasBr) {
+                    for (var c = 0; c < processedRows[r].cells.length; c++) {
+                        colWidths[c] = Math.max(colWidths[c], processedRows[r].cells[c].length);
+                    }
+                }
+            }
+        }
+        
+        // Helper to pad a cell
+        function padCell(text, width, halign) {
+            if (text.length >= width) return text;
+            var paddingNeeded = width - text.length;
+            if (halign === "left") {
+                return text + " ".repeat(paddingNeeded);
+            } else if (halign === "right") {
+                return " ".repeat(paddingNeeded) + text;
+            } else if (halign === "center") {
+                var leftPad = Math.floor(paddingNeeded / 2);
+                var rightPad = paddingNeeded - leftPad;
+                return " ".repeat(leftPad) + text + " ".repeat(rightPad);
+            }
+            return text + " ".repeat(paddingNeeded);
+        }
+        
+        var lines = [];
+        
+        // Header row
+        var headerCells = [];
+        for (var c = 0; c < numCols; c++) {
+            var cell = processedRows[0].cells[c];
+            if (padding) {
+                cell = padCell(cell, colWidths[c], colSpecs[c].halign);
+            }
+            headerCells.push(cell);
+        }
+        var headerLine = headerCells.join(" | ").trimEnd();
+        if (outerBorder) {
+            headerLine = "| " + headerLine + " |";
+        }
+        lines.push(headerLine);
+        
+        // Separator row
+        // Header/data rows use " | " (3 chars) between cells. Separator uses "|" (1 char).
+        // To align pipes, separator cells need +2 chars to compensate for missing spaces.
+        var sepCells = [];
+        var numSepCols = colSpecs.length;
+        for (var c = 0; c < numSepCols; c++) {
+            var baseWidth = padding ? colWidths[c] : 3;
+            var width;
+            if (numSepCols === 1) {
+                width = baseWidth;  // Single column, no adjustment needed
+            } else if (c === 0) {
+                width = baseWidth + 1;  // First column: add 1 for trailing space
+            } else if (c === numSepCols - 1) {
+                width = baseWidth + 1;  // Last column: add 1 for leading space
+            } else {
+                width = baseWidth + 2;  // Middle columns: add 2 for both spaces
+            }
+            
+            var halign = colSpecs[c].halign;
+            var sep;
+            if (halign === "left") {
+                sep = ":" + "-".repeat(width > 1 ? width - 1 : 1);
+            } else if (halign === "right") {
+                sep = "-".repeat(width > 1 ? width - 1 : 1) + ":";
+            } else if (halign === "center") {
+                sep = width > 2 ? ":" + "-".repeat(width - 2) + ":" : ":-:";
+            } else {
+                sep = "-".repeat(width);
+            }
+            sepCells.push(sep);
+        }
+        // Use "|" as joiner (no spaces) - cell widths already compensate
+        var sepLine = sepCells.join("|").trimEnd();
+        if (outerBorder) {
+            sepLine = "|" + sepLine + "|";
+        }
+        lines.push(sepLine);
+        
+        // Data rows
+        for (var r = 1; r < processedRows.length; r++) {
+            var rowCells = [];
+            for (var c = 0; c < processedRows[r].cells.length; c++) {
+                var cell = processedRows[r].cells[c];
+                if (padding && !processedRows[r].hasBr) {
+                    cell = padCell(cell, colWidths[c], colSpecs[c].halign);
+                }
+                rowCells.push(cell);
+            }
+            var rowLine = rowCells.join(" | ").trimEnd();
+            if (outerBorder) {
+                rowLine = "| " + rowLine + " |";
+            }
+            lines.push(rowLine);
+        }
+        
+        var result = lines.join("\n");
+        
+        // Add caption if provided
+        if (caption) {
+            result += "\n" + caption;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Makes Markdown code blocks and inline spans safe for browser rendering.
+     *
+     * Wraps any code fence (triple backtick or tilde) or inline backtick span
+     * whose body contains a less-than sign immediately followed by a
+     * non-whitespace character in a `< script type="preformatted">` …
+     * `< /script>` block so that Markdeep does not interpret HTML tags inside.
+     *
+     * Additionally, any `< script` or `< /script` pattern inside a wrapped block
+     * has a space inserted after `<` so the browser does not close the
+     * preformatted wrapper prematurely. Markdeep removes the space when rendering.
+     *
+     * Use this when generating Markdeep markdown programmatically from a script
+     * to automatically protect code blocks that may contain HTML.
+     *
+     * @param {string} text - Markdown text to make browser-safe
+     * @returns {string} Text with dangerous code blocks/spans wrapped and script tags escaped
+     */
+    function makeMarkdownCodeBrowserSafe(text) {
+        if (!text) { return text; }
+
+        var DANGEROUS_CODE_RE = /<\S/;
+        var FENCED_BLOCK_RE   = new RegExp('^(```+|~~~+)[^\\n]*\\n([\\s\\S]*?)^\\1[ \\t]*$', 'mg');
+        var INLINE_CODE_RE    = /(?<!`)`(?!`)([^`\n]+)`(?!`)/g;
+        var SCRIPT_TAG_RE     = /<([ \u200b\\])(\/?)script/gi;
+
+        if (!DANGEROUS_CODE_RE.test(text)) { return text; }
+
+        function escapeScriptTags(s) {
+            return s.replace(SCRIPT_TAG_RE, '< $2script');
+        }
+
+        text = text.replace(FENCED_BLOCK_RE, function(match, fence, body) {
+            return DANGEROUS_CODE_RE.test(body) ? 
+                '< script type="preformatted">\n' + escapeScriptTags(match) + '< /script>\n' :
+                match;
+        });
+
+        text = text.replace(INLINE_CODE_RE, function(match, body) {
+            return DANGEROUS_CODE_RE.test(body) ?
+                '< script type="preformatted">`' + escapeScriptTags(body) + '`< /script>' :
+                match;
+        });
+
+        return text;
+    }
+
     // Export relevant methods
     window.markdeep = Object.freeze({ 
         format:               markdeepToHTML,
         formatDiagram:        diagramToSVG,
         formatDocument:       formatDocument,
+        headerAnchor:         headerAnchor,
+        definitionAnchor:     definitionAnchor,
+        generateMarkdownTable: generateMarkdownTable,
+        makeMarkdownCodeBrowserSafe: makeMarkdownCodeBrowserSafe,
         langTable:            LANG_TABLE,
         stylesheet:           function() {
             return STYLESHEET + sectionNumberingStylesheet() + h1TitleOutputStylesheet() + HIGHLIGHT_STYLESHEET;
