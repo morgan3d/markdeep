@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
+
+body {
+    font-family: Roboto,Arial,sans-serif;
+    font-size: 11pt;
+    font-weight: 100;
+}
+
+
+/* reset heading/link fonts to that of body */
+.md a,
+.md div.title, contents, .md .tocHeader,
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6,
+.md .nonumberh1, .md .nonumberh2, .md .nonumberh3, .md .nonumberh4, .md .nonumberh5, .md .nonumberh6,
+.md .shortTOC, .md .mediumTOC, .md .longTOC {
+    font-family: inherit;
+}
+
+/* no numbering of headings */
+.md h1:before, .md h2:before, .md h3:before, .md h4:before, .md h5:before, .md h6:before { content: none; }
+.md .tocNumber { display: none; }
+
+.md h1 {
+    border-bottom: 3px solid #cf8313;
+    font-size: 24pt;
+    font-weight: 400;
+    padding-bottom: 10px;
+    margin-bottom: 40px;
+    margin-top: 50px;
+}
+
+.md h1, .md .nonumberh1, .md .tocHeader {page-break-before:always}
+
+.md .nonumberh1, .md .tocHeader {
+    text-align: right;
+    border: none;
+    font-size: 24pt;
+    font-weight: 400;
+    color: #cf8313;
+}
+
+.md h2, .md h3, .md h4, .md h5, .md h6 {
+    border: none;
+    color: #cf8313;
+}
+
+.md h2 { font-size: 22pt; }
+.md h3 { font-size: 19pt; font-weight: 400;}
+.md h4 { font-size: 17pt; font-weight: 400;}
+.md h5 { font-size: 15pt; font-weight: 400;}
+.md h6 { font-size: 12pt; font-weight: 400;}
+
+
+.md .longTOC {
+    color: #000;
+}
+
+.md .longTOC .level1 {
+    color: #cf8313;
+}
+
+.md .longTOC .level2, .md .longTOC .level3, .md .longTOC .level4, .md .longTOC .level5, .md .longTOC .level6 {
+    color: black;
+}
+
+
+.md table.table {
+    width: 100%;
+    font-size: 10pt;
+    font-weight: 100;
+}
+
+.md table.table th {
+    background: #f7d7a8;
+    color: black;
+    font-size: 12pt;
+}
+
+.md .listingcaption, .md .imagecaption {
+    font-size: 14pt;
+    font-style: normal !important;
+    font-weight: 700;
+}
+
+.md ol {
+    padding-left: 15px;
+}
+
+.md ol ol { padding-left: 22px; }
+
+
+.md ul {
+    padding-left: 0px;
+    list-style-type: none;
+}
+
+.md ul ul { padding-left: 22px }
+
+.md ul li::before {
+    content: '\25B6';
+    font-size: 80%;
+    color: #cf8313;
+    margin-right: 10px;
+}
+
+
+.md ul ul li::before {
+    content: '\2022';
+    font-size: 120%;
+}
+
+.md ul ul ul li::before {
+    content: '>';
+    font-size: 120%;
+    font-weight: bold;
+}
+
+.md ul ul ul ul li::before {
+    content: '\2014';
+    font-weight: 100;
+}
+
+.md div.title {
+    position: absolute;
+    font-size: 24pt;
+    text-align: left;
+    top: 1cm;
+    margin-left: -1cm;
+    padding-left: 2.5cm;
+    padding-top: 5cm;
+    width: 100%;
+    height: 16cm;
+    background: url(company-background.png) top left no-repeat, url(company-logo-256.png) top left no-repeat;
+    z-index: -1;
+}
+
+.md div.subtitle {    
+    margin-left: 1.5cm;
+    margin-top: 8.5cm;
+    margin-bottom:12.5cm;
+    font-size: 18pt;
+    text-align: left;
+}
+
+.md .afterTitles {
+    margin-top: 200px;
+}
+
+
+.md markdeepFooter {
+    display: none;
+}

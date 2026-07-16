@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css?family=Playfair+Display&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Roboto+Slab:300,400,700&display=swap&subset=latin-ext');
+
+body#md {
+    position: absolute;
+    font-family: "Roboto Slab", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    text-align: left;
+    margin: 0px 40px;
+    padding: 0;
+    max-width: 1024px;
+    color: #333;
+    font-size: 15px;
+    font-weight: 200;
+    line-height: 165%;
+    padding-right: 20px;
+    overflow-x: hidden;
+    text-overflow: ellipses;
+}
+
+
+.md .longTOC {
+    width: 210px;
+    display: block;
+    border-right: 2px solid #ddd;
+    overflow-y:scroll;
+    font-size: 15px;
+    font-family: inherit;
+    background: #FFF;
+    
+    position: absolute;
+    top: 90px;
+    left:-190px;
+    bottom:0px;
+    margin: 0px;
+    padding: 0px;
+}
+
+.scrolled .md .longTOC {
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    border-left: 10px solid #fff; 
+}
+
+
+/* no numbering of headings */
+.md h1:before, .md h2:before, .md h3:before, .md h4:before, .md h5:before, .md h6:before { content: none; }
+
+.md .longTOC a {
+    color: #000;
+}
+
+.md .tocHeader, .md .tocNumber {
+    display: none;
+}
+
+.md a,
+.md div.title, contents, .md .tocHeader,
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6,
+.md .nonumberh1, .md .nonumberh2, .md .nonumberh3, .md .nonumberh4, .md .nonumberh5, .md .nonumberh6,
+.md .shortTOC, .md .mediumTOC, .md .longTOC {
+    font-family: inherit;
+}
+
+
+.md h1, .md h2, .md h3, .md h4 {
+    font-family: "Roboto Slab", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 800;
+}
+
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
+    border: none;
+}
+
+.md h1 {
+    font-size: 16px;
+    text-transform: uppercase;
+    color: #d23123;
+    padding-bottom: 8px;
+}
+.md h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    color: #999;
+    font-weight: 200;
+}
+.md h3 {
+    font-size: 15px;
+    color: #999;
+    font-weight: 200;
+    font-style: italic;
+}
+
+
+/* Drop caps */
+.md p:nth-of-type(3):first-letter {
+    font-size: 54px;
+    float: left;
+    margin-top: .2em;
+    margin-right: .07em;
+    font-family: "Playfair Display", serif;
+}
+
+.md div.title {
+    font-family: "Playfair Display", serif;
+    font-weight: 400;
+    text-align: left;
+    position: absolute;
+    top: -14px;
+    left:-40px;
+    /*right: 0px; */
+    font-weight: 900;
+    padding: 25px 10px;
+    color: #fff;
+    font-size: 45px;
+    z-index: 10;
+    background-color: #d23123;
+    border-bottom: 2px solid #ddd;
+    border-right: 4096px solid #444;
+}
+
+
+.md div.subtitle {
+    margin-top: 10px;
+    font-weight: 200;
+    font-size: 18px;
+    line-height: 120%;
+    color: #999;
+    text-align: left;
+    font-style: italic;
+}
+
+.md div.subtitle:nth-of-type(2) {
+    margin-top: 120px;
+    font-weight: bold;
+    font-size: 30px;
+    font-style: normal;
+    color: #000;
+}
+
+.md div.mediumTOC center b {
+    display: none;
+}
+
+.md div.mediumTOC p {
+    margin-top: -16px;
+}
