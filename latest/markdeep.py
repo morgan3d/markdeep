@@ -26,7 +26,7 @@ def mangle(text: str) -> str:
     """
     Turn the argument into a legal URL anchor.
 
-    This matches the mangle() function from markdeep.js byte-for-byte [RM47].
+    This matches the mangle() function from markdeep.js byte-for-byte [RMDfbq].
     The safe set reproduces JavaScript encodeURI(), which is the canonical
     encoding because the renderer's published anchors use it.
 
@@ -520,7 +520,7 @@ def extract_table(source: str, label: str) -> dict:
     Extract a single labeled table from Markdeep source by its label.
 
     Locates the `[Table [label]: caption]` syntax (which must appear on the
-    line immediately below the table per RMX2 / `replaceTables()` in
+    line immediately below the table per RMDa6j / `replaceTables()` in
     `markdeep.js`) and returns the adjacent table parsed into headers,
     alignment, and data rows.
 
@@ -530,8 +530,8 @@ def extract_table(source: str, label: str) -> dict:
 
     Returns:
         A dict with keys: caption, id, header_row, align_row, data,
-        line_start, line_length, char_start, char_length. See RM10 in
-        markdeep-requirements.md.html for full field definitions.
+        line_start, line_length, char_start, char_length. See RMDf6z in
+        markdeep.requirements.md.html for full field definitions.
 
     Raises:
         TableExtractError: label not found, label not adjacent to a parseable
