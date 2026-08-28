@@ -36,7 +36,7 @@
     // Someone who opened a document they did not write, and who has never
     // heard of Markdeep, gets a plain but readable page instead of raw source.
     function giveUp() {
-        console.warn('load_local: could not find "' + filename + '" within ' +
+        console.warn('launch: could not find "' + filename + '" within ' +
                      MAX_DEPTH + ' directories above this document. ' +
                      'Rendering without a theme.');
         document.head.appendChild(Object.assign(document.createElement('script'),
@@ -62,7 +62,7 @@
     }
 
     if (!filename) {
-        console.error('load_local: no file parameter in the loader query string');
+        console.error('launch: no file parameter in the loader query string');
         return;
     }
 
