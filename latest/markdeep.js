@@ -6116,7 +6116,7 @@ function processInsertCommands(nodeArray, sourceArray, insertDoneCallback) {
      for (var i = 0; i < sourceArray.length; ++i) {
          sourceArray[i] = sourceArray[i].rp(/(?:^|\s)\((insert|embed)[ \t]+(\S+\.\S*)[ \t]+(height=[a-zA-Z0-9.]+[ \t]+)?here\)\s/g, function(match, type, src, params) {
              var childID = 'inc' + (++includeCounter);
-             var isHTML = src.toLowerCase().rp(/\.*$/,'').endsWith('.html');
+             var isHTML = src.toLowerCase().rp(/\?.*$/,'').endsWith('.html');
              if (type === 'embed' || ! isHTML) {
                  // This is not embedding another Markdeep file. Instead it is embedding
                  // some other kind of document.
@@ -6524,7 +6524,7 @@ if (! window.alreadyProcessedMarkdeep) {
 
     var formatDocument = function (mode) {
         // Detect the noformat argument to the URL
-        var noformat = (window.location.href.search(/\.*noformat.*/i) !== -1);
+        var noformat = (window.location.href.search(/\?.*noformat.*/i) !== -1);
 
         switch (mode) {
         case 'script':
@@ -6815,7 +6815,7 @@ if (! window.alreadyProcessedMarkdeep) {
                 head += entag('style', 'div.title { padding-top: 40px; } div.afterTitles { height: 15px; }');
             }
 
-            if (window.location.href.search(/\.*export.*/i) !== -1) {
+            if (window.location.href.search(/\?.*export.*/i) !== -1) {
                 // Export mode
                 var text = head + document.head.innerHTML + markdeepHTML;
                 if (needMathJax) {
@@ -8616,7 +8616,7 @@ contains:[e.C_NUMBER_MODE,r]},{begin:"\\bforeign\\b",end:"$",
 keywords:"foreign import export ccall stdcall cplusplus jvm dotnet safe unsafe",
 contains:[o,e.QUOTE_STRING_MODE,r]},{className:"meta",
 begin:"#!\\/usr\\/bin\\/env runhaskell",end:"$"},i,s,{scope:"string",
-begin:/'(?=\\.')/,end:/'/,contains:[{scope:"char.escape",match:/\\./}]
+begin:/'(?=\\?.')/,end:/'/,contains:[{scope:"char.escape",match:/\\./}]
 },e.QUOTE_STRING_MODE,c,o,e.inherit(e.TITLE_MODE,{begin:"^[_a-z][\\w']*"}),{
 begin:`(?!-)${a}--+|--+(?!-)${a}`},r,{begin:"->|<-"}]}},grmr_http:e=>{
 const n="HTTP/([32]|1\\.[01])",t={className:"attribute",

@@ -1,0 +1,78 @@
+<meta charset="utf-8"><script markdeep="2" src="https://morgan3d.github.io/markdeep/2/launch.js?file=company-whitepaper.js"></script><plaintext>
+
+# Company Themes
+
+Version | Date       | Authors    | Description of Change
+--------|------------|------------|-----------------------
+1.0     | 2026-11-02 | Author One | Initial release
+[Document History]
+
+## Overview
+
+The Company themes give an organization's documents one consistent look in
+three forms: a whitepaper, API documentation, and slides. This page uses the
+whitepaper theme. Replace the logo and background images for your organization
+and alter the colors as needed. Print to PDF to see how the page breaks affect
+formatting.
+
+## Choose a Theme
+
+Theme                   | For                                                        | Print
+------------------------|------------------------------------------------------------|---------------------------------
+`company-whitepaper.js` | Reports and proposals, with the title on a cover page       | Each `##` section starts a page
+`company-api.js`        | Reference documentation, with the outline on the left       | As one continuous document
+`company-slide.js`      | Presentations                                               | Landscape, one slide per page
+[The three Company themes]
+
+All three load `company-common.js`, which holds the typeface, the table header
+color, and the light page they share.
+
+## Use a Theme
+
+Unzip the Company themes into the folder that holds your documents, or into a
+folder above it. Make this the first line of each document, with the name of
+the theme you chose:
+
+```
+<meta charset="utf-8"><script markdeep="2" src="https://morgan3d.github.io/markdeep/2/launch.js?file=company-whitepaper.js"></script><plaintext>
+```
+
+The `#` heading is the document title. In the whitepaper it is drawn on the
+cover, over the background and logo.
+
+## Write Slides
+
+In `company-slide.js`, each `##` heading is a section title slide, and each
+`###` heading starts a slide under an orange band. A horizontal rule, `---`,
+starts a new slide with no heading:
+
+```
+# Quarterly Review
+
+## Results
+
+### Revenue
+
+- Up in every region
+```
+
+Print to PDF in landscape to produce the slides.
+
+## Make It Yours
+
+### Logo and Background
+
+Replace these images in the `assets` folder with your own, keeping the names:
+
+Image                    | Where it appears
+-------------------------|-----------------------------------------
+`company-logo-256.png`   | The whitepaper cover
+`company-background.png` | Behind the whitepaper cover
+`company-logo-512.png`   | Above the outline in the API theme
+[Images]
+
+### Colors
+
+The orange accent is `#cf8313`. Search for it in the theme files and their
+stylesheets in `assets`, and replace each one with your color. The table header
+color is in `company-common.js`.

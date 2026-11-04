@@ -1,0 +1,50 @@
+/* Company API theme: the logo band over the outline, the outline links, the
+   admonition titles, and the links. The logo is beside this stylesheet, so its
+   URL resolves here. */
+
+/* Paint the logo over a dark band with a grey rule under it. The outline's
+   top padding is the band's height. */
+#main_nav {
+    background-image: url(company-logo-512.png),
+                      linear-gradient(#202124, #202124),
+                      linear-gradient(#555, #555);
+    background-position: top left, top left, 0 105px;
+    background-size: auto 105px, 100% 105px, 100% 8px;
+    background-repeat: no-repeat;
+}
+
+#main_nav a:link, #main_nav a:visited, #main_nav a:hover, #main_nav code {
+    text-decoration: none;
+    color: #000;
+    font-size: 12px;
+    font-family: sans-serif;
+}
+
+#main_nav .longTOC li.level2 > a {
+    font-weight: 300;
+}
+
+.md .admonition-title {
+    border: unset;
+    margin-left: -55px;
+    margin-bottom: -15px;
+}
+
+.md .admonition.warn::before, .md .admonition.warning::before {
+    display: none;
+}
+
+.md .admonition.warn > .admonition-title, .md .admonition.warning > .admonition-title,
+.md .admonition.tip > .admonition-title {
+    border-bottom: 1px solid rgba(68,138,255,1);
+}
+
+.md .admonition.error > .admonition-title {
+    border-bottom: 1px solid rgba(255,23,68,1);
+}
+
+.md a:link, .md a:visited, .md a:link code, .md a:visited code,
+.md a:hover, .md a:hover code {
+    color: #cf8313;
+    text-decoration: underline;
+}

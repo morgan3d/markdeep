@@ -1,0 +1,32 @@
+.md section.h2-section > h2::before { 
+    content: counter(h2, upper-roman) " "; 
+    counter-increment: h2;
+}
+
+
+.md dl.metadata > dt {
+    visibility: hidden;
+}
+
+.md .afterTitles { 
+    display: none;
+}
+
+.md dl.metadata {
+    text-align: center;
+    font-style: italic;
+    font-size: 16px;
+    margin-top: 0px;
+    margin-bottom: 48px;
+}
+
+.md hr::after {
+    content: "꧁꧂";
+}
+
+.md .intro {
+    position: absolute;
+    top: 30px;
+    right: 10px;
+    z-index: -10;
+}

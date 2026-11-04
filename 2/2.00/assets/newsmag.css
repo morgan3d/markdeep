@@ -1,0 +1,31 @@
+/* News magazine theme stylesheet for Markdeep 2 */
+
+/* Set the magazine name in a red block at the left of the masthead */
+#site_header > p {
+   display: inline-block;
+   padding: 25px 10px;
+   background-color: #d23123;
+   color: #fff;
+   font-family: 'Playfair Display', serif;
+   font-size: 45px;
+   font-weight: 400;
+   line-height: 1;
+}
+
+/* Set the deck, the first paragraph outside every H2 section, in gray italic */
+.md section.h1-section > p:first-of-type {
+   margin-top: 10px;
+   font-size: 18px;
+   font-style: italic;
+   line-height: 120%;
+   color: #999;
+}
+
+/* Open the article with a drop cap on the paragraph after the deck */
+.md section.h1-section > p:nth-of-type(2)::first-letter {
+   float: left;
+   margin-top: 0.2em;
+   margin-right: 0.07em;
+   font-family: 'Playfair Display', serif;
+   font-size: 54px;
+}

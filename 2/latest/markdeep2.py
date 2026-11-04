@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-markdeep.py - Python utilities for Markdeep
+markdeep2.py: Python utilities for Markdeep
 
 Copyright (C) 2025-2026 Morgan McGuire
 
@@ -22,30 +22,23 @@ import html, re, urllib.parse
 from typing import Iterator, List, Optional, Tuple
 
 
-# A Reef ID prefixing a header title and a Reef alias suffixing it, both
-# removed before mangling so the title alone drives the anchor. Ported character
-# for character from Reef's _RE_ID_PREFIX/_RE_ALIAS_SUFFIX and from splitHeaderTitle
-# in markdeep2.js. The checksum letter is a character class because the renderer
-# has no reef to verify a checksum against.
-_REEF_ID_PREFIX_RE = re.compile(r'^([A-Z][A-Z]{2}[0-9a-f]+[qjvz]):\s+(.+)$')
-_REEF_ALIAS_SUFFIX_RE = re.compile(r'\s+\(#([a-z][a-z0-9_-]*)\)\s*$')
+# Header ID prefix and alias suffix, removed before mangling so that the title
+# alone gives the anchor. Same patterns as splitHeaderTitle in
+# markdeep2.js. The checksum letter is a character class, because the renderer
+# accepts any checksum.
+_DEPRECATED_ID_PREFIX_RE = re.compile(r'^([A-Z][A-Z]{2}[0-9a-f]+[qjvz]):\s+(.+)$')
+_DEPRECATED_ALIAS_SUFFIX_RE = re.compile(r'\s+\(#([a-z][a-z0-9_-]*)\)\s*$')
 
 
 def mangle(text: str) -> str:
     """
     Turn the plain text of a title into a legal URL anchor.
-    "The Exit Codes (all)" becomes "exit_codes_all". The articles are dropped
-    unless nothing else remains, so "The" anchors as "the".
+    "The Exit Codes (all)" becomes "exit_codes_all". Keep the articles only when
+    the title is all articles, so "The" anchors as "the".
 
-    This matches the mangle() function from markdeep2.js byte-for-byte. After
-    normalization only letters, digits, and underscores remain, so quote()
-    encodes exactly what JavaScript encodeURI() encodes.
-
-    Args:
-        text: The text to mangle
-
-    Returns:
-        A URL-safe anchor string
+    Matches mangle() in markdeep2.js byte for byte. Normalization keeps letters,
+    digits, and underscores, so quote() encodes exactly what encodeURI()
+    encodes.
     """
     cleaned = ''.join(c for c in text.lower() if c.isalnum() or c == '_' or c.isspace())
     without_articles = re.sub(r'(^|\s)(?:the|an|a)(?=\s|$)', r'\1', cleaned)
@@ -56,16 +49,9 @@ def mangle(text: str) -> str:
 
 def mangle_code(text: str) -> str:
     """
-    Code-sensitive version of mangle that separates function names from arguments.
-    For example: "foo(x, y)" becomes "foo-fcn", "bar[i]" becomes "bar-array".
-
-    This matches the mangleCode() function from markdeep2.js.
-
-    Args:
-        text: The code text to mangle
-
-    Returns:
-        A URL-safe anchor string with code-specific handling
+    mangle() with the arguments of a function, array, or template replaced by a
+    suffix: "foo(x, y)" becomes "foo-fcn" and "bar[i]" becomes "bar-array".
+    Matches mangleCode() in markdeep2.js.
     """
     match = re.match(r'^([A-Za-z_][A-Za-z_\.0-9:\->]*)([\(\[<])', text)
     if match:
@@ -104,13 +90,11 @@ def strip_section_number(title: str, parent_numbered: bool) -> tuple:
 
 def plain_title_text(source: str) -> str:
     """
-    The text a reader sees of a title as written in Markdeep source: a code span
-    keeps its content, emphasis and a link keep their text, an image and a tag
-    leave nothing. Delimiters that stay behind, as those of math do,
-    are punctuation and mangle() removes them.
-
-    This matches plainTitleText() from markdeep2.js, so the anchor computed
-    here is the one the renderer publishes from the heading's text content.
+    The text a reader sees of a title in Markdeep source: a code span keeps its
+    content, emphasis and a link keep their text, and an image or a tag is
+    removed. mangle() removes leftover delimiters, such as
+    those of math. Matches plainTitleText() in markdeep2.js, so that the anchor
+    equals the one the renderer computes from the heading text.
     """
     text = re.sub(r'⟨L:\d+⟩', '', source)
     text = re.sub(r'(`+)(.+?)\1', r'\2', text)
@@ -123,32 +107,22 @@ def plain_title_text(source: str) -> str:
 
 
 def remove_html_tags(text: str) -> str:
-    """
-    Remove HTML tags from text.
-    
-    This matches the removeHTMLTags() function from markdeep.js.
-    
-    Args:
-        text: Text that may contain HTML tags
-        
-    Returns:
-        Text with HTML tags removed
-    """
+    """Matches removeHTMLTags() in markdeep2.js."""
     return re.sub(r'<.*?>', '', text)
 
 
 def split_header_title(text: str) -> dict:
-    """Split header title text into {'id', 'title', 'alias'}. Each field
-    is the empty string when its pattern does not match. Ports splitHeaderTitle
-    from markdeep2.js so the Python and JavaScript anchors agree."""
+    """Split header title text into {'id', 'title', 'alias'}, with the empty
+    string for an absent part. Matches splitHeaderTitle in
+    markdeep2.js, so that the Python and JavaScript anchors agree."""
     alias = ''
     id_prefix = ''
     title = text
-    alias_match = _REEF_ALIAS_SUFFIX_RE.search(title)
+    alias_match = _DEPRECATED_ALIAS_SUFFIX_RE.search(title)
     if alias_match:
         alias = alias_match.group(1)
         title = title[:alias_match.start()]
-    id_match = _REEF_ID_PREFIX_RE.match(title)
+    id_match = _DEPRECATED_ID_PREFIX_RE.match(title)
     if id_match:
         id_prefix = id_match.group(1)
         title = id_match.group(2)
@@ -157,22 +131,11 @@ def split_header_title(text: str) -> dict:
 
 def header_anchor(header_array):
     """
-    Takes an array of nested header titles, as written in the source from the
-    outermost H2 down, and returns the anchor name using the full hierarchy path.
-    Headers with the same name are disambiguated by their nesting. The H1 is the
-    document title and is not a segment.
-
-    This matches the markdeep.headerAnchor() function from the JavaScript API.
-
-    Example:
-        header_anchor(['Introduction', 'Forms of _Being_', 'Addendum'])
-        returns 'introduction/forms_of_being/addendum'
-
-    Args:
-        header_array: List of header titles in hierarchical order
-
-    Returns:
-        The anchor name using the full path, or empty string if input is invalid
+    Anchor of a header from its path of titles as written in the source,
+    outermost H2 first, because the H1 is the document title.
+    Matches markdeep.headerAnchor() in markdeep2.js:
+    ['Introduction', 'Forms of _Being_', 'Addendum'] gives
+    'introduction/forms_of_being/addendum'.
     """
     if not isinstance(header_array, list) or len(header_array) == 0:
         return ''
@@ -189,27 +152,15 @@ def header_anchor(header_array):
 
 def definition_anchor(header_array, term):
     """
-    Takes an array of nested header titles and a definition term, and returns the anchor name
-    for the definition. Uses code-sensitive mangling for API definitions.
-    
-    This matches the markdeep.definitionAnchor() function from the JavaScript API.
-    
-    Example:
-        definition_anchor(['API Reference'], 'foo(x, y)')
-        returns 'api_reference/def-foo-fcn'
-
-    Args:
-        header_array: List of header titles in hierarchical order (may be empty)
-        term: The definition term
-
-    Returns:
-        The anchor name for the definition, or empty string if term is invalid
+    Anchor of a definition term under the header path, with code-sensitive
+    mangling of the term. Matches markdeep.definitionAnchor() in markdeep2.js:
+    ['API Reference'] and 'foo(x, y)' give 'api_reference/def-foo-fcn'.
     """
     if not isinstance(term, str) or len(term) == 0:
         return ''
 
-    # The term is plain text, in which `<` is a character and not a tag; only a
-    # code span around it is markup.
+    # Treat the term as plain text, where `<` is a character; strip only a
+    # surrounding code span.
     mangled_term = mangle_code(re.sub(r'(`+)(.+?)\1', r'\2', term).strip())
 
     if not isinstance(header_array, list) or len(header_array) == 0:
@@ -220,17 +171,15 @@ def definition_anchor(header_array, term):
 
 _TOGGLE_DELIMS = ('**', '__', '*', '_')   # try longest first; each is its own closer
 
-# A whole link or image is atomic under truncation: either it fits or the cut
-# falls before it, since a URL split at the truncation point is meaningless.
-# Mirrors the hyperlink and image patterns in markdeep2.js, where a quoted URL
-# may contain parentheses.
+# Keep a link or image whole under truncation, because a split URL is
+# meaningless. Same patterns as markdeep2.js, where a quoted URL may contain
+# parentheses.
 _LINK_ATOM_RE = re.compile(
     r'!?\[(?:[^\[\]\\]|\\[\[\]])*?\]\((?P<q>"?)(?:(?<=")[^"<>\s]+|[^<>\s"\)]+)(?P=q)(?:\s[^)]{0,200})?\)'
 )
 
-# Known HTML void elements (no closing tag) and container elements (closed if
-# left open at the cut). Any syntactically valid tag is protected from being
-# split; only container tags are also auto-closed. Extend these sets as needed.
+# HTML void and container elements. Every valid tag stays whole, and a
+# container tag left open at the cut is closed.
 _HTML_VOID = frozenset((
     'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
     'link', 'meta', 'param', 'source', 'track', 'wbr',
@@ -249,33 +198,28 @@ def truncate_markdown(text, max_width, suffix="…"):
     Truncate text to at most max_width characters without splitting Markdeep
     inline markup.
 
-    Scans text tracking open inline constructs — `` `code` ``, *em*/_em_,
-    **strong**/__strong__, ((stage directions)), and known HTML container tags
-    (<b>, <span>, <a>, …) — and treats atomic units (whole [links](url) /
-    ![images](url), HTML tags, and <!-- comments -->) as indivisible. Returns
-    the longest prefix whose rendered form (kept text + closers for whatever is
-    still open + suffix) fits in max_width; an atomic unit that will not fit is
-    dropped whole rather than split.
-
-    Any syntactically valid HTML tag is protected from being split; only known
-    container tags (see _HTML_CONTAINER) are auto-closed, and known void tags
-    (see _HTML_VOID) are never closed. Over-tracking is safe (a spurious closer
-    is harmless literal text), so the scan errs toward closing rather than risk
-    leaving markup open. Assumes well-formed input: the delimiters in text are
-    balanced and nested, as they are in a value the table would emit untruncated.
+    Track the open inline constructs: `` `code` ``, *em* and _em_, **strong**
+    and __strong__, ((stage directions)), and the container tags in
+    _HTML_CONTAINER. Keep a whole [link](url), ![image](url), HTML tag, or
+    <!-- comment --> together. Return the longest prefix whose kept text, the
+    closers of the open constructs, and suffix fit in max_width, and drop a
+    unit that does not fit. A spurious closer renders as literal text, so the
+    scan closes whenever in doubt. The delimiters in text must be balanced and
+    nested, as in a value the table emits untruncated.
     """
     if len(text) <= max_width:
         return text
 
-    # Clean cut points as (kept_end, open-closer stack). A cut is recorded only
-    # after real content — never right after an opener — so no span closes empty.
+    # Clean cut points as (kept_end, open-closer stack). Record a cut after
+    # content and never right after an opener, so that every closed span has
+    # content.
     candidates = [(0, ())]
     stack = []
     i, n = 0, len(text)
     while i < n:
         ch = text[i]
 
-        # Inside code, only an unescaped closing backtick is special.
+        # Inside code, an unescaped closing backtick ends the span
         if stack and stack[-1] == '`':
             if ch == '`' and text[i - 1] != '\\':
                 stack.pop()
@@ -283,7 +227,7 @@ def truncate_markdown(text, max_width, suffix="…"):
             candidates.append((i, tuple(stack)))
             continue
 
-        # Whole link / image is atomic.
+        # Keep a link or image whole
         if ch == '!' or ch == '[':
             atom = _LINK_ATOM_RE.match(text, i)
             if atom:
@@ -291,7 +235,7 @@ def truncate_markdown(text, max_width, suffix="…"):
                 candidates.append((i, tuple(stack)))
                 continue
 
-        # HTML comment or tag: never split; close known container tags.
+        # Keep an HTML comment or tag whole, and track container tags to close
         if ch == '<':
             comment = _HTML_COMMENT_RE.match(text, i)
             if comment:
@@ -309,15 +253,15 @@ def truncate_markdown(text, max_width, suffix="…"):
                         stack.pop()
                     candidates.append((i, tuple(stack)))
                 elif name in _HTML_CONTAINER and not is_self_close:
-                    # No candidate right after an opener, matching the delimiters.
+                    # Record a cut only after content, as for the delimiters
                     stack.append('</' + name + '>')
                 else:
-                    # Void, self-closing, or unknown tag: atomic, nothing to close.
+                    # Void, self-closing, or unknown tag: keep it whole
                     candidates.append((i, tuple(stack)))
                 continue
-            # Lone '<': treat as plain text.
+            # Treat a lone '<' as plain text
 
-        # Open code.
+        # Open code
         if ch == '`' and (i == 0 or text[i - 1] != '\\'):
             stack.append('`')
             i += 1
@@ -334,9 +278,9 @@ def truncate_markdown(text, max_width, suffix="…"):
             candidates.append((i, tuple(stack)))
             continue
 
-        # Strong / emphasis (longest delimiter first). Open only when the content
-        # would start with a non-space, non-delimiter char, matching markdeep's
-        # flanking rule; this avoids opening on literal asterisks like "2 * 3".
+        # Strong and emphasis, longest delimiter first. Open only before a
+        # character that is neither space nor the delimiter, as markdeep's
+        # flanking rule does, so that "2 * 3" stays literal.
         delim = next((d for d in _TOGGLE_DELIMS if text.startswith(d, i)), None)
         if delim:
             j = i + len(delim)
@@ -349,9 +293,9 @@ def truncate_markdown(text, max_width, suffix="…"):
                 stack.append(delim)
                 i = j
                 continue
-            # Not a valid delimiter here: fall through and treat as plain text.
+            # Treat an invalid delimiter as plain text
 
-        # Plain content character.
+        # Plain content character
         i += 1
         candidates.append((i, tuple(stack)))
 
@@ -360,7 +304,8 @@ def truncate_markdown(text, max_width, suffix="…"):
     best_end = -1
     for end, snap in candidates:
         kept = text[:end].rstrip()
-        # markdeep will not close a code span whose content ends in ` or \.
+        # Strip a trailing ` or \, because markdeep closes a code span only after
+        # another character
         if snap and snap[-1] == '`':
             kept = kept.rstrip('\\`')
         out = kept + ''.join(reversed(snap)) + suffix
@@ -371,28 +316,20 @@ def truncate_markdown(text, max_width, suffix="…"):
 
 def generate_markdown_table(rows, caption="", outer_border=False, padding=True, truncate_suffix="…"):
     """
-    Generate a Markdown table from rows of data.
-    
-    Args:
-        rows: List of rows. First row is header. Each row is a list of values or header dicts.
-              value = str | int | float | bool
-              header_dict = {"value": str, "max_width": int, "min_width": int, "halign": str}
-              halign = "left" | "center" | "right" | None (default: None)
-        caption: Markdeep caption syntax (rendered below table)
-        outer_border: If True, add leading/trailing | on each row
-        padding: If True, pad cells to form ASCII grid
-        truncate_suffix: Suffix for truncated cells (default: "…")
-    
-    Returns:
-        Formatted Markdown table string
-    
-    Raises:
-        ValueError: If rows is empty, contains None, or row has more cols than header
+    Markdown table text for rows. rows[0] is the header row; each header cell
+    is a value or a dict {"value", "max_width", "min_width", "halign"}, with
+    halign "left", "center", "right", or None. A value is a str, int, float,
+    or bool. caption is Markdeep caption syntax, placed below the table.
+    outer_border adds a leading and trailing | to each row. padding pads cells
+    to an ASCII grid. truncate_suffix ends each cell cut to its max_width.
+
+    Raises ValueError when rows is empty, contains None, or has a row with
+    more cells than the header.
     """
     if not rows:
         raise ValueError("rows cannot be empty")
     
-    # Parse header row to extract column specs
+    # Column specs from the header row
     header_row = rows[0]
     col_specs = []
     for cell in header_row:
@@ -427,7 +364,6 @@ def generate_markdown_table(rows, caption="", outer_border=False, padding=True, 
             if cell is None:
                 raise ValueError("None values not allowed (clean data before calling)")
             
-            # For header row, use the extracted value from col_specs
             if row_idx == 0:
                 cell_str = col_specs[col_idx]["value"]
             elif isinstance(cell, dict):
@@ -435,14 +371,12 @@ def generate_markdown_table(rows, caption="", outer_border=False, padding=True, 
             else:
                 cell_str = str(cell)
             
-            # Convert newlines to <br>
             if '\n' in cell_str:
                 cell_str = cell_str.replace('\n', '<br>')
             
             if '<br>' in cell_str:
                 row_has_br = True
             
-            # Apply max_width truncation without splitting inline markup
             if col_idx < len(col_specs):
                 max_w = col_specs[col_idx]["max_width"]
                 if max_w is not None:
@@ -450,21 +384,19 @@ def generate_markdown_table(rows, caption="", outer_border=False, padding=True, 
             
             processed_row.append(cell_str)
         
-        # Pad row to num_cols if fewer
         while len(processed_row) < num_cols:
             processed_row.append("")
         
         processed_rows.append((processed_row, row_has_br))
     
-    # Calculate column widths for padding
+    # Column widths
     col_widths = [spec["min_width"] for spec in col_specs]
     if padding:
         for processed_row, row_has_br in processed_rows:
-            if not row_has_br:  # <br> disables padding for that row
+            if not row_has_br:  # leave a row with <br> unpadded
                 for col_idx, cell in enumerate(processed_row):
                     col_widths[col_idx] = max(col_widths[col_idx], len(cell))
     
-    # Build table lines
     lines = []
     
     # Header row
@@ -480,23 +412,20 @@ def generate_markdown_table(rows, caption="", outer_border=False, padding=True, 
         header_line = "| " + header_line + " |"
     lines.append(header_line)
     
-    # Separator row
-    # Header/data rows use " | " (3 chars) between cells. Separator uses "|" (1 char).
-    # To align pipes, separator cells need +2 chars to compensate for missing spaces.
-    # First cell: +1 (space after), middle cells: +2 (space before and after), last cell: +1 (space before)
+    # Separator row. It joins cells with "|" and the other rows with " | ", so
+    # widen each edge cell by 1 and each inner cell by 2 to line up the pipes.
     sep_cells = []
     num_sep_cols = len(col_specs)
     for col_idx, spec in enumerate(col_specs):
         base_width = col_widths[col_idx] if padding else 3
-        # Add padding to compensate for " | " vs "|" joiner difference
         if num_sep_cols == 1:
-            width = base_width  # Single column, no adjustment needed
+            width = base_width
         elif col_idx == 0:
-            width = base_width + 1  # First column: add 1 for trailing space
+            width = base_width + 1
         elif col_idx == num_sep_cols - 1:
-            width = base_width + 1  # Last column: add 1 for leading space
+            width = base_width + 1
         else:
-            width = base_width + 2  # Middle columns: add 2 for both spaces
+            width = base_width + 2
         
         halign = spec["halign"]
         if halign == "left":
@@ -529,7 +458,6 @@ def generate_markdown_table(rows, caption="", outer_border=False, padding=True, 
     
     result = "\n".join(lines)
     
-    # Add caption if provided
     if caption:
         result += "\n" + caption
     
@@ -548,7 +476,8 @@ class TableExtractError(ValueError):
 
 
 def _split_row(row_text):
-    """Split a Markdeep table row on '|', tolerating leading/trailing border bars."""
+    """Cells of a Markdeep table row, split on '|' after one leading and one
+    trailing border bar are removed."""
     text = row_text.strip()
     if text.startswith('|'):
         text = text[1:]
@@ -581,24 +510,15 @@ def _alignment_marker(cell_text):
 
 def extract_table(source: str, label: str) -> dict:
     """
-    Extract a single labeled table from Markdeep source by its label.
+    The table whose caption is `[Table [label]: caption]` in source, parsed
+    into headers, alignment, and data rows. The caption is on the line
+    below the table, as replaceTables() in markdeep2.js requires.
 
-    Locates the `[Table [label]: caption]` syntax (which must appear on the
-    line immediately below the table per `replaceTables()` in
-    `markdeep.js`) and returns the adjacent table parsed into headers,
-    alignment, and data rows.
+    Returns a dict with the keys caption, id, header_row, align_row, data,
+    line_start, line_length, char_start, and char_length.
 
-    Args:
-        source: Markdeep source text.
-        label: The label inside the inner brackets of `[Table [label]: ...]`.
-
-    Returns:
-        A dict with keys: caption, id, header_row, align_row, data,
-        line_start, line_length, char_start, char_length.
-
-    Raises:
-        TableExtractError: label not found, label not adjacent to a parseable
-            table, table malformed, or label appears more than once.
+    Raises TableExtractError when the label is absent, appears more than once,
+    or is not below a well-formed table.
     """
     matches = [m for m in _TABLE_CAPTION_RE.finditer(source)
                if m.group('label').strip() == label]
@@ -689,7 +609,7 @@ def extract_table(source: str, label: str) -> dict:
 
 
 def _pad_cell(text, width, halign):
-    """Pad a cell to the specified width according to alignment."""
+    """Pad text with spaces to width for halign. None pads on the right."""
     if len(text) >= width:
         return text
     
@@ -719,7 +639,7 @@ class ListItem:
     """One item of a checklist and the items nested under it.
 
     `content` is the item's own text, multiline, without its marker, box, or
-    children. `checklist` stays None until Reef wraps the items in a Checklist.
+    children. `checklist` is None until a Checklist contains the item.
     An item whose fields still equal the parsed values serializes as its source
     lines; a change to any field regenerates its lines from the fields.
     """
@@ -760,7 +680,7 @@ def find_checklist(text: str) -> Optional[Tuple[int, int]]:
     before the next line in column 0 that is neither a list item nor inside a
     code fence. The checklist is the first top-level list whose first item is
     numbered and which contains a task item. A line inside a code fence is
-    never an item.
+    item content.
     """
     first: Optional[int] = None
     last = 0
@@ -795,7 +715,7 @@ def parse_checklist(text: str) -> List[ListItem]:
     """Parse the list in `text` into its top-level ListItems.
 
     An item's content is its first line after the box and every following line
-    up to the next item. A line inside a code fence is content, never an item.
+    up to the next item, including each line inside a code fence.
     An item nests under the nearest earlier item with less indentation. Raises
     ValueError when `text` does not begin with a list item.
     """
@@ -819,7 +739,7 @@ def parse_checklist(text: str) -> List[ListItem]:
             stack.pop()
         marker = match['marker'] or ''
         ordered = marker[:1].isdigit()
-        # A collapsible marker on an ordered item is text.
+        # Treat a collapsible marker on an ordered item as text.
         literal_box = ordered and match['box'] in _COLLAPSIBLE_BOXES
         siblings = stack[-1].children if stack else roots
         item = ListItem(
@@ -849,8 +769,8 @@ def _walk(items: List[ListItem]) -> Iterator[ListItem]:
 
 
 def _record_position(item: ListItem) -> None:
-    """Freeze the column and indent offset this item parses at, so the serializer can tell that a
-    caller re-parents it."""
+    """Record the parent's content column and the indent offset at parse time.
+    checklist_to_string compares them to detect a re-parented item."""
     parent = item.parent
     item._parsed_column = ('' if parent is None else
                            ' ' * _content_column(parent._indent or '', parent.marker))
@@ -896,18 +816,18 @@ def _item_text(item: ListItem, indent: str, moved: bool = False) -> str:
 def checklist_to_string(items: List[ListItem]) -> str:
     """Serialize ListItems from parse_checklist back to text.
 
-    An item reproduces its source lines exactly while its fields and the column it parses under
-    stay the same. A changed or new item is written with a `[x]`, `[ ]` or `[>]` box. An item
-    takes the indentation of the sibling before it, else of the sibling after it, else the parent
-    content column it is handed. When a caller re-parents an item, the column it is handed differs
-    from the parsed one, and it is written at its new column, each descendant at its new parent's
-    indentation plus its indent offset, so the indentation the author typed inside a subtree
-    travels with it.
+    Write an item as its source lines while its fields and its parent's content column equal the
+    parsed values. Write a changed or new item with a `[x]`, `[ ]`, or `[>]` box, indented like
+    the previous sibling, else the next sibling, else at the parent's content column. Write a
+    re-parented item at its new parent's content column, and each of its descendants at its new
+    parent's indentation plus its recorded indent offset, so the indentation inside the subtree
+    is unchanged.
     """
     def emit(items: List[ListItem], column: str, parent_indent: str = '',
              displaced: bool = False) -> Iterator[str]:
         in_place = [not displaced and item._parsed_column == column for item in items]
-        # A re-parented item with no sibling before it takes the indent of the first sibling that stayed.
+        # Indent a re-parented item with no sibling before it like the first
+        # sibling that stayed
         indent = next((item._indent or '' for item, stays in zip(items, in_place) if stays), column)
         for item, stays in zip(items, in_place):
             if displaced:
@@ -921,7 +841,6 @@ def checklist_to_string(items: List[ListItem]) -> str:
     return ''.join(emit(items, ''))
 
 
-# Export the main functions
 __all__ = ['header_anchor', 'definition_anchor',
            'mangle', 'mangle_code', 'remove_html_tags',
            'generate_markdown_table', 'truncate_markdown',
@@ -930,7 +849,6 @@ __all__ = ['header_anchor', 'definition_anchor',
 
 
 if __name__ == '__main__':
-    # Example usage
     print("Header anchor examples:")
     example1 = ['Introduction', 'Forms of _Being_', 'Addendum']
     print(f"  {example1}")

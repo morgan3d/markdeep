@@ -1,0 +1,630 @@
+/* Starship theme stylesheet */
+
+.md :not(.listing) > code {white-space: nowrap}
+
+:root {
+    --toc-width: 15em;
+
+    /* Run the prose to the edge of the content column */
+    --article-padding: 0px;
+
+    --section-border-color: #5a5a5a;
+    --section-indent: 16px;
+
+    /***************************************************/
+    /* The layout is hardcoded to the values below */
+    --section-border-top-size: 48px;
+    --section-border-right-size: 96px;
+    /* Chrome's overlay scrollbar has zero layout width, so reserve the width
+       the bar paints at: Chromium's width for `scrollbar-width: thin` */
+    --scrollbar-width: 11px;
+    /* Extend #content into the overview's column, so that its bar paints
+       beside the overview, away from the section rail */
+    --scrollbar-offset: 28px;
+    --starship-antialias-distance: 1px;
+    /* Room for a glow outside the overview's entries: the blur and spread of
+       the widest shadow, rounded up */
+    --overview-glow-room: 24px;
+    --page-top-padding: 8px;
+    --h2-sticky-height: 92px;
+    --h3-stick-gap: 32px;
+    /* Sticky offsets start at the window top, because the document is the
+       scroll region. The section chrome extends outside #article's inset. */
+    --sticky-top: calc(var(--page-top-padding) - var(--article-padding));
+    /***************************************************/
+
+    --starship-orange: #ff9900;
+    --starship-peach: #ffcc99;
+    --starship-tan: #cc9966;
+    --starship-purple: #cc99cc;
+    --starship-blue: #9999ff;
+    --starship-red: #cc6666;
+
+    --page-color: black;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+@media screen {
+    /* Cover the strip above a stuck section bar: the page padding plus the
+       overhang of the heading box. A taller cover clips the heading. */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: calc(var(--page-top-padding) + 4px);
+        background: var(--page-color);
+        z-index: 9999;
+        pointer-events: none;
+        display: block;
+        line-height: 0;
+    }
+}
+
+/* Use the body font for links, headings, and the overview */
+.md a,
+contents, .md .tocHeader,
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6,
+.md .nonumberh1, .md .nonumberh2, .md .nonumberh3, .md .nonumberh4, .md .nonumberh5, .md .nonumberh6,
+.md .shortTOC, .md .mediumTOC, .md .longTOC {
+    font-family: inherit;
+}
+
+
+/* Hide the overview label */
+.md .tocHeader {
+    display:none;
+    height: 0;
+}
+
+.md .longTOC {
+    margin: 0px;
+    /* Left-align wrapped overview entries */
+    text-align: left;
+    /* Place the top, because the fixed overview is outside #main_nav's
+       padding. The trailing term lines the first pill up with the title's
+       glyphs; tune it by eye against the H1.
+
+       Pad by --overview-glow-room and take it back off the anchors, so that a
+       glow paints inside the scroll clip while the entries stay in place.
+       `overflow-clip-margin` fails here: a scrolling axis coerces the other
+       axis to hidden, and a hidden axis ignores the clip margin. */
+    top: calc(var(--page-top-padding) + var(--article-padding) + 56px - var(--overview-glow-room));
+    padding: var(--overview-glow-room);
+    padding-left: calc(8px + var(--overview-glow-room));
+    /* End the scrolled pane at its last entry; the pane's bottom is the
+       window's bottom */
+    padding-bottom: 0px;
+    font-family: 'Roboto', Arial, Helvetica, "sans serif";
+    font-weight: 300;
+    scrollbar-gutter: stable;
+    /* Same thin bar as #content */
+    scrollbar-width: thin;
+    scrollbar-color: #fff transparent;
+
+    display: block;
+    width: calc(var(--toc-width) - 15px);
+    overflow-y: auto;
+    font-family: inherit;
+    position: fixed;
+    right: calc(var(--scrollbar-width) - var(--overview-glow-room));
+    /* Pin the bottom to the window bottom, which sets the scroll extent */
+    bottom: 0px;
+}
+
+/* Invisible section anchors */
+.md a.target {
+    top: 0px;
+}
+
+
+/* Print layout of the overview and the headings */
+@media print {
+    /* Unstick the sticky elements */
+    .md h2,
+    .md h3,
+    .md section.h2-section > .decoration.start,
+    .md section.h2-section > .decoration.start::before,
+    .md section.h2-section > .decoration.start::after {
+        position: relative;
+    }
+
+    .md section.h2-section {
+        page-break-before: always;
+        break-before: always;
+        margin-top: 32px;
+    }
+
+    /* Remove the cover of the side border, which stays in place in print */
+    .md section.h2-section > .decoration.start {
+        background: none !important;
+    }
+
+    /* Put the overview at the top of the document, in columns */
+    .md .longTOC {
+        position: static;
+        width: calc(100% + var(--section-border-right-size));
+        right: auto;
+        column-count: 4;
+        column-gap: 2em;
+        column-rule: 1px solid #333;
+    }
+    
+    /*.md .longTOC a.level2 {
+        break-before: column;
+    }*/
+
+    /* Keep each overview link in one column */
+    .md .longTOC a {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        -webkit-break-inside: avoid;
+        -webkit-page-break-inside: avoid;
+    }
+
+    @page {
+        margin-top: 2cm;
+        margin-bottom: 1.5cm;
+    }
+
+    /* Restore full page width in print */
+    body {
+        margin-right: calc(var(--section-border-right-size) + 8px);
+    }
+
+    /* Safari only */
+    @supports (-webkit-hyphens: none) {
+
+        .md h2 {
+            margin-top: -69px !important;
+            top: -24px !important;
+        }
+    }
+}
+
+
+/* The margins here and on the level rules below set the overview spacing */
+.md .longTOC a {
+    font-size: 80%;
+    margin-bottom: 8px;
+}
+
+/* A pill grows a line for each wrapped title line. Keep the line box at least
+   as tall as the glyphs of the display face, so that the second line clears
+   the first. */
+.md .longTOC li.level2 > a {
+    background: var(--section-color) !important;
+    min-height: 32px;
+    font-size: 15px;
+    border-radius: 16px;
+    text-align: left;
+    margin: 0;
+    color: #000 !important;
+    margin-bottom: -26px;
+    margin-top: 12px;
+    padding-top: 10px !important;
+    padding-bottom: 2px !important;
+    /* Hang wrapped title lines under the text, right of the opening number.
+       The number is part of the title text, so its width is an estimate:
+       13px, between its one-digit and two-digit widths in this face. */
+    padding-left: calc(29px + var(--overview-mark-width)) !important;
+    text-indent: -13px;
+    /* Zero the border and reserve the reading mark's width in padding-left,
+       so that both ends of the pill stay semicircles: a left border shrinks
+       the left corner radii and clips the inset glow. The glow shows the
+       section being read. */
+    border-left-width: 0px;
+    line-height: 20px !important;
+    display: block;
+    box-sizing: border-box;
+}
+
+.md .longTOC li.level2 > a code {
+    color: #000 !important;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* Rotate the starship colors over the top-level entries. Everything inside a
+   section reads --section-color, so the pill, its entries, and the reading
+   mark share one color. */
+.md .longTOC > ol > li:nth-child(6n+1) { --section-color: var(--starship-orange); }
+.md .longTOC > ol > li:nth-child(6n+2) { --section-color: var(--starship-peach); }
+.md .longTOC > ol > li:nth-child(6n+3) { --section-color: var(--starship-tan); }
+.md .longTOC > ol > li:nth-child(6n+4) { --section-color: var(--starship-purple); }
+.md .longTOC > ol > li:nth-child(6n+5) { --section-color: var(--starship-blue); }
+.md .longTOC > ol > li:nth-child(6n) { --section-color: var(--starship-red); }
+
+/* Color the reading mark with its section's colour */
+.md .longTOC a[aria-current=location] { border-left-color: var(--section-color); }
+
+/* Glow the reading mark of an entry under a pill. An empty box over the left
+   border casts the glow, to keep the halo off the whole row. Omit the inset
+   white glow, which washes out the thin mark. Pills glow by the rule below. */
+.md .longTOC li:not(.level2) > a[aria-current=location] { position: relative; }
+.md .longTOC li:not(.level2) > a[aria-current=location]::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--overview-mark-width));
+    width: var(--overview-mark-width);
+    box-shadow:
+        0 0 15.75px 4.2px color-mix(in srgb, var(--section-color), transparent 10%),
+        0 0 8.4px 1.68px rgba(255, 255, 255, 0.64);
+    pointer-events: none;
+}
+
+/* Glow the section the reader is in: a coloured halo, a white halo outside
+   it, and a white glow within */
+.md .longTOC li.level2:has(a[aria-current=location]) > a {
+    box-shadow:
+        0 0 15.75px 4.2px color-mix(in srgb, var(--section-color), transparent 10%),
+        0 0 8.4px 1.68px rgba(255, 255, 255, 0.64),
+        inset 0 0 10.5px 2.1px rgba(255, 255, 255, 0.54);
+    position: relative;
+    z-index: 10;
+}
+
+.md .longTOC li.level2 a {
+    width: 100%;
+}
+
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6, .md .longTOC li.level2 > a, .md .longTOC li.level2 > a code {
+    font-family: Antonio, Arial, Helvetica, "sans serif" !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing:-0.05em;
+}
+
+/* Space above each pill, which opens a group. Zero the first pill's margin,
+   because .longTOC sets the overview's top. */
+.md .longTOC li.level2 > a {
+    margin-bottom: 8px;
+    margin-top: 24px;
+}
+
+.md .longTOC > ol > li:first-child > a {
+    margin-top: 0px;
+}
+
+/* Wrap long titles inside the entry */
+.md .longTOC li.level3 > a, .md .longTOC li.level4 > a {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    display: block;
+    width: 100%;
+    line-height: 110%;
+}
+
+/* Indent the entry's own box, so that the reading mark on its left edge
+   lines up down the pane */
+.md .longTOC li.level3, .md .longTOC li.level4 { --overview-indent: 8px; }
+
+/* Show a level4 entry as a dashed, dimmed line, stepped in further. Put the
+   dash in the emptied number pseudo-element, beside the text; a list marker
+   sits at the far edge of the pane. */
+.md .longTOC li.level4 { --overview-indent: 15px; }
+.md .longTOC li.level4 > a { opacity: 70%; }
+.md .longTOC li.level4 > a::before { content: '⁃ ' !important; }
+
+.md div.afterTitles {
+    border: none
+}
+
+.md div.afterTitles {
+    display:none;
+}
+
+/* Hide every section number. Empty the overview's ::before, because it also
+   contains the counter-increment, and hiding it would number every entry
+   under a pill from zero. */
+.md .longTOC a::before { content: '' !important; }
+.md h3::before { display: none; }
+.md h4::before { display: none; }
+
+.md h2 {
+    content: '';
+    position: sticky;
+    display: block;
+    top: calc(var(--sticky-top) + 2px);
+    left: 0px;
+    /* Lift the heading 2px above the bar's backing, matching the offset of
+       `top` while stuck */
+    margin-top: -48px;
+
+    font-size: 55px !important;
+    margin-left:-16px;
+    margin-right:32px;
+    padding-left:48px;
+    padding-top:0px;
+    line-height: var(--section-border-top-size);
+    white-space: nowrap;
+    /* text-overflow needs a hidden x axis, and the resulting scroll container
+       clips y at the padding box. Pad the bottom for the descenders, and
+       cancel the padding with the negative margin. The glyphs of the 55px
+       face overhang the line box at both ends. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-bottom: 12px;
+    margin-bottom: -14px;
+    max-width: calc(100% - var(--section-border-right-size) + 16px);
+    height: calc(2px + var(--section-border-top-size));
+    width: fit-content;
+    padding-right: 10px;
+    border: none;
+    display: block;
+    z-index: 2;
+}
+
+/* Keep inline code in the heading on one line, so that it ends at the
+   ellipsis */
+.md h2 code {
+    white-space: inherit;
+    overflow-wrap: normal;
+}
+/* Black out the section top bar under the heading text */
+.md h2::after {
+    content: '';
+    position: absolute;
+    top: 0px;
+    left: 40px;
+    right: -16px;
+    /* End flush with the bottom of the colored bar, 4px below the heading
+       box; descenders hang past the black */
+    height: calc(var(--section-border-top-size) + 4px);
+    background: #000;
+    z-index: -1;
+    pointer-events: none;
+    overflow: visible;
+    display: block;
+}
+
+/* Hide Markdeep's H2 numbering */
+.md h2::before {
+    content: '';
+    display: none;
+}
+
+.md section.h2-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    position: relative;
+    padding-left: var(--section-indent);
+}
+
+/* Indent text directly under the H1 to the h2-section content. Indent the
+   children, because padding on the H1 section moves the h2-sections and
+   their chrome. */
+.md section.h1-section > :not(section):not(a):not(h1):not(.decoration):not(.afterTitles) {
+    margin-left: var(--section-indent);
+}
+
+/* Section top bar with rounded corners */
+.md section.h2-section > .decoration.start::before {
+    content: '';
+    position: sticky;
+    display: block;
+    top: calc(var(--sticky-top) + 4px);
+    left: 0px;
+    padding: 0;
+    margin-bottom: 0px;
+    margin-top: 0px;
+
+    width: 100%;
+    height: var(--section-border-top-size);
+    z-index: 3;
+    pointer-events: none;
+    border-top-right-radius: calc(var(--section-border-top-size) * 1.5) var(--section-border-top-size);
+    border-top-left-radius: calc(var(--section-border-top-size) / 2);
+    border-bottom-left-radius: calc(var(--section-border-top-size) / 2);
+    background: var(--section-border-color);
+}
+
+/* Black backing behind the heading bar. A sticky element releases when its
+   margin box reaches the section bottom: 12 + 44 + 2 here and 10 + 62 - 14
+   for the heading, so the two release together. The shadow covers the side
+   bar 1px up and right, where a fractional scale leaves edge pixels partly
+   covered. */
+.md section.h2-section > .decoration.start {
+    position: sticky;
+    visibility: visible;
+    content: '';
+    display: block;
+    top: calc(var(--sticky-top) + 4px);
+    margin-bottom: 2px;
+    margin-left: -16px;
+    width: calc(100% + var(--section-border-right-size) + 32px);
+    height: calc(var(--section-border-top-size) - 4px);
+    z-index: 2;
+    pointer-events: none;
+    background: var(--page-color);
+    box-shadow: 1px -1px 0 0 var(--page-color);
+}
+
+/* Inner concave corner of the section border: an elliptical gradient,
+   transparent at the center and opaque at the radius. Extend the box 1px
+   into both bars, because the gradient is opaque only at its outer edge. */
+.md section.h2-section > .decoration.start::after {
+    content:'';
+    position: sticky;
+    display: block;
+    top: 0px;
+    margin-top: -56px;
+    width: 100%;
+    height: calc(var(--section-border-top-size) * 2);
+    z-index: 20;
+    pointer-events: none;
+    background: radial-gradient(
+            calc(var(--section-border-top-size) * 0.75 - var(--starship-antialias-distance) * 0.5) calc(var(--section-border-top-size) * 0.5 - var(--starship-antialias-distance) * 0.5) at 0% 100%,
+            transparent calc(100% - calc(var(--starship-antialias-distance) * 0.5)),
+            var(--section-border-color) calc(100% + calc(var(--starship-antialias-distance) * 0.5))) calc(100% - var(--section-border-right-size) + 1px) calc(7px + var(--section-border-top-size)) / calc(var(--section-border-top-size) * 0.75 + 1px) calc(var(--section-border-top-size) * 0.5 + 1px) no-repeat;
+}
+
+/* Side bar, sliding under the overview anchor */
+.md section.h2-section::after {
+    content: '';
+    position: absolute;
+    top: 46px;
+    right: calc(-16px - var(--section-border-right-size));
+    width: var(--section-border-right-size);
+    bottom: 0;
+    z-index: 1;
+    background: var(--section-border-color);
+    pointer-events: none;
+}
+
+/* Rotate the starship colors over the sections */
+.md section.h2-section:nth-of-type(6n+1) { --section-border-color: var(--starship-orange); }
+.md section.h2-section:nth-of-type(6n+2) { --section-border-color: var(--starship-peach); }
+.md section.h2-section:nth-of-type(6n+3) { --section-border-color: var(--starship-tan); }
+.md section.h2-section:nth-of-type(6n+4) { --section-border-color: var(--starship-purple); }
+.md section.h2-section:nth-of-type(6n+5) { --section-border-color: var(--starship-blue); }
+.md section.h2-section:nth-of-type(6n+6) { --section-border-color: var(--starship-red); }
+
+.md h2 { color: var(--section-border-color) !important; }
+.md h3, .md h4, .md h5, .md h6 { color: var(--section-border-color) !important; }
+
+.md h3 {
+    font-size: 150%;
+    border: none;
+    position: sticky;
+    padding: 0px;
+    padding-top:4px;
+    padding-bottom:8px;
+    margin: 0px;
+    top: calc(var(--sticky-top) + var(--h2-sticky-height) - var(--h3-stick-gap) - 8px);
+    min-height: 32px;
+    background: #000;
+}
+
+.md h2 code, .md h3 code { font-family: inherit; line-height: inherit; color: inherit }
+
+.md h4, .md h5, .md h6 {
+    font-size: 120%;
+}
+
+span.md > p {
+    padding-left: 16px;
+}
+
+/* Scroll a wide table inside its box, clear of the section's right border */
+.md div.table {
+    overflow-x: auto;
+}
+
+.md pre.listing code {
+    font-weight: unset;
+    background: none;
+    color: unset;
+}
+
+
+
+.md div.longTOC {
+    font-size: 15px;
+}
+
+
+/* Fill the open dot of diagrams */
+.md svg.diagram .opendot {
+    fill: #000;
+}
+
+.hljs-comment,.hljs-quote{color:#a0f0aa}.hljs-variable,.hljs-template-variable,.hljs-tag,.hljs-name,.hljs-selector-id,.hljs-selector-class,.hljs-regexp,.hljs-deletion{color:#cc6666}.hljs-number,.hljs-built_in,.hljs-builtin-name,.hljs-literal,.hljs-type,.hljs-params,.hljs-meta,.hljs-link{color:#de935f}.hljs-attribute{color:#f0c674}.hljs-string,.hljs-symbol,.hljs-bullet,.hljs-addition{color:#b5bd68}.hljs-title,.hljs-section{color:#81a2be}.hljs-keyword,.hljs-selector-tag{color:#b294bb}.hljs{display:block;overflow-x:auto;background:#1d1f21;color:#c5c8c6;padding:.5em}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:bold}
+.hljs-function .hljs-title { color:#81a2be}
+
+
+/* Colour each admonition title rule to match its box */
+.md .admonition-title {
+    border-bottom: 1px solid rgba(68,138,255,1);
+}
+
+.md .admonition.warn .admonition-title, .md .admonition.warning .admonition-title {
+    border-bottom: 1px solid rgba(255,170,0,1);
+}
+
+.md .admonition.tip .admonition-title {
+    border-bottom: 1px solid rgba(68,138,255,1);
+}
+
+.md .admonition.error .admonition-title {
+    border-bottom: 1px solid rgba(255,23,68,1);
+}
+
+.md a:link, .md a:visited, .md a:link code, .md a:visited code {
+    color: #80bfff !important;
+}
+
+/* Colour the entries under a pill with their section's color, over the link
+   color above */
+.md .longTOC li:not(.level2) > a:link, .md .longTOC li:not(.level2) > a:visited, .md .longTOC li:not(.level2) > a:link code, .md .longTOC li:not(.level2) > a:visited code {
+    color: var(--section-color) !important;
+}
+
+
+/* Narrow windows: remove the rail and the curve into it. The width is
+   hard-coded, because a media query takes literal lengths. */
+@media (max-width: 700px) {
+    :root {
+        /* calc() rejects a unitless zero in an addition */
+        --section-border-right-size: 0px;
+    }
+
+    /* Hide the rail */
+    .md section.h2-section::after {
+        display: none;
+    }
+
+    /* End the bar square, 12px from the window, and hide the concave fillet
+       to the rail. Measure the width from the window, to skip every padding
+       term between the window and the section. */
+    .md section.h2-section > .decoration.start {
+        width: calc(100vw - 24px);
+    }
+
+    .md section.h2-section > .decoration.start::before {
+        border-top-right-radius: 0px;
+    }
+
+    .md section.h2-section > .decoration.start::after {
+        display: none;
+    }
+
+    .md .longTOC {
+        visibility: hidden;
+        position: absolute;
+        pointer-events: none;
+    }
+
+    .md h2 {
+        max-width: 100%;
+    }
+
+    .md section.h2-section::before {
+        background:
+            linear-gradient(to right, var(--section-border-color), var(--section-border-color)) calc(var(--section-border-top-size) / 2) 8px / calc(100% - var(--section-border-top-size) * 2 + 1px) var(--section-border-top-size) no-repeat,
+            radial-gradient(circle at calc(var(--section-border-top-size) / 2) calc(var(--section-border-top-size) / 2 + 8px), var(--section-border-color) calc(var(--section-border-top-size) * 0.5 - calc(var(--starship-antialias-distance) / 2)), #000 calc(var(--section-border-top-size) * 0.5 + calc(var(--starship-antialias-distance) / 2))) 0 0 / var(--section-border-top-size) calc(var(--section-border-top-size) + 8px) no-repeat,
+            radial-gradient(ellipse calc(var(--section-border-top-size) * 1.5) var(--section-border-top-size) at 0 100%, var(--section-border-color) calc(100% - calc(var(--starship-antialias-distance) / 2)), var(--page-color) calc(100% + calc(var(--starship-antialias-distance) / 2))) 100% 8px / calc(var(--section-border-top-size) * 1.5) var(--section-border-top-size) no-repeat;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+}
