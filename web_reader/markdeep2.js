@@ -2,7 +2,7 @@
 /** 
 
   Markdeep2.js
-  Version 2.01
+  Version 2.00
 
   Copyright 2015-2026, Morgan McGuire, https://casual-effects.com
   All rights reserved.
@@ -34,7 +34,7 @@
   will break the regular expressions in highlight.js.
 */
 /**See https://casual-effects.com/markdeep for @license and documentation.
-markdeep2.min.js 2.01 (C) 2015-2026 Morgan McGuire
+markdeep2.min.js 2.00 (C) 2015-2026 Morgan McGuire
 highlight.min.js 11.11.1 (C) 2025 Ivan Sagalaev https://highlightjs.org */
 // The public API object under node, and undefined in a browser.
 const MARKDEEP_NODE_API = (function() {
@@ -43,7 +43,7 @@ const MARKDEEP_NODE_API = (function() {
 // Test this before any read of document or window at load.
 const IN_BROWSER = (typeof document !== 'undefined');
 
-const MARKDEEP_FOOTER = '<div id="markdeep_footer" class="markdeepFooter">formatted by <a href="https://casual-effects.com/markdeep" style="color:#999">Markdeep&nbsp;2.01&nbsp;&nbsp;</a><div style="display:inline-block;font-size:13px;font-family:\'Times New Roman\',serif;vertical-align:middle;transform:translate(-3px,-1px)rotate(135deg);">&#x2712;</div></div>';
+const MARKDEEP_FOOTER = '<div id="markdeep_footer" class="markdeepFooter">formatted by <a href="https://casual-effects.com/markdeep" style="color:#999">Markdeep&nbsp;2.00&nbsp;&nbsp;</a><div style="display:inline-block;font-size:13px;font-family:\'Times New Roman\',serif;vertical-align:middle;transform:translate(-3px,-1px)rotate(135deg);">&#x2712;</div></div>';
 
 {
 // For minification. This is admittedly scary.
