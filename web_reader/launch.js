@@ -17,9 +17,12 @@
     // no renderer, show the source again at load.
     const background = query.get('background');
     if (background !== null) {
+
         const COLOR = '[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|white|black';
         const match = new RegExp(`^(?:(${COLOR})|light-dark\\((${COLOR}),(${COLOR})\\))$`).exec(background);
+
         if (match) {
+
             let value = match[1];
             if (value === undefined) {
                 // Choose the scheme as the renderer does: the stored choice, then the system
@@ -28,15 +31,17 @@
                       ((stored !== 'light') && matchMedia('(prefers-color-scheme: dark)').matches);
                 value = dark ? match[3] : match[2];
             }
-            const color = (value === 'white' || value === 'black') ? value : '#' + value;
+
             const hide = Object.assign(document.createElement('style'), {
                 className: 'fallback',
-                textContent: `body{background:${color};color:rgba(0,0,0,0)}`
+                textContent: `body{background:${((value === 'white' || value === 'black') ? '' : '#') + value};color:rgba(0,0,0,0)}`
             });
+
             document.head.appendChild(hide);
             window.addEventListener('load', function () {
                 if (! ('markdeep' in window)) { hide.remove(); }
             });
+
         } else {
             console.error(`launch.js background must be 3 or 6 hex digits, white, black, or light-dark() of two of those, not "${background}"`);
         }
