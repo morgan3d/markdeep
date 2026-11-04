@@ -1,0 +1,42 @@
+/* Company whitepaper theme: the cover behind the title, and the list marks.
+   The images are beside this stylesheet, so their URLs resolve here. */
+
+.md h1 {
+    background-image: url(company-background.png), url(company-logo-256.png);
+    background-position: top left, top left;
+    background-repeat: no-repeat, no-repeat;
+    padding-top: 5cm;
+    padding-left: 2.5cm;
+    min-height: 11cm;
+}
+
+.md ul {
+    padding-left: 0;
+    list-style-type: none;
+}
+
+.md ul ul {
+    padding-left: 22px;
+}
+
+.md ul li::before {
+    content: '\25B6';
+    font-size: 80%;
+    color: #cf8313;
+    margin-right: 10px;
+}
+
+.md ul ul li::before {
+    content: '\2022';
+    font-size: 120%;
+}
+
+.md ul ul ul li::before {
+    content: '>';
+    font-weight: bold;
+}
+
+.md ul ul ul ul li::before {
+    content: '\2014';
+    font-weight: 100;
+}

@@ -1,0 +1,54 @@
+/* Company slide theme: landscape pages, section title slides, and slide
+   heading bands wider than the text column */
+
+@page {
+    size: landscape;
+    margin-bottom: 100px;
+}
+
+/* Section title slide */
+.md h2 {
+    break-before: page;
+    width: calc(100% + 200px);
+    margin: 20px -100px;
+    padding: 300px 0 20px 0;
+    border: none;
+    text-align: center;
+    font-size: 50px;
+    color: #cf8313;
+}
+
+/* Slide heading band */
+.md h3 {
+    break-before: page;
+    width: calc(100% + 200px);
+    margin: 100px -100px 50px -100px;
+    padding: 20px 0;
+    border: none;
+    text-align: center;
+    font-size: 34px;
+    color: #fff;
+    background-color: #cf8313;
+}
+
+.md hr {
+    break-before: page;
+}
+
+.md table.table th + th, .md table.table td + td {
+    border-left: 3px solid #fff;
+}
+
+/* Show where each section starts on screen. Hide the rules in print, where
+   each one is a page break. */
+@media screen {
+    .md h2 {
+        border-top: 1px solid #000;
+    }
+}
+
+@media print {
+    .md hr {
+        visibility: hidden;
+    }
+}

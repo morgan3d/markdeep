@@ -1,0 +1,133 @@
+/* Resume/CV theme stylesheet for Markdeep 2 */
+
+:root {
+   /* Color the bands, the entry fish, and links */
+   --resume-accent-color: #6fb7b7;
+   --link-color: var(--resume-accent-color);
+   --resume-rule-color: #ccc;
+   --resume-sidebar-width: 36%;
+   --resume-gutter: 40px;
+   --h2-size: 18px;
+   --h3-size: 18px;
+   /* Widen the page for two columns */
+   --content-max-width: 910px;
+}
+
+body {
+   border-top: 12px solid var(--resume-accent-color);
+   border-bottom: 12px solid var(--resume-accent-color);
+}
+
+.md h1 {
+   text-align: center;
+   text-transform: uppercase;
+   letter-spacing: 0.15em;
+   font-weight: 400;
+   border-bottom: none;
+   margin-bottom: 0;
+}
+
+/* The candidate's title is the first paragraph outside every H2 section */
+.md section.h1-section > p:first-of-type {
+   text-align: center;
+   text-transform: uppercase;
+   letter-spacing: 0.15em;
+   font-size: 80%;
+   margin-top: 0.5em;
+   padding-bottom: var(--resume-gutter);
+   border-bottom: 2px solid #333;
+}
+
+.md h2 {
+   text-transform: uppercase;
+   letter-spacing: 0.1em;
+   font-weight: 600;
+   border-bottom: 1px solid var(--resume-rule-color);
+   padding-bottom: 0.3em;
+}
+
+/* Hang wrapped heading lines past the fish */
+.md h3 {
+   --resume-fish-width: 1.5em;
+   font-variant-caps: small-caps;
+   letter-spacing: 0.05em;
+   font-weight: 600;
+   color: var(--body-color);
+   margin-top: 38px;
+   margin-bottom: -8px;
+   padding-bottom: 0;
+   padding-left: var(--resume-fish-width);
+   text-indent: calc(-1 * var(--resume-fish-width));
+}
+
+/* Mark every entry with a fish. Its width must equal the hanging indent. */
+.md h3::before {
+   content: "𓆟";
+   display: inline-block;
+   width: var(--resume-fish-width);
+   text-indent: 0;
+   color: var(--resume-accent-color);
+}
+
+.md h3 + p {
+   margin-top: 0;
+}
+
+/* Start bullets at the column edge */
+.md ul {
+   margin-left: 0;
+   padding-left: 1em;
+}
+
+/* Place each section by the anchor in its heading. The rows are:
+
+      row 5:  Contact    | Profile
+      row 6:  Education  | Experience
+      row 7:  Skills     | (Experience)
+      row 8:  (Skills)   | (Experience)
+
+   Row 8 is the only flexible row, and a grid sizes it from the items that
+   span it, so the longer column's extra height goes below Skills. The name
+   block auto-places into rows 1 to 4; an unused row has no height. */
+@media (min-width: 640px) {
+   .md section.h1-section {
+      display: grid;
+      grid-template-columns: var(--resume-sidebar-width) 1fr;
+      grid-template-rows: repeat(7, auto) 1fr;
+   }
+
+   .md section.h1-section > :not(section.h2-section) {
+      grid-column: 1 / -1;
+   }
+
+   /* Hide the decoration elements, which would take grid rows. */
+   .md section.h1-section > div.decoration {
+      display: none;
+   }
+
+   /* Draw one unbroken center line: both columns have a border, and the main
+      cell overlaps the sidebar border by 1px. A vertical margin would break
+      the line between rows. */
+   .md section.h2-section {
+      grid-column: 2;
+      margin: 0 0 0 -1px;
+      padding: 0 0 var(--resume-gutter) var(--resume-gutter);
+      border-left: 1px solid var(--resume-rule-color);
+      --heading-padding-top: 0px;
+   }
+
+   .md section.h2-section:has(> h2 > a.target:is([name="contact"], [name="education"], [name="skills"])) {
+      grid-column: 1;
+      margin: 0;
+      padding: 0 var(--resume-gutter) var(--resume-gutter) 0;
+      border-left: none;
+      border-right: 1px solid var(--resume-rule-color);
+   }
+
+   .md section.h2-section:has(> h2 > a.target[name="contact"])    { grid-row: 5; }
+   .md section.h2-section:has(> h2 > a.target[name="education"])  { grid-row: 6; }
+   .md section.h2-section:has(> h2 > a.target[name="skills"])     { grid-row: 7 / 9; }
+   .md section.h2-section:has(> h2 > a.target[name="profile"])    { grid-row: 5; }
+   .md section.h2-section:has(> h2 > a.target[name="experience"]) { grid-row: 6 / 9; }
+
+}
